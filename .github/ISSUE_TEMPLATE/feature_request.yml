@@ -1,0 +1,23 @@
+name: Feature request
+description: Đề xuất cải tiến workflow hoặc chất lượng report
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Vấn đề cần giải quyết
+      description: Mô tả tình huống thực tế và vì sao workflow hiện tại chưa đủ.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Giải pháp đề xuất
+    validations:
+      required: true
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Ảnh hưởng tương thích
+      description: Template, rule, API, dữ liệu cũ hoặc hiệu năng có bị ảnh hưởng không?

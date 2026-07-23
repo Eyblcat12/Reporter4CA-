@@ -1,0 +1,146 @@
+/* ═══════════════════════════════════════════════════════════
+   ReportTypeSelector — Premium radio cards with glass effect
+   ═══════════════════════════════════════════════════════════ */
+
+.rts__title {
+  font-family: var(--font-heading);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-3) 0;
+  letter-spacing: -0.01em;
+}
+
+.rts__grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* ─── Card ─── */
+.rts__card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  text-align: left;
+  color: var(--text-primary);
+  width: 100%;
+  font-family: var(--font-ui);
+  overflow: hidden;
+  transition: border-color 0.2s ease,
+              background 0.2s ease,
+              box-shadow 0.2s ease,
+              transform 0.15s ease;
+}
+
+/* Subtle gradient overlay on hover */
+.rts__card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 60%, rgba(var(--accent-rgb), 0.03) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.rts__card:hover::before {
+  opacity: 1;
+}
+
+.rts__card:hover {
+  border-color: rgba(var(--accent-rgb), 0.3);
+  background: var(--surface-hover);
+  transform: translateX(2px);
+}
+
+.rts__card--selected {
+  border-color: var(--accent);
+  background: var(--accent-muted);
+  box-shadow: var(--shadow-glow), var(--shadow-inner);
+}
+
+.rts__card--selected:hover {
+  background: var(--accent-muted);
+  transform: none;
+}
+
+/* ─── Card Icon ─── */
+.rts__card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--surface-elevated);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  transition: all 0.25s var(--ease-spring);
+}
+
+.rts__card:hover .rts__card-icon {
+  transform: scale(1.05);
+}
+
+.rts__card--selected .rts__card-icon {
+  background: var(--accent-gradient);
+  color: white;
+  box-shadow: 0 3px 12px rgba(var(--accent-rgb), 0.35);
+}
+
+/* ─── Card Text ─── */
+.rts__card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.rts__card-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.rts__card-desc {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ─── Radio Dot ─── */
+.rts__radio {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.rts__radio--active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12);
+}
+
+.rts__radio-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px rgba(var(--accent-rgb), 0.5);
+}

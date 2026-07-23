@@ -1,0 +1,169 @@
+{
+  "paragraphCount": 21,
+  "paragraphDigest": "0aaffa329a66dae7eab6a3ab4e9c4f0f91573578406b8268ffd0f42b89f49c3f",
+  "headings": [
+    {
+      "style": "Heading 1",
+      "text": "Thông tin sự cố"
+    },
+    {
+      "style": "Heading 1",
+      "text": "Tóm tắt điều hành"
+    },
+    {
+      "style": "Heading 1",
+      "text": "Tài sản bị ảnh hưởng"
+    },
+    {
+      "style": "Heading 1",
+      "text": "Dòng thời gian"
+    },
+    {
+      "style": "Heading 1",
+      "text": "Phát hiện và bằng chứng"
+    },
+    {
+      "style": "Heading 1",
+      "text": "Indicators of compromise (IoCs)"
+    },
+    {
+      "style": "Heading 1",
+      "text": "MITRE ATT&CK"
+    },
+    {
+      "style": "Heading 1",
+      "text": "Ứng phó sự cố"
+    },
+    {
+      "style": "Heading 2",
+      "text": "Khoanh vùng"
+    },
+    {
+      "style": "Heading 2",
+      "text": "Loại bỏ"
+    },
+    {
+      "style": "Heading 2",
+      "text": "Khôi phục"
+    },
+    {
+      "style": "Heading 1",
+      "text": "Bài học kinh nghiệm"
+    },
+    {
+      "style": "Heading 1",
+      "text": "Khuyến nghị & khắc phục"
+    }
+  ],
+  "tables": [
+    {
+      "rows": 5,
+      "columns": 2,
+      "header": [
+        "Thuộc tính",
+        "Giá trị"
+      ]
+    },
+    {
+      "rows": 3,
+      "columns": 4,
+      "header": [
+        "STT",
+        "Tài sản",
+        "Địa chỉ IP",
+        "Kết quả"
+      ]
+    },
+    {
+      "rows": 2,
+      "columns": 4,
+      "header": [
+        "Thời gian",
+        "Sự kiện",
+        "Bằng chứng",
+        "IoC liên quan"
+      ]
+    },
+    {
+      "rows": 2,
+      "columns": 4,
+      "header": [
+        "Tài sản",
+        "Rule",
+        "Mức độ",
+        "Bằng chứng"
+      ]
+    },
+    {
+      "rows": 2,
+      "columns": 5,
+      "header": [
+        "STT",
+        "Loại",
+        "Giá trị",
+        "Kiểm tra",
+        "Nguồn"
+      ]
+    },
+    {
+      "rows": 2,
+      "columns": 5,
+      "header": [
+        "Technique",
+        "Tactic",
+        "Tên",
+        "Bằng chứng",
+        "Trạng thái"
+      ]
+    },
+    {
+      "rows": 2,
+      "columns": 4,
+      "header": [
+        "Hành động",
+        "Trạng thái",
+        "Phụ trách",
+        "Bằng chứng"
+      ]
+    },
+    {
+      "rows": 2,
+      "columns": 4,
+      "header": [
+        "Hành động",
+        "Trạng thái",
+        "Phụ trách",
+        "Bằng chứng"
+      ]
+    },
+    {
+      "rows": 2,
+      "columns": 4,
+      "header": [
+        "Hành động",
+        "Trạng thái",
+        "Phụ trách",
+        "Bằng chứng"
+      ]
+    }
+  ],
+  "numberedParagraphs": 19,
+  "remainingTokens": [],
+  "sectionCount": 2,
+  "relationships": {
+    "core-properties": 1,
+    "endnotes": 1,
+    "extended-properties": 1,
+    "fontTable": 1,
+    "footer": 2,
+    "footnotes": 1,
+    "header": 1,
+    "numbering": 1,
+    "officeDocument": 1,
+    "settings": 1,
+    "styles": 1,
+    "theme": 1,
+    "webSettings": 1
+  },
+  "media": []
+}

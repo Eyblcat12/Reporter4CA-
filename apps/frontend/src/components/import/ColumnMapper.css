@@ -1,0 +1,206 @@
+/* ═══════════════════════════════════════════════════════════
+   ColumnMapper.css — Premium column mapping interface
+   ═══════════════════════════════════════════════════════════ */
+
+.column-mapper {
+  padding: var(--space-4) var(--space-5);
+}
+
+/* ─── Header ─── */
+.column-mapper__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+  gap: var(--space-3);
+}
+
+.column-mapper__title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.column-mapper__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* ─── Warning banner ─── */
+.column-mapper__warning {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-3);
+  background: var(--warning-muted);
+  border: 1px solid var(--warning);
+  border-radius: var(--radius-md);
+  color: var(--warning);
+  font-size: var(--text-xs);
+  font-weight: 500;
+}
+
+.column-mapper__warning svg {
+  flex-shrink: 0;
+}
+
+/* ─── Mapping rows list ─── */
+.column-mapper__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: var(--space-1);
+}
+
+.column-mapper__list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.column-mapper__list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.column-mapper__list::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+
+/* ─── Individual mapping row ─── */
+.column-mapper__row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.column-mapper__row:hover {
+  background: var(--surface-elevated);
+  border-color: var(--border-subtle);
+}
+
+.column-mapper__row--mapped {
+  border-color: var(--success);
+  background: var(--success-muted);
+}
+
+.column-mapper__row--mapped:hover {
+  background: var(--success-muted);
+  border-color: var(--success);
+}
+
+/* ─── Source column info ─── */
+.column-mapper__source {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.column-mapper__col-name {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+}
+
+.column-mapper__samples {
+  display: flex;
+  gap: var(--space-1);
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.column-mapper__sample {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100px;
+  padding: 1px 4px;
+  background: var(--surface-elevated);
+  border-radius: 3px;
+}
+
+/* ─── Arrow ─── */
+.column-mapper__arrow {
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
+  font-weight: 300;
+  user-select: none;
+}
+
+/* ─── Target select ─── */
+.column-mapper__target {
+  min-width: 0;
+}
+
+.select-wrapper {
+  position: relative;
+}
+
+.select-wrapper select {
+  width: 100%;
+  padding: var(--space-1) var(--space-6) var(--space-1) var(--space-2);
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: var(--text-xs);
+  font-family: var(--font-ui);
+  appearance: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.select-wrapper select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.1);
+}
+
+.select-wrapper select:hover {
+  border-color: rgba(var(--accent-rgb), 0.3);
+}
+
+.select-icon {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+
+/* ─── Status indicator ─── */
+.column-mapper__status {
+  width: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.column-mapper__dot {
+  width: 8px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--border);
+}
+
+.text-success {
+  color: var(--success);
+}
