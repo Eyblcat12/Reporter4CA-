@@ -1,34 +1,53 @@
+<div align="center">
+
 # Reporter Pro
+
+**Local-first DFIR & Compromise Assessment report automation**
 
 [![CI](https://github.com/Eyblcat12/Reporter4CA-/actions/workflows/ci.yml/badge.svg)](https://github.com/Eyblcat12/Reporter4CA-/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-6f42c1.svg)](LICENSE)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB.svg?logo=python&logoColor=white)](.python-version)
 [![Node 20](https://img.shields.io/badge/Node.js-20-339933.svg?logo=node.js&logoColor=white)](.nvmrc)
+[![Platform](https://img.shields.io/badge/Platform-Windows-0078D4.svg?logo=windows)](INSTALL.md)
 
-Reporter Pro là công cụ local-first giúp tự động hóa báo cáo DFIR và Compromise
-Assessment từ dữ liệu tracking. Ứng dụng kết hợp giao diện React, API FastAPI và
-template Word để chuẩn hóa quá trình import, kiểm tra dữ liệu, phân tích finding,
-xem trước và xuất báo cáo DOCX.
+[Bắt đầu](#bắt-đầu-nhanh) · [Tính năng](#tính-năng-chính) · [Benchmark](#benchmark-thực-tế) · [Tài liệu](#tài-liệu) · [Đóng góp](CONTRIBUTING.md)
 
-> **Phạm vi hiện tại:** tối ưu cho cá nhân và nhóm nội bộ trên Windows. Reporter Pro
-> chưa được thiết kế như một dịch vụ multi-tenant chạy trên toàn server.
+</div>
 
-## Điểm nổi bật
+![Reporter Pro dashboard](docs/images/reporter-dashboard.png)
 
-- Import Excel, CSV, JSON hoặc raw text; tự nhận diện và cho phép chỉnh mapping cột.
-- Kiểm tra chất lượng dữ liệu trước khi tạo báo cáo, chỉ rõ dòng lỗi và cảnh báo.
-- Rule engine có thể cấu hình để chuyển nội dung `Note` thành finding có truy vết.
-- Sáu loại báo cáo: Full, Server, Client, Summary, Technical và Incident Response.
-- Template DOCX theo từng loại báo cáo, kiểm tra tương thích trước khi sử dụng.
-- Job tạo report có trạng thái, tiến độ, hủy an toàn và ghi lịch sử.
-- Dashboard thống kê report, tài sản, tỷ lệ thành công và hoạt động theo thời gian.
-- Workspace backup, template versioning và golden DOCX regression test.
-- Giao diện Việt/Anh, dark/light mode và luồng thao tác tối ưu cho desktop.
-- Plugin API mở rộng; tích hợp bên ngoài là tùy chọn và không bắt buộc để chạy.
+Reporter Pro tự động hóa quá trình tạo báo cáo DFIR và Compromise Assessment từ
+dữ liệu tracking. Ứng dụng kết hợp giao diện React, API FastAPI và template Word
+để import, kiểm tra chất lượng dữ liệu, phân tích finding, xem trước và xuất báo
+cáo DOCX có cấu trúc nhất quán.
 
-## Bắt đầu nhanh trên Windows
+> **Phạm vi hiện tại:** tối ưu cho cá nhân và team nội bộ chạy trên Windows.
+> Reporter Pro chưa được thiết kế như dịch vụ multi-tenant triển khai toàn server.
 
-Yêu cầu: **Python 3.12+**, **Node.js 20–25** và **npm 10+**.
+## Tính năng chính
+
+- **Import linh hoạt:** Excel, CSV, JSON, raw text hoặc sample; tự nhận diện và
+  cho phép chỉnh mapping cột.
+- **Data-quality trước khi xuất:** phát hiện dòng lỗi/cảnh báo, hostname trùng,
+  IP sai, thiếu OS, thiếu result và các trường bắt buộc.
+- **Rule engine có truy vết:** chuyển nội dung `Note` thành finding; có thể thêm,
+  bật/tắt và thử rule ngay trong workflow.
+- **Sáu loại báo cáo:** Full, Server, Client, Summary, Technical và Incident
+  Response.
+- **Template an toàn:** template riêng theo report type, kiểm tra tương thích và
+  versioning trước khi đặt làm mặc định.
+- **Job nền:** trạng thái `queued/running/completed/failed/cancelled`, tiến độ,
+  hủy an toàn, chống tạo trùng và cleanup file tạm.
+- **Dashboard:** thống kê report, tài sản, tỷ lệ thành công, biểu đồ hoạt động và
+  lịch sử có ngày giờ.
+- **Kiểm thử DOCX:** golden-file test so sánh heading, paragraph, table, section,
+  relationship và media.
+- **Local-first:** dữ liệu, lịch sử và report được giữ trên máy; plugin ngoài là
+  khả năng mở rộng tùy chọn.
+
+## Bắt đầu nhanh
+
+Yêu cầu: **Windows**, **Python 3.12+**, **Node.js 20–25** và **npm 10+**.
 
 ```powershell
 git clone https://github.com/Eyblcat12/Reporter4CA-.git
@@ -37,50 +56,78 @@ cd Reporter4CA-
 .\start.bat
 ```
 
-`setup.bat` tạo môi trường Python riêng, cài dependency đã khóa, tạo `.env` cục bộ,
-cài frontend bằng `npm ci` và build production UI. `start.bat` sau đó mở ứng dụng
-tại [http://127.0.0.1:8000](http://127.0.0.1:8000).
+`setup.bat` tạo Python virtual environment, cài dependency đã khóa, tạo `.env`
+cục bộ, chạy `npm ci` và build production UI. `start.bat` mở ứng dụng tại
+[http://127.0.0.1:8000](http://127.0.0.1:8000).
 
-Xem [hướng dẫn cài đặt đầy đủ](INSTALL.md) nếu cần cài thủ công, chạy development
-mode hoặc xử lý lỗi môi trường.
+Xem [INSTALL.md](INSTALL.md) để cài thủ công, chạy development mode hoặc xử lý
+lỗi môi trường.
 
 ## Quy trình sử dụng
 
-1. Chọn file tracking, raw text hoặc dữ liệu mẫu.
-2. Kiểm tra mapping cột và bảng chất lượng dữ liệu.
-3. Chỉnh tài sản, rule phát hiện và metadata nếu cần.
-4. Chọn report type, template và preset.
-5. Preview, theo dõi job và tải DOCX khi hoàn tất.
+![Reporter Pro workflow](docs/images/report-workflow.svg)
 
-API tương tác có sẵn tại [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-khi ứng dụng đang chạy.
+1. Chọn file tracking, raw text hoặc dữ liệu mẫu.
+2. Xác nhận mapping cột và sửa các dòng không hợp lệ.
+3. Kiểm tra data-quality; thêm hoặc thử rule phát hiện từ trường `Note`.
+4. Chọn report type, template, preset và metadata.
+5. Preview, bắt đầu job và theo dõi tiến độ.
+6. Tải DOCX; lịch sử và dashboard được cập nhật khi job kết thúc.
+
+API tương tác và schema có sẵn tại
+[http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) khi ứng dụng đang chạy.
+
+## Benchmark thực tế
+
+![Reporter Pro benchmark](docs/images/benchmark-large-workload.svg)
+
+Benchmark tháng 07/2026 trên Lenovo 82RD, Ryzen 7 6800H, RAM 16 GB, với input
+50.000 máy (20.000 server / 30.000 client), một DOCX và template bắt buộc:
+
+| Phép thử | Kết quả đã xác nhận |
+|---|---|
+| Import + parse + data-quality 50.000 dòng | Hoàn tất, đủ 50.000 tài sản, khoảng 20 giây |
+| DOCX chi tiết 1.000 máy | Hoàn tất, 93,8 giây, peak RSS 848 MB |
+| DOCX chi tiết 3.000 máy | Hoàn tất, 375,2 giây, peak RSS 2.433 MB |
+| DOCX chi tiết 3.750 máy | Hoàn tất, 414,1 giây, peak RSS 2.928 MB |
+| DOCX chi tiết 4.000–5.000 máy | Chủ động dừng khi vượt watchdog RAM 3 GB |
+| Soak test job nền 120 phút | Pass, 83 job, 0 lỗi ngoài dự kiến |
+
+Hai năng lực cần được hiểu riêng: pipeline có thể đọc/kiểm tra 50.000 máy, nhưng
+engine hiện chưa đóng gói chi tiết 50.000 máy vào **một** DOCX. Mốc một file đã
+xác nhận dưới giới hạn RAM 3 GB là 3.750 máy; workload lớn hơn cần chia volume
+hoặc tiếp tục tối ưu engine.
+
+Xem [báo cáo benchmark, môi trường và phương pháp đo](docs/BENCHMARKS.md).
 
 ## Kiến trúc
 
 ```text
-Browser / React + Vite
-          │ REST API
-          ▼
-FastAPI ──┬── Import & data-quality pipeline
+React + Vite
+     │ REST API
+     ▼
+FastAPI ──┬── Import, mapping & data-quality
           ├── Rule / finding engine
           ├── Background report jobs
           ├── DOCX template & generation engine
-          ├── SQLite history / workspace backup
-          └── Optional plugins
+          ├── SQLite history & workspace backup
+          └── Optional plugin boundary
 ```
 
 ```text
 Reporter4CA-/
 ├── .github/            GitHub Actions và community templates
 ├── apps/
-│   ├── backend/        FastAPI, engine, templates, samples
+│   ├── backend/        FastAPI, engine, templates và samples
 │   └── frontend/       React, Vitest và Playwright
 ├── docs/               Hướng dẫn người dùng và tài liệu kỹ thuật
-├── scripts/            Setup, launcher và quality gate
-├── tests/              Backend/API/DOCX regression tests
+├── scripts/            Setup, launcher, benchmark và quality gate
+├── tests/              Backend, API và DOCX regression tests
 ├── setup.bat           Cài đặt một lần trên Windows
 └── start.bat           Khởi chạy production local
 ```
+
+Chi tiết thiết kế nằm trong [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Tài liệu
 
@@ -90,11 +137,14 @@ Reporter4CA-/
 | Hướng dẫn sử dụng | [docs/USER_GUIDE.md](docs/USER_GUIDE.md) |
 | Template và report type | [docs/TEMPLATE_GUIDE.md](docs/TEMPLATE_GUIDE.md) |
 | Thêm rule từ cột Note | [docs/USER_RULE_GUIDE.md](docs/USER_RULE_GUIDE.md) |
+| Benchmark và giới hạn hiện tại | [docs/BENCHMARKS.md](docs/BENCHMARKS.md) |
 | Kiến trúc và luồng dữ liệu | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | Phát triển và kiểm thử | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) |
+| Golden DOCX test | [docs/testing/golden-docx.md](docs/testing/golden-docx.md) |
+| Soak test | [docs/testing/soak-test.md](docs/testing/soak-test.md) |
 | Trạng thái và roadmap | [docs/PROJECT_STATUS_AND_ROADMAP.md](docs/PROJECT_STATUS_AND_ROADMAP.md) |
 
-## Phát triển
+## Phát triển và kiểm thử
 
 ```powershell
 .\setup.bat -Development
@@ -102,7 +152,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\start-reporter.ps1 -Developme
 powershell -ExecutionPolicy Bypass -File .\scripts\check.ps1
 ```
 
-Quality gate gồm backend regression/API tests, frontend component tests và
+Quality gate gồm backend/API regression tests, frontend component tests và
 production build. E2E chính:
 
 ```powershell
@@ -111,20 +161,14 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-Chi tiết quy trình đóng góp nằm trong [CONTRIBUTING.md](CONTRIBUTING.md).
+Đọc [CONTRIBUTING.md](CONTRIBUTING.md) trước khi gửi thay đổi.
 
 ## Bảo mật và dữ liệu
 
-Reporter Pro xử lý dữ liệu tại máy cục bộ. File `.env`, database, log, report sinh
-ra, dependency và build artifact đều bị loại khỏi Git. Không commit dữ liệu khách
+Reporter Pro xử lý dữ liệu tại máy cục bộ. `.env`, database, log, report sinh ra,
+dependency và build artifact đều bị loại khỏi Git. Không commit dữ liệu khách
 hàng, API key, token hoặc report thật. Xem [SECURITY.md](SECURITY.md) để báo cáo
 lỗ hổng.
-
-## Trạng thái hiệu năng
-
-Các giới hạn mặc định hiện mang tính bảo vệ workstation, không phải cam kết năng
-lực tối đa. Bảng benchmark chuẩn hóa cho report lớn sẽ được công bố sau khi hoàn
-thành bộ test có thể tái lập trên cấu hình máy được ghi rõ.
 
 ## Giấy phép
 
