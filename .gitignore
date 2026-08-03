@@ -36,8 +36,10 @@ apps/frontend/playwright-report/
 
 # ─── Electron Build ─────────────────────────────────────────────────────────
 artifacts/desktop/dist/
+artifacts/benchmarks/
 artifacts/soak/
 artifacts/golden-docx/
+apps/backend/data/cache/
 
 # ─── Database ────────────────────────────────────────────────────────────────
 *.db

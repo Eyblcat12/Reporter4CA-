@@ -1,4 +1,0 @@
--r requirements.txt
-
-# Test-only dependency required by Starlette's TestClient.
-httpx2==2.7.0
