@@ -40,9 +40,12 @@ test('import sample → configure → preview → generate', async ({ page }) =>
       ruleEvaluated = request.rule.name === 'Acme Relay review'
         && request.rule.conditions.containsAny.includes('Acme Relay');
       return route.fulfill({ json: {
-        matchedRows: 1, totalRows: 2,
+        matchedRows: 1, changedRows: 1, totalRows: 2,
+        impact: { servers: 0, clients: 1 },
+        conflicts: [], truncated: false,
         matches: [{
           row: 1, hostname: 'ws-e2e-01', type: 'client',
+          assessmentBefore: 'Không phát hiện', assessmentAfter: 'Cần xác minh',
           evidence: [{ field: 'notes', value: 'Acme Relay observed', matched: 'acme relay' }],
         }],
       } });
@@ -101,9 +104,9 @@ test('import sample → configure → preview → generate', async ({ page }) =>
   await page.getByLabel(/Tên rule/i).fill('Acme Relay review');
   await page.getByLabel(/Từ khóa cần khớp/i).fill('Acme Relay');
   await page.getByRole('button', { name: /Thử trên 2 dòng/i }).click();
-  await expect(page.getByText(/Khớp 1\/2 dòng/i)).toBeVisible();
+  await expect(page.locator('.rule-test__summary').getByText(/1\s+khớp/i)).toBeVisible();
   expect(ruleEvaluated).toBe(true);
-  await page.getByRole('button', { name: /Lưu rule/i }).click();
+  await page.getByRole('button', { name: /Lưu & áp dụng/i }).click();
   await expect(page.getByText('Acme Relay review')).toBeVisible();
   expect(ruleSaved).toBe(true);
 
@@ -112,9 +115,11 @@ test('import sample → configure → preview → generate', async ({ page }) =>
   await expect(page.locator('.docx-modal')).toBeVisible();
   expect(previewRequested).toBe(true);
 
-  const downloadPromise = page.waitForEvent('download');
-  await page.locator('.docx-modal__footer').getByRole('button', { name: /Tạo báo cáo DOCX/i }).click();
-  const download = await downloadPromise;
-  expect(download.suggestedFilename()).toBe('e2e-report.docx');
+  const downloadResponse = page.waitForResponse((response) => (
+    response.url().endsWith('/api/report-jobs/e2e-job/download') && response.ok()
+  ));
+  await page.locator('.docx-modal__footer').getByRole('button', { name: /Generate từ Preview này/i }).click();
+  const response = await downloadResponse;
+  expect(response.headers()['content-disposition']).toContain('e2e-report.docx');
   expect(generateRequested).toBe(true);
 });
