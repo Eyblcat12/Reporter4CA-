@@ -1,0 +1,46 @@
+.runtime-stopped {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 50% 35%, rgba(124, 58, 237, .15), transparent 38%),
+    color-mix(in srgb, var(--bg-primary) 97%, #050509);
+  backdrop-filter: blur(18px);
+}
+
+.runtime-stopped__card {
+  width: min(460px, 100%);
+  padding: 36px;
+  border: 1px solid var(--border-color);
+  border-radius: 22px;
+  background: var(--bg-card);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, .38);
+  text-align: center;
+}
+
+.runtime-stopped__icon {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 20px;
+  border-radius: 17px;
+  color: #c4b5fd;
+  background: rgba(124, 58, 237, .14);
+  box-shadow: inset 0 0 0 1px rgba(139, 92, 246, .22);
+}
+
+.runtime-stopped h1 {
+  margin: 0 0 10px;
+  color: var(--text-primary);
+  font-size: clamp(23px, 4vw, 30px);
+}
+
+.runtime-stopped p {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.65;
+}
