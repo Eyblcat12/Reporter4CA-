@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, Request, UploadFile
 from pydantic import BaseModel, Field
 from fastapi.responses import FileResponse, JSONResponse
 from starlette.background import BackgroundTask
@@ -102,7 +102,13 @@ from core.template_analyzer import (
     validate_docx_bytes,
 )
 from core.template_schema import compare_template_analysis
-from core.workspace_backup import create_workspace_backup
+from core.workspace_backup import (
+    MAX_BACKUP_BYTES,
+    WorkspaceBackupError,
+    create_workspace_backup,
+    inspect_workspace_backup,
+    restore_workspace_backup,
+)
 
 import sys
 
@@ -917,6 +923,59 @@ async def download_workspace_backup():
         },
         background=BackgroundTask(backup_path.unlink, missing_ok=True),
     )
+
+
+async def _save_backup_upload(upload: UploadFile) -> Path:
+    suffix = Path(upload.filename or "backup.zip").suffix.lower()
+    if suffix != ".zip":
+        raise HTTPException(422, "Backup must be a .zip archive.")
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as temporary:
+        target = Path(temporary.name)
+        total = 0
+        while chunk := await upload.read(1024 * 1024):
+            total += len(chunk)
+            if total > MAX_BACKUP_BYTES:
+                target.unlink(missing_ok=True)
+                raise HTTPException(413, "Backup exceeds the 512 MiB safety limit.")
+            temporary.write(chunk)
+    return target
+
+
+@router.post("/system/restore/preview")
+async def preview_workspace_restore(backup: UploadFile = File(...)):
+    """Validate and describe a restore archive without mutating the workspace."""
+    archive_path = await _save_backup_upload(backup)
+    try:
+        return inspect_workspace_backup(archive_path, get_db(), TEMPLATES_DIR)
+    except WorkspaceBackupError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    finally:
+        archive_path.unlink(missing_ok=True)
+
+
+@router.post("/system/restore")
+async def restore_workspace(
+    backup: UploadFile = File(...),
+    confirmation_token: str = Form(..., alias="confirmationToken"),
+):
+    """Restore a previously dry-run archive, with automatic rollback on failure."""
+    active_jobs = [
+        job for job in _report_jobs.list(limit=100) if job["status"] not in {"completed", "failed", "cancelled"}
+    ]
+    if active_jobs:
+        raise HTTPException(409, "Wait for active report jobs to finish before restoring.")
+    archive_path = await _save_backup_upload(backup)
+    try:
+        return restore_workspace_backup(
+            archive_path,
+            get_db(),
+            TEMPLATES_DIR,
+            confirmation_token=confirmation_token,
+        )
+    except WorkspaceBackupError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    finally:
+        archive_path.unlink(missing_ok=True)
 
 
 @router.get("/sample")

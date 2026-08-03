@@ -74,6 +74,36 @@ class ApiIntegrationTests(unittest.TestCase):
         self.assertEqual(rules.status_code, 200)
         self.assertTrue(any(rule["id"] == "PROXY_TOOL_REVIEW" for rule in rules.json()["rules"]))
 
+    def test_workspace_backup_dry_run_and_confirmed_restore_contract(self) -> None:
+        template_path = self.template_root / "summary" / "summary.docx"
+        template_path.parent.mkdir(parents=True)
+        document = Document()
+        document.add_heading("Summary", level=1)
+        document.save(template_path)
+        self.database.add_template(
+            name="Summary",
+            filename=template_path.name,
+            file_path=str(template_path),
+            report_type="summary",
+        )
+
+        downloaded = self.client.get("/api/system/backup")
+        self.assertEqual(downloaded.status_code, 200)
+        self.assertEqual(downloaded.headers["x-backup-templates"], "1")
+        files = {"backup": ("workspace.zip", downloaded.content, "application/zip")}
+        preview = self.client.post("/api/system/restore/preview", files=files)
+        self.assertEqual(preview.status_code, 200)
+        self.assertTrue(preview.json()["dryRun"])
+        self.assertEqual(preview.json()["templateCount"], 1)
+
+        restored = self.client.post(
+            "/api/system/restore",
+            files={"backup": ("workspace.zip", downloaded.content, "application/zip")},
+            data={"confirmationToken": preview.json()["confirmationToken"]},
+        )
+        self.assertEqual(restored.status_code, 200)
+        self.assertTrue(restored.json()["restored"])
+
     def test_incident_validation_contract_and_preview_guard(self) -> None:
         invalid = self.client.post("/api/validate-incident", json={"metadata": {}})
         self.assertEqual(invalid.status_code, 200)

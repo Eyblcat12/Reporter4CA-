@@ -448,6 +448,49 @@ class Database:
             snapshot.close()
         return target
 
+    def restore_from(self, source_path: Path | str) -> None:
+        """Replace the live database from a validated SQLite snapshot.
+
+        Callers are responsible for validating the snapshot before invoking this
+        method. SQLite's backup API keeps the already-open singleton connection
+        usable and also restores pages that would otherwise live in WAL files.
+        """
+        source_file = Path(source_path)
+        if not source_file.is_file():
+            raise FileNotFoundError(source_file)
+        source = sqlite3.connect(str(source_file))
+        target = self._get_conn()
+        try:
+            source.backup(target)
+            target.commit()
+        finally:
+            source.close()
+
+    def relocate_template_paths(self, paths_by_filename: dict[str, Path]) -> None:
+        """Point restored template metadata at files in this installation."""
+        normalized = {
+            filename.casefold(): str(path.resolve())
+            for filename, path in paths_by_filename.items()
+        }
+        connection = self._get_conn()
+        with connection:
+            for filename, path in normalized.items():
+                connection.execute(
+                    "UPDATE templates SET file_path = ?, updated_at = ? "
+                    "WHERE lower(filename) = ?",
+                    (path, _now_iso(), filename),
+                )
+            version_rows = connection.execute(
+                "SELECT id, file_path FROM template_versions"
+            ).fetchall()
+            for version_id, old_path in version_rows:
+                replacement = normalized.get(Path(old_path or "").name.casefold())
+                if replacement:
+                    connection.execute(
+                        "UPDATE template_versions SET file_path = ? WHERE id = ?",
+                        (replacement, version_id),
+                    )
+
     # ── Low-level query helpers ─────────────────────────────
 
     def _execute(
