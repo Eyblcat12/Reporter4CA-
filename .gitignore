@@ -42,6 +42,7 @@ artifacts/golden-docx/
 artifacts/review/
 artifacts/template-backups/
 artifacts/verification/
+artifacts/releases/
 apps/backend/data/cache/
 
 # ─── Database ────────────────────────────────────────────────────────────────
