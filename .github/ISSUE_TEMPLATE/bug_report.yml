@@ -1,0 +1,54 @@
+name: Bug report
+description: Báo lỗi có thể tái hiện trong Reporter Pro
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Không đính kèm dữ liệu khách hàng, credential, report thật hoặc log chưa được làm sạch.
+  - type: input
+    id: version
+    attributes:
+      label: Version hoặc commit
+      placeholder: v2.x / commit SHA
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Thành phần
+      options:
+        - Import / mapping
+        - Data quality / rules
+        - Template / DOCX
+        - Jobs / history / dashboard
+        - Frontend
+        - Setup / launcher
+        - Khác
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Các bước tái hiện
+      description: Dùng sample tổng hợp hoặc mô tả đã loại bỏ dữ liệu nhạy cảm.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Kết quả mong đợi và thực tế
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Môi trường
+      placeholder: Windows, Python, Node.js, Word/LibreOffice
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Kiểm tra dữ liệu
+      options:
+        - label: Tôi xác nhận nội dung không chứa dữ liệu khách hàng hoặc secret.
+          required: true

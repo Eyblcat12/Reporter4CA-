@@ -1,93 +1,180 @@
-# ngocduc112-project
+<div align="center">
 
+# Reporter Pro
 
+**Local-first DFIR & Compromise Assessment report automation**
 
-## Getting started
+[![CI](https://github.com/Eyblcat12/Reporter4CA-/actions/workflows/ci.yml/badge.svg)](https://github.com/Eyblcat12/Reporter4CA-/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-6f42c1.svg)](LICENSE)
+[![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB.svg?logo=python&logoColor=white)](.python-version)
+[![Node 20](https://img.shields.io/badge/Node.js-20-339933.svg?logo=node.js&logoColor=white)](.nvmrc)
+[![Platform](https://img.shields.io/badge/Platform-Windows-0078D4.svg?logo=windows)](INSTALL.md)
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+[Bắt đầu](#bắt-đầu-nhanh) · [Tính năng](#tính-năng-chính) · [Benchmark](#benchmark-thực-tế) · [Tài liệu](#tài-liệu) · [Đóng góp](CONTRIBUTING.md)
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+</div>
 
-## Add your files
+![Reporter Pro dashboard](docs/images/reporter-dashboard.png)
 
-* [Create](https://docs.gitlab.com/user/project/repository/web_editor/#create-a-file) or [upload](https://docs.gitlab.com/user/project/repository/web_editor/#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+Reporter Pro tự động hóa quá trình tạo báo cáo DFIR và Compromise Assessment từ
+dữ liệu tracking. Ứng dụng kết hợp giao diện React, API FastAPI và template Word
+để import, kiểm tra chất lượng dữ liệu, phân tích finding, xem trước và xuất báo
+cáo DOCX có cấu trúc nhất quán.
 
+> **Phạm vi hiện tại:** tối ưu cho cá nhân và team nội bộ chạy trên Windows.
+> Reporter Pro chưa được thiết kế như dịch vụ multi-tenant triển khai toàn server.
+
+## Tính năng chính
+
+- **Import linh hoạt:** Excel, CSV, JSON, raw text hoặc sample; tự nhận diện và
+  cho phép chỉnh mapping cột.
+- **Data-quality trước khi xuất:** phát hiện dòng lỗi/cảnh báo, hostname trùng,
+  IP sai, thiếu OS, thiếu result và các trường bắt buộc.
+- **Rule engine có truy vết:** chuyển nội dung `Note` thành finding; có thể thêm,
+  bật/tắt và thử rule ngay trong workflow.
+- **Sáu loại báo cáo:** Full, Server, Client, Summary, Technical và Incident
+  Response.
+- **Template an toàn:** template riêng theo report type, kiểm tra tương thích và
+  versioning trước khi đặt làm mặc định.
+- **Job nền:** trạng thái `queued/running/completed/failed/cancelled`, tiến độ,
+  hủy an toàn, chống tạo trùng và cleanup file tạm.
+- **Preview có identity:** backend pin rule/template/plugin, trả signature và có
+  thể promotion byte-for-byte từ Preview sang report qua feature flag thử nghiệm.
+- **Dashboard:** thống kê report, tài sản, tỷ lệ thành công, biểu đồ hoạt động và
+  lịch sử có ngày giờ.
+- **Kiểm thử DOCX:** golden-file test so sánh heading, paragraph, table, section,
+  relationship và media.
+- **Local-first:** dữ liệu, lịch sử và report được giữ trên máy; plugin ngoài là
+  khả năng mở rộng tùy chọn.
+- **Vòng đời đồng bộ:** đóng tab Reporter cuối cùng sẽ dừng launcher/backend; dừng
+  launcher cũng được giao diện nhận biết mà không để tiến trình nền chạy sót.
+
+## Bắt đầu nhanh
+
+Yêu cầu: **Windows**, **Python 3.12+**, **Node.js 20–25** và **npm 10+**.
+
+```powershell
+git clone https://github.com/Eyblcat12/Reporter4CA-.git
+cd Reporter4CA-
+.\setup.bat
+.\start.bat
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/ngocduc112-group/ngocduc112-project.git
-git branch -M main
-git push -uf origin main
+
+`setup.bat` tạo Python virtual environment, cài dependency đã khóa, tạo `.env`
+cục bộ, chạy `npm ci` và build production UI. `start.bat` mở ứng dụng tại
+[http://127.0.0.1:8000](http://127.0.0.1:8000).
+
+Xem [INSTALL.md](INSTALL.md) để cài thủ công, chạy development mode hoặc xử lý
+lỗi môi trường.
+
+## Quy trình sử dụng
+
+![Reporter Pro workflow](docs/images/report-workflow.svg)
+
+1. Chọn file tracking, raw text hoặc dữ liệu mẫu.
+2. Xác nhận mapping cột và sửa các dòng không hợp lệ.
+3. Kiểm tra data-quality; thêm hoặc thử rule phát hiện từ trường `Note`.
+4. Chọn report type, template, preset và metadata.
+5. Preview, bắt đầu job và theo dõi tiến độ.
+6. Tải DOCX; lịch sử và dashboard được cập nhật khi job kết thúc.
+
+API tương tác và schema có sẵn tại
+[http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) khi ứng dụng đang chạy.
+
+## Benchmark thực tế
+
+![Reporter Pro benchmark](docs/images/benchmark-large-workload.svg)
+
+Benchmark tháng 07/2026 trên Lenovo 82RD, Ryzen 7 6800H, RAM 16 GB, với input
+50.000 máy (20.000 server / 30.000 client), một DOCX và template bắt buộc:
+
+| Phép thử | Kết quả đã xác nhận |
+|---|---|
+| Import + parse + data-quality 50.000 dòng | Hoàn tất, đủ 50.000 tài sản, khoảng 20 giây |
+| DOCX chi tiết 1.000 máy | Hoàn tất, 93,8 giây, peak RSS 848 MB |
+| DOCX chi tiết 3.000 máy | Hoàn tất, 375,2 giây, peak RSS 2.433 MB |
+| DOCX chi tiết 3.750 máy | Hoàn tất, 414,1 giây, peak RSS 2.928 MB |
+| DOCX chi tiết 4.000–5.000 máy | Chủ động dừng khi vượt watchdog RAM 3 GB |
+| Soak test job nền 120 phút | Pass, 83 job, 0 lỗi ngoài dự kiến |
+
+Hai năng lực cần được hiểu riêng: pipeline có thể đọc/kiểm tra 50.000 máy, nhưng
+engine hiện chưa đóng gói chi tiết 50.000 máy vào **một** DOCX. Mốc một file đã
+xác nhận dưới giới hạn RAM 3 GB là 3.750 máy; workload lớn hơn cần chia volume
+hoặc tiếp tục tối ưu engine.
+
+Xem [báo cáo benchmark, môi trường và phương pháp đo](docs/BENCHMARKS.md).
+
+## Kiến trúc
+
+```text
+React + Vite
+     │ REST API
+     ▼
+FastAPI ──┬── Import, mapping & data-quality
+          ├── Rule / finding engine
+          ├── Background report jobs
+          ├── DOCX template & generation engine
+          ├── SQLite history & workspace backup
+          └── Optional plugin boundary
 ```
 
-## Integrate with your tools
+```text
+Reporter4CA-/
+├── .github/            GitHub Actions và community templates
+├── apps/
+│   ├── backend/        FastAPI, engine, templates và samples
+│   └── frontend/       React, Vitest và Playwright
+├── docs/               Hướng dẫn người dùng và tài liệu kỹ thuật
+├── scripts/            Setup, launcher, benchmark và quality gate
+├── tests/              Backend, API và DOCX regression tests
+├── setup.bat           Cài đặt một lần trên Windows
+└── start.bat           Khởi chạy production local
+```
 
-* [Set up project integrations](https://gitlab.com/ngocduc112-group/ngocduc112-project/-/settings/integrations)
+Chi tiết thiết kế nằm trong [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-## Collaborate with your team
+## Tài liệu
 
-* [Invite team members and collaborators](https://docs.gitlab.com/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/user/project/merge_requests/creating_merge_requests/)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/user/project/issues/managing_issues/#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+| Chủ đề | Tài liệu |
+|---|---|
+| Cài đặt và xử lý lỗi | [INSTALL.md](INSTALL.md) |
+| Hướng dẫn sử dụng | [docs/USER_GUIDE.md](docs/USER_GUIDE.md) |
+| Template và report type | [docs/TEMPLATE_GUIDE.md](docs/TEMPLATE_GUIDE.md) |
+| Thêm rule từ cột Note | [docs/USER_RULE_GUIDE.md](docs/USER_RULE_GUIDE.md) |
+| Benchmark và giới hạn hiện tại | [docs/BENCHMARKS.md](docs/BENCHMARKS.md) |
+| Kế hoạch tối ưu Preview/Generate | [docs/PERFORMANCE_OPTIMIZATION_PLAN.md](docs/PERFORMANCE_OPTIMIZATION_PLAN.md) |
+| Kiến trúc và luồng dữ liệu | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+| Phát triển và kiểm thử | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) |
+| Golden DOCX test | [docs/testing/golden-docx.md](docs/testing/golden-docx.md) |
+| Soak test | [docs/testing/soak-test.md](docs/testing/soak-test.md) |
+| Trạng thái và roadmap | [docs/PROJECT_STATUS_AND_ROADMAP.md](docs/PROJECT_STATUS_AND_ROADMAP.md) |
 
-## Test and Deploy
+## Phát triển và kiểm thử
 
-Use the built-in continuous integration in GitLab.
+```powershell
+.\setup.bat -Development
+powershell -ExecutionPolicy Bypass -File .\scripts\start-reporter.ps1 -Development
+powershell -ExecutionPolicy Bypass -File .\scripts\check.ps1
+```
 
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/topics/autodevops/requirements/)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ci/environments/protected_environments/)
+Quality gate gồm backend/API regression tests, frontend component tests và
+production build. E2E chính:
 
-***
+```powershell
+cd apps\frontend
+npx playwright install chromium
+npm run test:e2e
+```
 
-# Editing this README
+Đọc [CONTRIBUTING.md](CONTRIBUTING.md) trước khi gửi thay đổi.
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+## Bảo mật và dữ liệu
 
-## Suggestions for a good README
+Reporter Pro xử lý dữ liệu tại máy cục bộ. `.env`, database, log, report sinh ra,
+dependency và build artifact đều bị loại khỏi Git. Không commit dữ liệu khách
+hàng, API key, token hoặc report thật. Xem [SECURITY.md](SECURITY.md) để báo cáo
+lỗ hổng.
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+## Giấy phép
 
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+Phát hành theo [MIT License](LICENSE).
