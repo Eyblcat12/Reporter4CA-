@@ -32,9 +32,17 @@ jobs:
       - name: Install locked dependencies
         shell: pwsh
         run: ./scripts/setup.ps1 -Development -SkipFrontendBuild
-      - name: Run release quality gate
+      - name: Run backend release gate
         shell: pwsh
-        run: ./scripts/check.ps1
+        run: ./scripts/check.ps1 -SkipFrontend
+      - name: Run frontend component tests
+        shell: pwsh
+        working-directory: apps/frontend
+        run: npm test
+      - name: Run frontend production build
+        shell: pwsh
+        working-directory: apps/frontend
+        run: npm run build
       - name: Create source archives and checksums
         shell: pwsh
         run: ./scripts/create-release-artifacts.ps1 -Ref $env:GITHUB_REF_NAME

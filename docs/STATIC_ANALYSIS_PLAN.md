@@ -4,7 +4,7 @@
 
 Thiết lập Ruff cho Python và ESLint/Prettier cho React mà không thay đổi hành vi
 report engine, không format file sinh tự động và không tạo một commit khổng lồ khó
-review. Đây là kế hoạch triển khai; chưa bật formatter/linter trong baseline 2.1.0.
+review. Đây là kế hoạch triển khai; chưa bật formatter/linter trong baseline 2.1.x.
 
 ## Phạm vi đề xuất
 
