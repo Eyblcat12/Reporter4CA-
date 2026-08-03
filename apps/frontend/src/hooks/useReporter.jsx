@@ -1277,6 +1277,39 @@ export function ReporterProvider({ children }) {
     return { filename, size: blob.size };
   }, [addLog]);
 
+  const previewWorkspaceRestore = useCallback(async (file) => {
+    addLog(`Đang kiểm tra backup trước khi restore: ${file.name}`);
+    const form = new FormData();
+    form.append('backup', file, file.name);
+    const res = await fetch(`${API_BASE}/system/restore/preview`, {
+      method: 'POST',
+      body: form,
+    });
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(payload.detail || 'Backup không hợp lệ');
+    }
+    addLog(`Dry-run hợp lệ: ${payload.templateCount} template`);
+    return payload;
+  }, [addLog]);
+
+  const restoreWorkspaceBackup = useCallback(async (file, confirmationToken) => {
+    addLog(`Đang restore workspace từ ${file.name}...`);
+    const form = new FormData();
+    form.append('backup', file, file.name);
+    form.append('confirmationToken', confirmationToken);
+    const res = await fetch(`${API_BASE}/system/restore`, {
+      method: 'POST',
+      body: form,
+    });
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(payload.detail || 'Không thể restore workspace');
+    }
+    addLog(`Đã restore workspace: ${payload.templateCount} template`);
+    return payload;
+  }, [addLog]);
+
   // ── Clear imported file ─────────────────────────────────
 
   const clearImportedFile = useCallback(() => {
@@ -1350,6 +1383,8 @@ export function ReporterProvider({ children }) {
     fetchDashboardSummary,
     // Local-first workspace protection
     downloadWorkspaceBackup,
+    previewWorkspaceRestore,
+    restoreWorkspaceBackup,
     // New: clear import
     clearImportedFile,
   };
