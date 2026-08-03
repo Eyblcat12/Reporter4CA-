@@ -47,6 +47,12 @@ Write-Step "Installing backend dependencies from $Requirements..."
 & $VenvPython -m pip install --disable-pip-version-check -r (Join-Path $Backend $Requirements)
 if ($LASTEXITCODE -ne 0) { throw "Backend dependency installation failed." }
 
+Write-Step "Preparing bundled DOCX templates for a faster first Preview..."
+& $VenvPython (Join-Path $Root "scripts\warm_prepared_templates.py")
+if ($LASTEXITCODE -ne 0) {
+    Write-Warning "Template warm-up was deferred; Reporter Pro will use the safe cold path."
+}
+
 if (-not (Test-Path -LiteralPath (Join-Path $Root ".env"))) {
     Copy-Item -LiteralPath (Join-Path $Root ".env.example") -Destination (Join-Path $Root ".env")
     Write-Step "Created local .env from .env.example."

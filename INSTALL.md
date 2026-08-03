@@ -24,8 +24,10 @@ Script setup thực hiện:
 1. Kiểm tra phiên bản Python và Node.js.
 2. Tạo `apps\backend\.venv`.
 3. Cài backend dependency từ file phiên bản đã khóa.
-4. Tạo `.env` từ `.env.example` nếu chưa có.
-5. Chạy `npm ci` và build frontend production.
+4. Prewarm sáu template DOCX bundled vào cache content-addressed để lần Preview đầu
+   không phải compile template đồng bộ; nếu warm-up lỗi, engine vẫn fallback an toàn.
+5. Tạo `.env` từ `.env.example` nếu chưa có.
+6. Chạy `npm ci` và build frontend production.
 
 Script không ghi đè `.env` đã tồn tại.
 

@@ -763,6 +763,56 @@ def warm_prepared_template_safely(
         )
 
 
+def bundled_template_sources(
+    templates_root: str | Path,
+) -> list[tuple[ReportType, Path]]:
+    """Resolve the same bundled defaults used by the API without touching the DB."""
+
+    root = Path(templates_root).expanduser().resolve()
+    fallback = root / "report_template.docx"
+    sources: list[tuple[ReportType, Path]] = []
+    for report_type in ReportType:
+        category = root / report_type.value
+        candidates = sorted(
+            path
+            for path in category.glob("*.docx")
+            if path.is_file() and not path.name.startswith("~")
+        ) if category.is_dir() else []
+        source = candidates[0] if candidates else fallback
+        if source.is_file():
+            sources.append((report_type, source))
+    return sources
+
+
+def warm_bundled_templates(
+    templates_root: str | Path,
+) -> list[dict[str, Any]]:
+    """Prepare bundled defaults and return aggregate-only setup diagnostics."""
+
+    results: list[dict[str, Any]] = []
+    for report_type, source in bundled_template_sources(templates_root):
+        started_ns = time.perf_counter_ns()
+        outcome = "prepared"
+        error_code = ""
+        try:
+            prepared = warm_prepared_template(source, report_type)
+            if not prepared:
+                outcome = "disabled"
+        except (OSError, PreparedTemplateError, RuntimeError, ValueError) as exc:
+            outcome = "deferred"
+            error_code = type(exc).__name__
+        results.append({
+            "reportType": report_type.value,
+            "outcome": outcome,
+            "errorCode": error_code,
+            "durationMs": round(
+                (time.perf_counter_ns() - started_ns) / 1_000_000,
+                3,
+            ),
+        })
+    return results
+
+
 def _performance_phase(
     metrics: PerformanceMetrics | None,
     name: str,

@@ -196,6 +196,41 @@ class PreparedTemplateCacheTests(unittest.TestCase):
 
 
 class PreparedTemplateIntegrationTests(unittest.TestCase):
+    def test_bundled_warmup_resolves_categories_and_defers_individual_failures(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fallback = root / "report_template.docx"
+            fallback.write_bytes(_docx_bytes("fallback"))
+            server_dir = root / "server_only"
+            server_dir.mkdir()
+            server = server_dir / "server.docx"
+            server.write_bytes(_docx_bytes("server"))
+
+            def warm(source: Path, report_type: generator.ReportType) -> bool:
+                if report_type == generator.ReportType.TECHNICAL:
+                    raise PreparedTemplateError("controlled")
+                self.assertTrue(source.is_file())
+                return True
+
+            with patch.object(generator, "warm_prepared_template", side_effect=warm) as called:
+                results = generator.warm_bundled_templates(root)
+
+            self.assertEqual(len(results), len(generator.ReportType))
+            self.assertEqual(
+                {item["reportType"] for item in results},
+                {item.value for item in generator.ReportType},
+            )
+            technical = next(
+                item for item in results if item["reportType"] == "technical"
+            )
+            self.assertEqual(technical["outcome"], "deferred")
+            self.assertEqual(technical["errorCode"], "PreparedTemplateError")
+            server_call = next(
+                call for call in called.call_args_list
+                if call.args[1] == generator.ReportType.SERVER_ONLY
+            )
+            self.assertTrue(os.path.samefile(server_call.args[0], server))
+
     def test_flag_defaults_on_and_supports_explicit_rollback(self) -> None:
         with patch.dict(os.environ, {}, clear=True):
             self.assertTrue(prepared_template_enabled())
