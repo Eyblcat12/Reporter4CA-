@@ -31,7 +31,7 @@ def create_workspace_backup(
     templates_dir: Path | str,
     output_path: Path | str,
     *,
-    app_version: str = "2.1.1",
+    app_version: str = "2.1.2",
 ) -> dict[str, Any]:
     """Write a database/template backup archive and return its manifest."""
     template_root = Path(templates_dir).resolve()

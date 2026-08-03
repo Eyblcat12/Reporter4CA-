@@ -3,6 +3,15 @@
 Mọi thay đổi đáng chú ý của Reporter Pro được ghi tại đây. Dự án tuân theo
 [Semantic Versioning](https://semver.org/); ngày phát hành dùng định dạng ISO.
 
+## [2.1.2] - 2026-08-03
+
+### Fixed
+
+- Khóa line ending của CSV ở LF trên mọi hệ điều hành để fixture benchmark giữ
+  nguyên byte và SHA-256 sau khi checkout trên Windows runner.
+- Khôi phục release gate tái lập cho bộ fixture hiệu năng mà không thay đổi dữ liệu,
+  manifest hay kết quả benchmark đã công bố.
+
 ## [2.1.1] - 2026-08-03
 
 ### Fixed
@@ -41,3 +50,4 @@ Mọi thay đổi đáng chú ý của Reporter Pro được ghi tại đây. D�
 
 [2.1.0]: https://github.com/Eyblcat12/Reporter4CA-/releases/tag/v2.1.0
 [2.1.1]: https://github.com/Eyblcat12/Reporter4CA-/releases/tag/v2.1.1
+[2.1.2]: https://github.com/Eyblcat12/Reporter4CA-/releases/tag/v2.1.2

@@ -9,6 +9,7 @@
 *.md text eol=lf
 *.yml text eol=lf
 *.yaml text eol=lf
+*.csv text eol=lf
 *.docx binary
 *.xlsx binary
 *.png binary
