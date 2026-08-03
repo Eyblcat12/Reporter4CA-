@@ -48,7 +48,7 @@ job trước, sau đó đóng tab hoặc launcher để file tạm được xử
 
 ```powershell
 python -m venv apps\backend\.venv
-apps\backend\.venv\Scripts\python.exe -m pip install -r apps\backend\requirements.txt
+apps\backend\.venv\Scripts\python.exe -m pip install --require-hashes -r apps\backend\requirements.lock.txt
 Copy-Item .env.example .env
 cd apps\frontend
 npm ci
@@ -56,6 +56,11 @@ npm run build
 cd ..\..
 .\start.bat
 ```
+
+Hai lockfile `requirements.lock.txt` và `requirements-dev.lock.txt` khóa cả
+dependency trực tiếp, gián tiếp và SHA-256 của package. Không bỏ tùy chọn
+`--require-hashes`: đây là bước ngăn package sai phiên bản hoặc sai artifact được
+cài trên một máy khác.
 
 ## Development mode
 

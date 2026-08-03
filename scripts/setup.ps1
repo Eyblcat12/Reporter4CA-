@@ -9,7 +9,7 @@ $Backend = Join-Path $Root "apps\backend"
 $Frontend = Join-Path $Root "apps\frontend"
 $Venv = Join-Path $Backend ".venv"
 $VenvPython = Join-Path $Venv "Scripts\python.exe"
-$Requirements = if ($Development) { "requirements-dev.txt" } else { "requirements.txt" }
+$Requirements = if ($Development) { "requirements-dev.lock.txt" } else { "requirements.lock.txt" }
 
 function Write-Step([string]$Message) {
     Write-Host "[Reporter Pro Setup] $Message" -ForegroundColor Cyan
@@ -44,7 +44,7 @@ if (-not (Test-Path -LiteralPath $VenvPython)) {
 }
 
 Write-Step "Installing backend dependencies from $Requirements..."
-& $VenvPython -m pip install --disable-pip-version-check -r (Join-Path $Backend $Requirements)
+& $VenvPython -m pip install --disable-pip-version-check --require-hashes -r (Join-Path $Backend $Requirements)
 if ($LASTEXITCODE -ne 0) { throw "Backend dependency installation failed." }
 
 Write-Step "Preparing bundled DOCX templates for a faster first Preview..."

@@ -7,8 +7,18 @@
 powershell -ExecutionPolicy Bypass -File .\scripts\start-reporter.ps1 -Development
 ```
 
-Python dependency được khóa trong `apps/backend/requirements*.txt`; frontend dùng
-`package-lock.json` và bắt buộc cài bằng `npm ci` trong CI.
+`requirements.txt` và `requirements-dev.txt` là đầu vào trực tiếp dễ review.
+`requirements.lock.txt` và `requirements-dev.lock.txt` là môi trường cài đặt thực,
+khóa toàn bộ dependency gián tiếp và SHA-256. Frontend dùng `package-lock.json`.
+CI bắt buộc dùng `pip --require-hashes` và `npm ci`.
+
+Khi chủ động nâng dependency Python, tạo lại lockfile bằng:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\lock-python-dependencies.ps1
+```
+
+Chỉ commit lockfile sau khi review diff và chạy quality gate trên virtualenv sạch.
 
 ## Quality gate
 

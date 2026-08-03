@@ -18,7 +18,7 @@ backend-regression:
     paths:
       - .cache/pip
   before_script:
-    - python -m pip install -r apps/backend/requirements-dev.txt
+    - python -m pip install --require-hashes -r apps/backend/requirements-dev.lock.txt
   script:
     - >-
       python -m unittest -v
