@@ -30,6 +30,7 @@ if (-not $SkipBackend) {
         tests.test_plugin_manager `
         tests.test_performance_harness `
         tests.test_prepared_template `
+        tests.test_preview_benchmark_summary `
         tests.test_preview_artifacts `
         tests.test_report_jobs `
         tests.test_report_generator `
