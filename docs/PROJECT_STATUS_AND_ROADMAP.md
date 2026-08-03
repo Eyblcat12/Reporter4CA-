@@ -246,8 +246,8 @@ Ngoài ra, Elasticsearch là tích hợp tùy chọn nhưng dependency và quy t
 **Mục tiêu:** tạo một phiên bản có thể tái lập, kiểm tra và phát hành nhất quán.
 
 - Hoàn tất review và commit cấu trúc monorepo.
-- Chuẩn hóa version dùng chung cho backend và frontend (đã hoàn thành 2.0.0);
-  desktop artifact sẽ đồng bộ ở lần đóng gói kế tiếp.
+- Semantic version, changelog, release note, checksum workflow và baseline v2.1.0
+  đã hoàn thành; desktop installer vẫn là bước đóng gói riêng tiếp theo.
 - GitHub Actions và quality gate local cho backend/frontend đã hoàn thành.
 - Chuẩn hóa formatter/linter: Ruff cho Python, ESLint/Prettier cho frontend.
 - Dependency Python trực tiếp/gián tiếp và SHA-256 đã khóa trong hai lockfile;
@@ -256,7 +256,7 @@ Ngoài ra, Elasticsearch là tích hợp tùy chọn nhưng dependency và quy t
 - Tách unit test khỏi script integration thủ công.
 - Restore có kiểm tra manifest/checksum, dry-run preview và rollback database /
   template đã hoàn thành, cùng API/UI và regression test lỗi giữa chừng.
-- Tạo baseline tag sau khi toàn bộ quality gate đạt.
+- Baseline tag v2.1.0 được tạo sau khi toàn bộ quality gate đạt.
 
 **Điều kiện hoàn thành:** clone sạch có thể cài, test và build bằng tài liệu; không cần thao tác ngầm ngoài hướng dẫn.
 

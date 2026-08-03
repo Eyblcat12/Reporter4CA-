@@ -15,6 +15,7 @@ import { useReporterContext } from '../../hooks/useReporter';
 import { useI18n } from '../../i18n';
 import ThemeToggle from './ThemeToggle';
 import LanguageSwitcher from './LanguageSwitcher';
+import packageInfo from '../../../package.json';
 import './Sidebar.css';
 
 const STEPS = [
@@ -107,7 +108,7 @@ export default function Sidebar({ collapsed, onToggle }) {
               transition={{ duration: 0.15 }}
             >
               <span className="sidebar__logo-title">Reporter Pro</span>
-              <span className="sidebar__logo-version">v2.2</span>
+              <span className="sidebar__logo-version">v{packageInfo.version}</span>
             </motion.div>
           )}
         </AnimatePresence>

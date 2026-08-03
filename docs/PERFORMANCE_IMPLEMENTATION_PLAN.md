@@ -1,6 +1,6 @@
 # Kế hoạch triển khai tối ưu Preview và Generate DOCX
 
-> **Trạng thái:** Phase 0–5 đã tích hợp; Preview Job UI chạy sau feature flag và setup prewarm đã đạt ngưỡng Preview 50 máy, chưa bật hai flag mặc định
+> **Trạng thái:** Phase 0–5 đã tích hợp; Preview Job/Cache đạt gate 10 trial và được bật mặc định cho local/team, có feature flag rollback
 > **Phạm vi:** Reporter Pro cho cá nhân và team nội bộ  
 > **Mục tiêu ưu tiên:** Tăng tốc nhưng giữ nguyên template, nội dung, finding, evidence và khả năng quay lại engine hiện tại  
 > **Tài liệu kiến trúc gốc:** `docs/PERFORMANCE_OPTIMIZATION_PLAN.md`  
@@ -109,7 +109,7 @@ dùng hiểu trạng thái `current`, `stale`, `expired` và hành vi Generate t
 ### Phase 5 — tích hợp frontend/backend hoàn tất ngày 03/08/2026, rollout có kiểm soát
 
 - Đã thêm Preview Job API bất đồng bộ: tạo, poll, cancel và tải nội dung; API cũ vẫn
-  giữ nguyên và prototype được bảo vệ bằng `AUTO_REPORT_PREVIEW_JOBS=0` mặc định.
+  giữ nguyên làm compatibility fallback.
 - Đã thêm managed Preview Artifact Registry với TTL 15 phút, giới hạn entry/byte,
   LRU, startup sweep, integrity SHA-256 và lease/refcount cho download/promotion.
 - Cleanup không xóa artifact đang được lease; artifact stale, expired hoặc corrupt
@@ -133,13 +133,17 @@ Frontend chính đã được nối theo cơ chế feature-flag/fallback và có
 stale race, explicit cancel. Benchmark cache-hit Generate 50 máy đạt 73,092 ms và
 byte-identical. Profile tái lập xác định cache-miss Preview `full/50` là 28,131 giây,
 trong đó prepared-template compile chiếm 19,872 giây. Setup hiện prewarm template;
-Preview sau prewarm đạt 7,164 giây, dưới ngưỡng 10 giây. Hai flag vẫn tắt mặc định
-cho đến khi đủ ma trận nhiều trial và kiểm thử máy tham chiếu.
+Preview sau prewarm đạt 7,164 giây, dưới ngưỡng 10 giây.
 
 Development gate tiếp theo đạt 5/5 trial prewarmed với min 7,491 giây, median
 7,721 giây và max 7,926 giây. Chưa công bố P95 vì chưa đủ 10 mẫu.
 Release gate sau thay đổi đạt **216 backend tests**, **43 frontend tests** và
 production build; chạy với `ResourceWarning` hiển thị không còn cảnh báo SQLite.
+
+Release gate cuối gồm 10/10 trial prewarmed đạt integrity và dưới 10 giây:
+P50 6.300,499 ms, P95 7.882,863 ms, max 7.926,317 ms. Vì vậy hai flag Preview
+được bật mặc định; đặt `AUTO_REPORT_PREVIEW_JOBS=0` hoặc
+`AUTO_REPORT_PREVIEW_CACHE=0` vẫn rollback ngay mà không migrate dữ liệu.
 
 ## 1. Kết luận kỹ thuật làm cơ sở triển khai
 

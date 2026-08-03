@@ -29,7 +29,11 @@ from benchmark_report_generation import (  # noqa: E402
     validate_fixture,
 )
 from api.models import GenerateRequest, ReportType as ApiReportType  # noqa: E402
-from core.config import performance_metrics_enabled  # noqa: E402
+from core.config import (  # noqa: E402
+    performance_metrics_enabled,
+    preview_cache_enabled,
+    preview_jobs_enabled,
+)
 from core.docx_field_updater import FieldUpdateResult  # noqa: E402
 from core.input_parser import parse_input  # noqa: E402
 from core.performance_metrics import (  # noqa: E402
@@ -121,6 +125,18 @@ class PerformanceMetricsTests(unittest.TestCase):
             self.assertFalse(performance_metrics_enabled())
         with patch.dict(os.environ, {"AUTO_REPORT_PERF_METRICS": "yes"}, clear=True):
             self.assertTrue(performance_metrics_enabled())
+
+    def test_preview_job_and_cache_flags_default_on_with_zero_rollback(self) -> None:
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertTrue(preview_jobs_enabled())
+            self.assertTrue(preview_cache_enabled())
+        with patch.dict(
+            os.environ,
+            {"AUTO_REPORT_PREVIEW_JOBS": "0", "AUTO_REPORT_PREVIEW_CACHE": "0"},
+            clear=True,
+        ):
+            self.assertFalse(preview_jobs_enabled())
+            self.assertFalse(preview_cache_enabled())
 
     def test_emitted_json_contains_only_sanitized_metadata(self) -> None:
         metrics = PerformanceMetrics(metadata={

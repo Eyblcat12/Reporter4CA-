@@ -1,0 +1,47 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Verify and publish source release
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version-file: .python-version
+          cache: pip
+          cache-dependency-path: apps/backend/requirements-dev.lock.txt
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: apps/frontend/package-lock.json
+      - name: Verify release metadata and tag
+        shell: pwsh
+        run: ./scripts/verify-release.ps1 -RequireTag
+      - name: Install locked dependencies
+        shell: pwsh
+        run: ./scripts/setup.ps1 -Development -SkipFrontendBuild
+      - name: Run release quality gate
+        shell: pwsh
+        run: ./scripts/check.ps1
+      - name: Create source archives and checksums
+        shell: pwsh
+        run: ./scripts/create-release-artifacts.ps1 -Ref $env:GITHUB_REF_NAME
+      - name: Publish GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $files = Get-ChildItem -File "artifacts/releases/$env:GITHUB_REF_NAME" | ForEach-Object { $_.FullName }
+          gh release create $env:GITHUB_REF_NAME @files --verify-tag --title "Reporter Pro $env:GITHUB_REF_NAME" --notes-file "docs/releases/$env:GITHUB_REF_NAME.md"

@@ -6,7 +6,7 @@ import os
 
 
 APP_NAME = "Reporter Pro"
-APP_VERSION = "2.0.0"
+APP_VERSION = "2.1.0"
 DEFAULT_CORS_ORIGINS = (
     "http://127.0.0.1:5173",
     "http://localhost:5173",
@@ -80,15 +80,15 @@ def unified_report_scheduler_enabled() -> bool:
 
 
 def preview_jobs_enabled() -> bool:
-    """Expose the asynchronous Preview Job API without changing the legacy UI."""
+    """Expose async Preview Jobs; set the flag to 0 for compatibility rollback."""
 
-    return os.getenv("AUTO_REPORT_PREVIEW_JOBS", "0").strip().lower() in _TRUTHY
+    return os.getenv("AUTO_REPORT_PREVIEW_JOBS", "1").strip().lower() in _TRUTHY
 
 
 def preview_cache_enabled() -> bool:
-    """Allow explicit Generate promotion from a verified Preview artifact."""
+    """Allow verified Preview promotion; set the flag to 0 for cold Generate."""
 
-    return os.getenv("AUTO_REPORT_PREVIEW_CACHE", "0").strip().lower() in _TRUTHY
+    return os.getenv("AUTO_REPORT_PREVIEW_CACHE", "1").strip().lower() in _TRUTHY
 
 
 def preview_artifact_ttl_seconds() -> int:

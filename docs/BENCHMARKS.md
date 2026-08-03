@@ -40,6 +40,27 @@ so sánh cho các phase tối ưu tiếp theo, không phải phép đo “cold d
 P95 chưa được công bố vì mới có 5 mẫu; benchmark runner chỉ xuất P95 khi có ít
 nhất 10 trial.
 
+## Preview Job release gate — `Tracking_2.csv`, 50 máy, 10 trial
+
+Ngày 03/08/2026, Preview Job API được đo đủ 10 process độc lập với prepared
+template đã prewarm, report `full`, plugin tắt và Word field update được kiểm soát.
+Mỗi trial import lại `Tracking_2.csv`, poll job thật, tải DOCX, mở lại ZIP và xác
+nhận semantic integrity. Ngưỡng release cho workstation tham chiếu là 10 giây.
+
+| Chỉ số | Kết quả |
+|---|---:|
+| Trial đạt integrity | 10/10 |
+| Trial dưới 10 giây | 10/10 |
+| Preview P50 / P95 | 6.300,499 / 7.882,863 ms |
+| Preview min / max | 4.831,658 / 7.926,317 ms |
+| Product latency P50 / P95 | 6.212,551 / 7.791,045 ms |
+| Peak RSS P50 / P95 | 734,832 / 735,186 MiB |
+
+Release gate đạt. `AUTO_REPORT_PREVIEW_JOBS` và `AUTO_REPORT_PREVIEW_CACHE` được
+bật mặc định cho local/team; đặt một trong hai về `0` sẽ rollback ngay về API
+Preview tương thích hoặc cold Generate mà không cần migrate database. Có thể tái
+lập phép tổng hợp bằng `scripts/summarize_preview_benchmarks.py`.
+
 ### Phân rã thời gian P50
 
 | Phase | P50 |
@@ -329,13 +350,11 @@ chỉ khoảng 2,5–3,0 giây. `setup.ps1` vì vậy prewarm sáu template bund
 content-addressed. Lỗi prewarm không chặn cài đặt; engine vẫn có legacy fallback.
 
 Số liệu cũ vượt 360 giây không tái hiện bằng harness đã sửa contract `jobId` và không
-còn được dùng làm baseline. Hai flag Preview vẫn mặc định tắt cho đến khi có đủ trial
-để công bố P95 trên máy tham chiếu.
+còn được dùng làm baseline.
 
-Development gate bổ sung chạy **5/5 trial prewarmed đạt**: min 7.490,502 ms,
-median 7.721,450 ms và max 7.926,317 ms. Đây là min/median/max, không được diễn giải
-thành P95; ma trận 10 trial trên máy tham chiếu vẫn là điều kiện trước rollout mặc định.
-Release gate cùng revision đạt 216 backend tests, 43 frontend tests và production build.
+Development gate cuối chạy **10/10 trial prewarmed đạt**: P50 6.300,499 ms,
+P95 7.882,863 ms và max 7.926,317 ms. Ma trận đủ điều kiện công bố P95 và rollout
+mặc định cho local/team. Compatibility flags vẫn được giữ để rollback tức thời.
 
 Tái lập:
 

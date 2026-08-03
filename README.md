@@ -150,6 +150,8 @@ Chi tiết thiết kế nằm trong [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 | Kế hoạch tối ưu Preview/Generate | [docs/PERFORMANCE_OPTIMIZATION_PLAN.md](docs/PERFORMANCE_OPTIMIZATION_PLAN.md) |
 | Kiến trúc và luồng dữ liệu | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | Phát triển và kiểm thử | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) |
+| Quy trình phát hành | [docs/RELEASING.md](docs/RELEASING.md) |
+| Kế hoạch formatter/static analysis | [docs/STATIC_ANALYSIS_PLAN.md](docs/STATIC_ANALYSIS_PLAN.md) |
 | Golden DOCX test | [docs/testing/golden-docx.md](docs/testing/golden-docx.md) |
 | Soak test | [docs/testing/soak-test.md](docs/testing/soak-test.md) |
 | Trạng thái và roadmap | [docs/PROJECT_STATUS_AND_ROADMAP.md](docs/PROJECT_STATUS_AND_ROADMAP.md) |
