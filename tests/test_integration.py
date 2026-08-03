@@ -19,7 +19,7 @@ print(f'API proxy: {health["status"]}')
 
 # Test column-preview with BAO_CAO_TOOL.xlsx
 import base64, os
-xlsx_path = os.path.join(os.path.dirname(__file__), 'BAO_CAO_TOOL.xlsx')
+xlsx_path = os.path.join(os.path.dirname(__file__), '..', 'apps', 'backend', 'samples', 'BAO_CAO_TOOL.xlsx')
 if os.path.exists(xlsx_path):
     with open(xlsx_path, 'rb') as f:
         content = base64.b64encode(f.read()).decode()

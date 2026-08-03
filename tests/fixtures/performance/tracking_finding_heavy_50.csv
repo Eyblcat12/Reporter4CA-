@@ -1,0 +1,51 @@
+Type,Hostname,IP,OS,Result,Notes,Software,Process,Zone,Owner
+server,SRV-FINDING-HEAVY-000001,10.152.0.1,Windows Server 2019,Phát hiện mã độc,Mimikatz credential dumping được xác nhận từ cảm biến EDR.,,lsass.exe,Office,Endpoint
+client,PC-FINDING-HEAVY-000002,10.152.0.2,macOS 15,Ghi nhận dấu hiệu bất thường,Webshell được xác nhận trong thư mục dịch vụ web.,,w3wp.exe,Management,Endpoint
+client,PC-FINDING-HEAVY-000003,10.152.0.3,Windows 11,Phát hiện mã độc,Mimikatz credential dumping được xác nhận từ cảm biến EDR.,,lsass.exe,DMZ,Application
+server,SRV-FINDING-HEAVY-000004,10.152.0.4,Windows Server 2019,Ghi nhận dấu hiệu bất thường,Webshell được xác nhận trong thư mục dịch vụ web.,,w3wp.exe,Office,Endpoint
+client,PC-FINDING-HEAVY-000005,10.152.0.5,macOS 15,Phát hiện mã độc,Mimikatz credential dumping được xác nhận từ cảm biến EDR.,,lsass.exe,Datacenter,Blue Team
+server,SRV-FINDING-HEAVY-000006,10.152.0.6,Rocky Linux 9,Ghi nhận dấu hiệu bất thường,Webshell được xác nhận trong thư mục dịch vụ web.,,w3wp.exe,Office,Application
+client,PC-FINDING-HEAVY-000007,10.152.0.7,Windows 11,Phát hiện mã độc,Mimikatz credential dumping được xác nhận từ cảm biến EDR.,,lsass.exe,Office,Blue Team
+client,PC-FINDING-HEAVY-000008,10.152.0.8,Windows 10,Ghi nhận dấu hiệu bất thường,Webshell được xác nhận trong thư mục dịch vụ web.,,w3wp.exe,Office,Blue Team
+server,SRV-FINDING-HEAVY-000009,10.152.0.9,Windows Server 2022,Phát hiện mã độc,Mimikatz credential dumping được xác nhận từ cảm biến EDR.,,lsass.exe,Office,Endpoint
+client,PC-FINDING-HEAVY-000010,10.152.0.10,Ubuntu Desktop 22.04,Ghi nhận dấu hiệu bất thường,Webshell được xác nhận trong thư mục dịch vụ web.,,w3wp.exe,Datacenter,Endpoint
+server,SRV-FINDING-HEAVY-000011,10.152.0.11,Rocky Linux 9,Phát hiện mã độc,Mimikatz credential dumping được xác nhận từ cảm biến EDR.,,lsass.exe,DMZ,Infrastructure
+client,PC-FINDING-HEAVY-000012,10.152.0.12,Windows 10,Ghi nhận dấu hiệu bất thường,Webshell được xác nhận trong thư mục dịch vụ web.,,w3wp.exe,DMZ,Endpoint
+client,PC-FINDING-HEAVY-000013,10.152.0.13,Windows 11,Phát hiện mã độc,Mimikatz credential dumping được xác nhận từ cảm biến EDR.,,lsass.exe,DMZ,Infrastructure
+server,SRV-FINDING-HEAVY-000014,10.152.0.14,Ubuntu 22.04 LTS,Ghi nhận dấu hiệu bất thường,Webshell được xác nhận trong thư mục dịch vụ web.,,w3wp.exe,Management,Application
+client,PC-FINDING-HEAVY-000015,10.152.0.15,macOS 15,Phát hiện mã độc,Mimikatz credential dumping được xác nhận từ cảm biến EDR.,,lsass.exe,Datacenter,Endpoint
+server,SRV-FINDING-HEAVY-000016,10.152.0.16,Windows Server 2022,Ghi nhận dấu hiệu bất thường,Webshell được xác nhận trong thư mục dịch vụ web.,,w3wp.exe,DMZ,Endpoint
+client,PC-FINDING-HEAVY-000017,10.152.0.17,Windows 10,Phát hiện mã độc,Mimikatz credential dumping được xác nhận từ cảm biến EDR.,,lsass.exe,Management,Blue Team
+client,PC-FINDING-HEAVY-000018,10.152.0.18,Ubuntu Desktop 22.04,Ghi nhận dấu hiệu bất thường,Webshell được xác nhận trong thư mục dịch vụ web.,,w3wp.exe,Office,Application
+server,SRV-FINDING-HEAVY-000019,10.152.0.19,Ubuntu 22.04 LTS,Phát hiện mã độc,Mimikatz credential dumping được xác nhận từ cảm biến EDR.,,lsass.exe,DMZ,Blue Team
+client,PC-FINDING-HEAVY-000020,10.152.0.20,Ubuntu Desktop 22.04,Ghi nhận dấu hiệu bất thường,Webshell được xác nhận trong thư mục dịch vụ web.,,w3wp.exe,DMZ,Infrastructure
+server,SRV-FINDING-HEAVY-000021,10.152.0.21,Ubuntu 22.04 LTS,Phát hiện mã độc,Mimikatz credential dumping được xác nhận từ cảm biến EDR.,,lsass.exe,DMZ,Infrastructure
+client,PC-FINDING-HEAVY-000022,10.152.0.22,Windows 10,Ghi nhận dấu hiệu bất thường,Webshell được xác nhận trong thư mục dịch vụ web.,,w3wp.exe,Datacenter,Application
+client,PC-FINDING-HEAVY-000023,10.152.0.23,macOS 15,Phát hiện mã độc,Mimikatz credential dumping được xác nhận từ cảm biến EDR.,,lsass.exe,Office,Blue Team
+server,SRV-FINDING-HEAVY-000024,10.152.0.24,Windows Server 2022,Ghi nhận dấu hiệu bất thường,Webshell được xác nhận trong thư mục dịch vụ web.,,w3wp.exe,DMZ,Infrastructure
+client,PC-FINDING-HEAVY-000025,10.152.0.25,Windows 10,Phát hiện mã độc,Mimikatz credential dumping được xác nhận từ cảm biến EDR.,,lsass.exe,Management,Infrastructure
+server,SRV-FINDING-HEAVY-000026,10.152.0.26,Rocky Linux 9,Ghi nhận dấu hiệu bất thường,Webshell được xác nhận trong thư mục dịch vụ web.,,w3wp.exe,Management,Application
+client,PC-FINDING-HEAVY-000027,10.152.0.27,macOS 15,Phát hiện mã độc,Mimikatz credential dumping được xác nhận từ cảm biến EDR.,,lsass.exe,Management,Blue Team
+client,PC-FINDING-HEAVY-000028,10.152.0.28,macOS 15,Ghi nhận dấu hiệu bất thường,Webshell được xác nhận trong thư mục dịch vụ web.,,w3wp.exe,DMZ,Application
+server,SRV-FINDING-HEAVY-000029,10.152.0.29,Windows Server 2022,Phát hiện mã độc,Mimikatz credential dumping được xác nhận từ cảm biến EDR.,,lsass.exe,Office,Application
+client,PC-FINDING-HEAVY-000030,10.152.0.30,Ubuntu Desktop 22.04,Ghi nhận dấu hiệu bất thường,Webshell được xác nhận trong thư mục dịch vụ web.,,w3wp.exe,Management,Application
+server,SRV-FINDING-HEAVY-000031,10.152.0.31,Ubuntu 22.04 LTS,Phát hiện mã độc,Mimikatz credential dumping được xác nhận từ cảm biến EDR.,,lsass.exe,Office,Blue Team
+client,PC-FINDING-HEAVY-000032,10.152.0.32,macOS 15,Ghi nhận dấu hiệu bất thường,Webshell được xác nhận trong thư mục dịch vụ web.,,w3wp.exe,Office,Blue Team
+client,PC-FINDING-HEAVY-000033,10.152.0.33,Windows 11,Phát hiện mã độc,Mimikatz credential dumping được xác nhận từ cảm biến EDR.,,lsass.exe,Management,Blue Team
+server,SRV-FINDING-HEAVY-000034,10.152.0.34,Ubuntu 22.04 LTS,Ghi nhận dấu hiệu bất thường,Webshell được xác nhận trong thư mục dịch vụ web.,,w3wp.exe,Datacenter,Blue Team
+client,PC-FINDING-HEAVY-000035,10.152.0.35,Windows 10,Phát hiện mã độc,Mimikatz credential dumping được xác nhận từ cảm biến EDR.,,lsass.exe,Management,Blue Team
+server,SRV-FINDING-HEAVY-000036,10.152.0.36,Windows Server 2022,Ghi nhận dấu hiệu bất thường,Webshell được xác nhận trong thư mục dịch vụ web.,,w3wp.exe,Datacenter,Blue Team
+client,PC-FINDING-HEAVY-000037,10.152.0.37,Ubuntu Desktop 22.04,Phát hiện mã độc,Mimikatz credential dumping được xác nhận từ cảm biến EDR.,,lsass.exe,Office,Application
+client,PC-FINDING-HEAVY-000038,10.152.0.38,Windows 11,Ghi nhận dấu hiệu bất thường,Webshell được xác nhận trong thư mục dịch vụ web.,,w3wp.exe,Datacenter,Blue Team
+server,SRV-FINDING-HEAVY-000039,10.152.0.39,Windows Server 2022,Phát hiện mã độc,Mimikatz credential dumping được xác nhận từ cảm biến EDR.,,lsass.exe,Management,Application
+client,PC-FINDING-HEAVY-000040,10.152.0.40,Windows 10,Ghi nhận dấu hiệu bất thường,Webshell được xác nhận trong thư mục dịch vụ web.,,w3wp.exe,Datacenter,Infrastructure
+server,SRV-FINDING-HEAVY-000041,10.152.0.41,Ubuntu 22.04 LTS,Phát hiện mã độc,Mimikatz credential dumping được xác nhận từ cảm biến EDR.,,lsass.exe,Datacenter,Blue Team
+client,PC-FINDING-HEAVY-000042,10.152.0.42,Ubuntu Desktop 22.04,Ghi nhận dấu hiệu bất thường,Webshell được xác nhận trong thư mục dịch vụ web.,,w3wp.exe,DMZ,Infrastructure
+client,PC-FINDING-HEAVY-000043,10.152.0.43,Windows 10,Phát hiện mã độc,Mimikatz credential dumping được xác nhận từ cảm biến EDR.,,lsass.exe,Datacenter,Application
+server,SRV-FINDING-HEAVY-000044,10.152.0.44,Windows Server 2022,Ghi nhận dấu hiệu bất thường,Webshell được xác nhận trong thư mục dịch vụ web.,,w3wp.exe,Datacenter,Application
+client,PC-FINDING-HEAVY-000045,10.152.0.45,Windows 10,Phát hiện mã độc,Mimikatz credential dumping được xác nhận từ cảm biến EDR.,,lsass.exe,DMZ,Infrastructure
+server,SRV-FINDING-HEAVY-000046,10.152.0.46,Windows Server 2019,Ghi nhận dấu hiệu bất thường,Webshell được xác nhận trong thư mục dịch vụ web.,,w3wp.exe,Datacenter,Endpoint
+client,PC-FINDING-HEAVY-000047,10.152.0.47,Windows 11,Phát hiện mã độc,Mimikatz credential dumping được xác nhận từ cảm biến EDR.,,lsass.exe,DMZ,Endpoint
+client,PC-FINDING-HEAVY-000048,10.152.0.48,Windows 11,Ghi nhận dấu hiệu bất thường,Webshell được xác nhận trong thư mục dịch vụ web.,,w3wp.exe,Management,Application
+server,SRV-FINDING-HEAVY-000049,10.152.0.49,Windows Server 2019,Phát hiện mã độc,Mimikatz credential dumping được xác nhận từ cảm biến EDR.,,lsass.exe,Office,Endpoint
+client,PC-FINDING-HEAVY-000050,10.152.0.50,Windows 10,Ghi nhận dấu hiệu bất thường,Webshell được xác nhận trong thư mục dịch vụ web.,,w3wp.exe,Management,Infrastructure

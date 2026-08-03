@@ -1,0 +1,371 @@
+{
+  "snapshotSchemaVersion": 3,
+  "paragraphCount": 48,
+  "paragraphDigest": "d346a4c495981159b99711a6610cef5b9def38fbe22abb4387928b3dab026810",
+  "headings": [
+    {
+      "style": "Heading 1",
+      "text": "Tổng quan"
+    },
+    {
+      "style": "Heading 2",
+      "text": "Phạm vi và mục đích thực hiện"
+    },
+    {
+      "style": "Heading 2",
+      "text": "Phương pháp thực hiện"
+    },
+    {
+      "style": "Heading 1",
+      "text": "Kết quả"
+    },
+    {
+      "style": "Heading 2",
+      "text": "Đánh giá chung với các máy trạm"
+    },
+    {
+      "style": "Heading 2",
+      "text": "Chi tiết kết quả CA các máy trạm"
+    },
+    {
+      "style": "Heading 3",
+      "text": "Kết quả thực hiện CA trên máy trạm WS-GOLDEN-01"
+    },
+    {
+      "style": "Heading 1",
+      "text": "Phân tích điều tra"
+    },
+    {
+      "style": "Heading 2",
+      "text": "Phân tích điều tra máy trạm"
+    },
+    {
+      "style": "Heading 1",
+      "text": "Gỡ bỏ mã độc"
+    },
+    {
+      "style": "Heading 2",
+      "text": "Gỡ bỏ mã độc trên máy trạm"
+    },
+    {
+      "style": "Heading 1",
+      "text": "Indicators of compromise (IoCs)"
+    },
+    {
+      "style": "Heading 1",
+      "text": "Khuyến nghị & khắc phục"
+    }
+  ],
+  "tables": [
+    {
+      "rows": 2,
+      "columns": 4,
+      "header": [
+        "STT",
+        "Máy trạm",
+        "Địa chỉ truy cập",
+        "Phiên bản hệ điều hành"
+      ],
+      "nonEmptyCells": 8,
+      "contentDigest": "108d2bc1ad9d1b79f9008c806b99ad9a15710b9fadef9a829399ebefd40ab882",
+      "rowDigests": [
+        "59a162e58071bfe44b2b36a98b2a6787b574fe85948e952d6f4ae9cf932bf99f",
+        "19067e61484b6798ab3df9912cf1cd6809248d638e87d77d9b525a2c1137afd8"
+      ],
+      "formatDigest": "d672fd03e4da4d2b265d7e2492ba5abd8aca929b49ec2d6abb36b11e7b276e8f"
+    },
+    {
+      "rows": 2,
+      "columns": 3,
+      "header": [
+        "STT",
+        "Máy trạm",
+        "Kết quả rà soát đánh giá"
+      ],
+      "nonEmptyCells": 6,
+      "contentDigest": "cd799f93548051f910d3627311015ea7bc526b9587277f010322de3420300b67",
+      "rowDigests": [
+        "7ee950c413823dc23162d87109b495889cc14c882c46e49d0077468bdf253eb3",
+        "177364626bd523e17296bcda94342b566bd35d077c8282ea041cebb727961b3d"
+      ],
+      "formatDigest": "4626b5951ad6e53e5a1a97b05056933c30552a61894d17125cd0bc2291df6c6e"
+    },
+    {
+      "rows": 16,
+      "columns": 3,
+      "header": [
+        "STT",
+        "Hạng mục rà soát",
+        "Kết quả rà soát"
+      ],
+      "nonEmptyCells": 48,
+      "contentDigest": "b96d7c822b88ac7696d2bb2e6b134850f01310f354113dbb20083c8230383928",
+      "rowDigests": [
+        "670514058953e19301f90f0aa4c95ad37ca445da30c0ac7d412814b4a5be0aa0",
+        "552b3119cb9bc0bb9673be00cca7d414fedfd47cd4276f8ab7bbe13ff3b1663c",
+        "90c0d780089e5c89f8bdd21ccfba538d48063a75926c347361af9b5f9bb16fba",
+        "2056e9453e2734c51c995216cae7ba003adce301897c1937f37f8e5aa82d1f10",
+        "f3c3ff941a9a948332499ce4cbf5a2458c90115899e7c5f9ce77046731dd7b2d",
+        "e970e6a76896ff01a9a4c3cf39600119709b96ee9850ab6d12153de0912ad813",
+        "451cb8f5a95931304d1bc71e4ae703d31707068e947d1b44e53f5f11f194b832",
+        "8541027c7dfe648d15c6720ff04245a70de8a818004bf837a029b1db3b1ae606",
+        "657e6bfba7890807230be478e89c7b2f2380baae8c1236f8c3189ec7bf2cf32d",
+        "5054f9291b53773336e1f575715d4f474f04740867321641c91bc32851f57f3c",
+        "b5d29146fa98166d74279bf3f49b3711db3c0ad065e7141875091e0f41037b7f",
+        "4809d89bf625c9978259edcb3a490d31957018f11dc2e4a9529faa4935a6b6b8",
+        "dd0e0b17bb02b73155f634cdca0982273679857ded7b03a598b014527644d375",
+        "93f66e1ff11656cca9b6ee25afd81cd6222fe063259778e7001e881fb92cc5b3",
+        "a4ba466248fe1362aaa977aaa6d75cf7f1be8c2e197d0f1e106fb0db0fb082a5",
+        "b94888d5e0a47ba3d598df277cb5e4948872d3eaf8d86e43877f1997c6afd79b"
+      ],
+      "formatDigest": "fe6df3eab147485f708d1a1559bb4dae2108983095682f057ec2b31183a77317"
+    },
+    {
+      "rows": 2,
+      "columns": 4,
+      "header": [
+        "STT",
+        "Máy trạm",
+        "Địa chỉ IP",
+        "Trạng thái"
+      ],
+      "nonEmptyCells": 8,
+      "contentDigest": "3a9774789b696e98849df8385b2f62f19c748f2d4e11b810253a1cc4c56e21b3",
+      "rowDigests": [
+        "6fa0a60867062a832e99e8546fb343cbc21bf933f7990edea2ca821695c09483",
+        "1bf520653d36be841e8843a9f524f55edf2b7b8510ec6e686bcc5fae34201f40"
+      ],
+      "formatDigest": "5b78dd081230a1898e066927ac05c6615b6fdaaded32ec3256907208c69398f0"
+    },
+    {
+      "rows": 2,
+      "columns": 3,
+      "header": [
+        "STT",
+        "Thông tin",
+        "Chi tiết"
+      ],
+      "nonEmptyCells": 4,
+      "contentDigest": "cad4e4da04ff41428a7486471c52d90517dd6b5d6f4273bb4dff02cba44bf36a",
+      "rowDigests": [
+        "bcb56aa4820d7ea482cbcdaa7ab7e2a01197a366b27955f3078d14f1cf7a8578",
+        "835ce42a94afc447413f9d8dff3512b42464d4110b93cfba1a54f95b1eac96d3"
+      ],
+      "formatDigest": "cb383581330d1ecfc64ae1346dea8ca6b2f0be06ec63ded91f109d45c68a1cde"
+    }
+  ],
+  "numberedParagraphs": 41,
+  "remainingTokens": [],
+  "sectionCount": 2,
+  "sections": [
+    {
+      "type": {},
+      "pageSize": {
+        "w": "11906",
+        "h": "16838",
+        "code": "9"
+      },
+      "pageMargins": {
+        "top": "1418",
+        "right": "1134",
+        "bottom": "1134",
+        "left": "1701",
+        "header": "680",
+        "footer": "680",
+        "gutter": "0"
+      },
+      "columns": {
+        "space": "720"
+      },
+      "pageNumbering": {
+        "fmt": "lowerRoman",
+        "start": "0"
+      },
+      "titlePage": true,
+      "headerTypes": [
+        "default"
+      ],
+      "footerTypes": [
+        "default"
+      ],
+      "propertiesDigest": "0ca3fc118e764788c60be2363a51f6bcf4c3d78251a1d77df2eed00298096635"
+    },
+    {
+      "type": {},
+      "pageSize": {
+        "w": "11906",
+        "h": "16838",
+        "code": "9"
+      },
+      "pageMargins": {
+        "top": "1418",
+        "right": "1134",
+        "bottom": "1134",
+        "left": "1701",
+        "header": "680",
+        "footer": "680",
+        "gutter": "0"
+      },
+      "columns": {
+        "space": "720"
+      },
+      "pageNumbering": {
+        "start": "1"
+      },
+      "titlePage": false,
+      "headerTypes": [],
+      "footerTypes": [
+        "default"
+      ],
+      "propertiesDigest": "d1dea284c146799ef474afdb9e4fd15d159be15d333a191a7056e9e1b385388f"
+    }
+  ],
+  "headersFooters": [
+    {
+      "part": "word/footer1.xml",
+      "kind": "footer",
+      "paragraphs": [
+        "2"
+      ],
+      "paragraphDigest": "68a90152c04505f5f2f397b31c13447056085e8176be9daa43b182b9d731b2e4",
+      "tableCount": 0,
+      "tableCellDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "fieldInstructions": [
+        "PAGE   \\* MERGEFORMAT"
+      ]
+    },
+    {
+      "part": "word/footer2.xml",
+      "kind": "footer",
+      "paragraphs": [
+        "Trang 3 / 308"
+      ],
+      "paragraphDigest": "9a768c115ae7931f93581be4c437624b49911c73cfb4360c7fd2cadafc43f7df",
+      "tableCount": 0,
+      "tableCellDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "fieldInstructions": [
+        "PAGE  \\* Arabic  \\* MERGEFORMAT"
+      ]
+    },
+    {
+      "part": "word/header1.xml",
+      "kind": "header",
+      "paragraphs": [
+        "",
+        ""
+      ],
+      "paragraphDigest": "439083f38956ba51ece90631552c6ea23c5c29570d3d5710e408e77e01ba7375",
+      "tableCount": 0,
+      "tableCellDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "fieldInstructions": []
+    }
+  ],
+  "relationships": [
+    {
+      "source": "/",
+      "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties",
+      "target": "docProps/app.xml",
+      "targetMode": "Internal"
+    },
+    {
+      "source": "/",
+      "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
+      "target": "word/document.xml",
+      "targetMode": "Internal"
+    },
+    {
+      "source": "/",
+      "type": "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties",
+      "target": "docProps/core.xml",
+      "targetMode": "Internal"
+    },
+    {
+      "source": "word/document.xml",
+      "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/endnotes",
+      "target": "endnotes.xml",
+      "targetMode": "Internal"
+    },
+    {
+      "source": "word/document.xml",
+      "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/fontTable",
+      "target": "fontTable.xml",
+      "targetMode": "Internal"
+    },
+    {
+      "source": "word/document.xml",
+      "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer",
+      "target": "footer1.xml",
+      "targetMode": "Internal"
+    },
+    {
+      "source": "word/document.xml",
+      "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer",
+      "target": "footer2.xml",
+      "targetMode": "Internal"
+    },
+    {
+      "source": "word/document.xml",
+      "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes",
+      "target": "footnotes.xml",
+      "targetMode": "Internal"
+    },
+    {
+      "source": "word/document.xml",
+      "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/header",
+      "target": "header1.xml",
+      "targetMode": "Internal"
+    },
+    {
+      "source": "word/document.xml",
+      "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering",
+      "target": "numbering.xml",
+      "targetMode": "Internal"
+    },
+    {
+      "source": "word/document.xml",
+      "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings",
+      "target": "settings.xml",
+      "targetMode": "Internal"
+    },
+    {
+      "source": "word/document.xml",
+      "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles",
+      "target": "styles.xml",
+      "targetMode": "Internal"
+    },
+    {
+      "source": "word/document.xml",
+      "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme",
+      "target": "theme/theme1.xml",
+      "targetMode": "Internal"
+    },
+    {
+      "source": "word/document.xml",
+      "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/webSettings",
+      "target": "webSettings.xml",
+      "targetMode": "Internal"
+    }
+  ],
+  "media": [],
+  "tocFields": {
+    "tocCount": 1,
+    "tocInstructions": [
+      "TOC \\o \"1-3\" \\h \\z \\u"
+    ],
+    "updateFields": true,
+    "dirtyFieldCount": 1
+  },
+  "semanticCounts": {
+    "reportType": "client_only",
+    "assetCount": 1,
+    "findingCount": 0,
+    "evidenceCount": 0,
+    "assetTypeCounts": {
+      "client": 1
+    },
+    "assessmentCounts": {
+      "clean": 1
+    },
+    "ruleCounts": {}
+  }
+}

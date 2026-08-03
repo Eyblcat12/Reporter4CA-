@@ -1,0 +1,51 @@
+Type,Hostname,IP,OS,Result,Notes,Software,Process,Zone,Owner
+server,SRV-CLEAN-000001,10.150.0.1,Rocky Linux 9,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Datacenter,Application
+client,PC-CLEAN-000002,10.150.0.2,Ubuntu Desktop 22.04,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,DMZ,Blue Team
+client,PC-CLEAN-000003,10.150.0.3,Windows 11,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Management,Infrastructure
+server,SRV-CLEAN-000004,10.150.0.4,Ubuntu 22.04 LTS,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Management,Infrastructure
+client,PC-CLEAN-000005,10.150.0.5,Ubuntu Desktop 22.04,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Office,Infrastructure
+server,SRV-CLEAN-000006,10.150.0.6,Rocky Linux 9,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,DMZ,Endpoint
+client,PC-CLEAN-000007,10.150.0.7,macOS 15,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Management,Blue Team
+client,PC-CLEAN-000008,10.150.0.8,Windows 11,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Office,Blue Team
+server,SRV-CLEAN-000009,10.150.0.9,Rocky Linux 9,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,DMZ,Application
+client,PC-CLEAN-000010,10.150.0.10,Windows 11,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Office,Blue Team
+server,SRV-CLEAN-000011,10.150.0.11,Windows Server 2019,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Office,Blue Team
+client,PC-CLEAN-000012,10.150.0.12,Ubuntu Desktop 22.04,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Office,Infrastructure
+client,PC-CLEAN-000013,10.150.0.13,Ubuntu Desktop 22.04,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Management,Blue Team
+server,SRV-CLEAN-000014,10.150.0.14,Ubuntu 22.04 LTS,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,DMZ,Application
+client,PC-CLEAN-000015,10.150.0.15,Ubuntu Desktop 22.04,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,DMZ,Endpoint
+server,SRV-CLEAN-000016,10.150.0.16,Ubuntu 22.04 LTS,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Management,Application
+client,PC-CLEAN-000017,10.150.0.17,Windows 10,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Management,Infrastructure
+client,PC-CLEAN-000018,10.150.0.18,Ubuntu Desktop 22.04,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Office,Endpoint
+server,SRV-CLEAN-000019,10.150.0.19,Windows Server 2019,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Datacenter,Blue Team
+client,PC-CLEAN-000020,10.150.0.20,Windows 10,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,DMZ,Blue Team
+server,SRV-CLEAN-000021,10.150.0.21,Windows Server 2022,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Office,Application
+client,PC-CLEAN-000022,10.150.0.22,Windows 11,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,DMZ,Application
+client,PC-CLEAN-000023,10.150.0.23,macOS 15,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Management,Endpoint
+server,SRV-CLEAN-000024,10.150.0.24,Rocky Linux 9,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Datacenter,Endpoint
+client,PC-CLEAN-000025,10.150.0.25,Windows 11,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Management,Application
+server,SRV-CLEAN-000026,10.150.0.26,Windows Server 2022,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Office,Infrastructure
+client,PC-CLEAN-000027,10.150.0.27,Ubuntu Desktop 22.04,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Datacenter,Application
+client,PC-CLEAN-000028,10.150.0.28,Ubuntu Desktop 22.04,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,DMZ,Application
+server,SRV-CLEAN-000029,10.150.0.29,Rocky Linux 9,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Office,Blue Team
+client,PC-CLEAN-000030,10.150.0.30,Windows 10,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Management,Blue Team
+server,SRV-CLEAN-000031,10.150.0.31,Windows Server 2019,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,DMZ,Blue Team
+client,PC-CLEAN-000032,10.150.0.32,macOS 15,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,DMZ,Infrastructure
+client,PC-CLEAN-000033,10.150.0.33,Ubuntu Desktop 22.04,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,DMZ,Endpoint
+server,SRV-CLEAN-000034,10.150.0.34,Rocky Linux 9,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Office,Infrastructure
+client,PC-CLEAN-000035,10.150.0.35,Ubuntu Desktop 22.04,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Management,Endpoint
+server,SRV-CLEAN-000036,10.150.0.36,Ubuntu 22.04 LTS,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Office,Blue Team
+client,PC-CLEAN-000037,10.150.0.37,Ubuntu Desktop 22.04,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Office,Application
+client,PC-CLEAN-000038,10.150.0.38,Ubuntu Desktop 22.04,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Management,Application
+server,SRV-CLEAN-000039,10.150.0.39,Windows Server 2019,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Office,Endpoint
+client,PC-CLEAN-000040,10.150.0.40,Windows 10,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Office,Blue Team
+server,SRV-CLEAN-000041,10.150.0.41,Rocky Linux 9,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,DMZ,Infrastructure
+client,PC-CLEAN-000042,10.150.0.42,Windows 10,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,DMZ,Infrastructure
+client,PC-CLEAN-000043,10.150.0.43,macOS 15,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Office,Blue Team
+server,SRV-CLEAN-000044,10.150.0.44,Windows Server 2022,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,DMZ,Blue Team
+client,PC-CLEAN-000045,10.150.0.45,macOS 15,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Datacenter,Infrastructure
+server,SRV-CLEAN-000046,10.150.0.46,Rocky Linux 9,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,DMZ,Endpoint
+client,PC-CLEAN-000047,10.150.0.47,macOS 15,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Datacenter,Blue Team
+client,PC-CLEAN-000048,10.150.0.48,Ubuntu Desktop 22.04,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Management,Application
+server,SRV-CLEAN-000049,10.150.0.49,Ubuntu 22.04 LTS,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Datacenter,Endpoint
+client,PC-CLEAN-000050,10.150.0.50,Windows 11,Không phát hiện - Đã kiểm tra,Đã hoàn tất đối chiếu telemetry; không có cảnh báo cần xử lý.,Reporter Agent,reporter-agent.exe,Datacenter,Endpoint

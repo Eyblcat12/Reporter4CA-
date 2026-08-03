@@ -1,0 +1,353 @@
+{
+  "fixtureSetId": "reporter-performance-50-v1",
+  "fixtures": [
+    {
+      "assetCount": 50,
+      "clientCount": 30,
+      "expectedByReportType": {
+        "client_only": {
+          "assessmentCounts": {
+            "clean": 30
+          },
+          "assetCount": 30,
+          "clientCount": 30,
+          "evidenceCount": 0,
+          "findingCount": 0,
+          "serverCount": 0
+        },
+        "full": {
+          "assessmentCounts": {
+            "clean": 50
+          },
+          "assetCount": 50,
+          "clientCount": 30,
+          "evidenceCount": 0,
+          "findingCount": 0,
+          "serverCount": 20
+        },
+        "incident_response": {
+          "assessmentCounts": {
+            "clean": 50
+          },
+          "assetCount": 50,
+          "clientCount": 30,
+          "evidenceCount": 0,
+          "findingCount": 0,
+          "serverCount": 20
+        },
+        "server_only": {
+          "assessmentCounts": {
+            "clean": 20
+          },
+          "assetCount": 20,
+          "clientCount": 0,
+          "evidenceCount": 0,
+          "findingCount": 0,
+          "serverCount": 20
+        },
+        "summary": {
+          "assessmentCounts": {
+            "clean": 50
+          },
+          "assetCount": 50,
+          "clientCount": 30,
+          "evidenceCount": 0,
+          "findingCount": 0,
+          "serverCount": 20
+        },
+        "technical": {
+          "assessmentCounts": {
+            "clean": 50
+          },
+          "assetCount": 50,
+          "clientCount": 30,
+          "evidenceCount": 0,
+          "findingCount": 0,
+          "serverCount": 20
+        }
+      },
+      "file": "tracking_clean_50.csv",
+      "id": "clean-50",
+      "inputBytes": 11260,
+      "profile": "clean",
+      "seed": 20260730,
+      "serverCount": 20,
+      "sha256": "ea0bb58ec6dd2a9e065beb99c3dbbfc5d9d89e7b5039208512604ae3e2821c0b",
+      "validReportTypes": [
+        "full",
+        "server_only",
+        "client_only",
+        "summary",
+        "technical",
+        "incident_response"
+      ]
+    },
+    {
+      "assetCount": 50,
+      "clientCount": 30,
+      "expectedByReportType": {
+        "client_only": {
+          "assessmentCounts": {
+            "anomaly": 11,
+            "clean": 10,
+            "insufficient_data": 4,
+            "needs_review": 5
+          },
+          "assetCount": 30,
+          "clientCount": 30,
+          "evidenceCount": 39,
+          "findingCount": 25,
+          "serverCount": 0
+        },
+        "full": {
+          "assessmentCounts": {
+            "anomaly": 18,
+            "clean": 16,
+            "insufficient_data": 8,
+            "needs_review": 8
+          },
+          "assetCount": 50,
+          "clientCount": 30,
+          "evidenceCount": 67,
+          "findingCount": 42,
+          "serverCount": 20
+        },
+        "incident_response": {
+          "assessmentCounts": {
+            "anomaly": 18,
+            "clean": 16,
+            "insufficient_data": 8,
+            "needs_review": 8
+          },
+          "assetCount": 50,
+          "clientCount": 30,
+          "evidenceCount": 67,
+          "findingCount": 42,
+          "serverCount": 20
+        },
+        "server_only": {
+          "assessmentCounts": {
+            "anomaly": 7,
+            "clean": 6,
+            "insufficient_data": 4,
+            "needs_review": 3
+          },
+          "assetCount": 20,
+          "clientCount": 0,
+          "evidenceCount": 28,
+          "findingCount": 17,
+          "serverCount": 20
+        },
+        "summary": {
+          "assessmentCounts": {
+            "anomaly": 18,
+            "clean": 16,
+            "insufficient_data": 8,
+            "needs_review": 8
+          },
+          "assetCount": 50,
+          "clientCount": 30,
+          "evidenceCount": 67,
+          "findingCount": 42,
+          "serverCount": 20
+        },
+        "technical": {
+          "assessmentCounts": {
+            "anomaly": 18,
+            "clean": 16,
+            "insufficient_data": 8,
+            "needs_review": 8
+          },
+          "assetCount": 50,
+          "clientCount": 30,
+          "evidenceCount": 67,
+          "findingCount": 42,
+          "serverCount": 20
+        }
+      },
+      "file": "tracking_mixed_50.csv",
+      "id": "mixed-50",
+      "inputBytes": 9285,
+      "profile": "mixed",
+      "seed": 20260731,
+      "serverCount": 20,
+      "sha256": "bd0f075067528904b1b4c3a91c9be3559a48cd6dc2bd7bded832af8b71125d12",
+      "validReportTypes": [
+        "full",
+        "server_only",
+        "client_only",
+        "summary",
+        "technical",
+        "incident_response"
+      ]
+    },
+    {
+      "assetCount": 50,
+      "clientCount": 30,
+      "expectedByReportType": {
+        "client_only": {
+          "assessmentCounts": {
+            "anomaly": 30
+          },
+          "assetCount": 30,
+          "clientCount": 30,
+          "evidenceCount": 60,
+          "findingCount": 45,
+          "serverCount": 0
+        },
+        "full": {
+          "assessmentCounts": {
+            "anomaly": 50
+          },
+          "assetCount": 50,
+          "clientCount": 30,
+          "evidenceCount": 100,
+          "findingCount": 75,
+          "serverCount": 20
+        },
+        "incident_response": {
+          "assessmentCounts": {
+            "anomaly": 50
+          },
+          "assetCount": 50,
+          "clientCount": 30,
+          "evidenceCount": 100,
+          "findingCount": 75,
+          "serverCount": 20
+        },
+        "server_only": {
+          "assessmentCounts": {
+            "anomaly": 20
+          },
+          "assetCount": 20,
+          "clientCount": 0,
+          "evidenceCount": 40,
+          "findingCount": 30,
+          "serverCount": 20
+        },
+        "summary": {
+          "assessmentCounts": {
+            "anomaly": 50
+          },
+          "assetCount": 50,
+          "clientCount": 30,
+          "evidenceCount": 100,
+          "findingCount": 75,
+          "serverCount": 20
+        },
+        "technical": {
+          "assessmentCounts": {
+            "anomaly": 50
+          },
+          "assetCount": 50,
+          "clientCount": 30,
+          "evidenceCount": 100,
+          "findingCount": 75,
+          "serverCount": 20
+        }
+      },
+      "file": "tracking_finding_heavy_50.csv",
+      "id": "finding_heavy-50",
+      "inputBytes": 9461,
+      "profile": "finding_heavy",
+      "seed": 20260732,
+      "serverCount": 20,
+      "sha256": "5cdddcb2317d4097387a340b6f80322b67dfa7c5814d03b349604d48b31d5b88",
+      "validReportTypes": [
+        "full",
+        "server_only",
+        "client_only",
+        "summary",
+        "technical",
+        "incident_response"
+      ]
+    },
+    {
+      "assetCount": 50,
+      "clientCount": 30,
+      "expectedByReportType": {
+        "client_only": {
+          "assessmentCounts": {
+            "clean": 30
+          },
+          "assetCount": 30,
+          "clientCount": 30,
+          "evidenceCount": 0,
+          "findingCount": 0,
+          "serverCount": 0
+        },
+        "full": {
+          "assessmentCounts": {
+            "clean": 50
+          },
+          "assetCount": 50,
+          "clientCount": 30,
+          "evidenceCount": 0,
+          "findingCount": 0,
+          "serverCount": 20
+        },
+        "incident_response": {
+          "assessmentCounts": {
+            "clean": 50
+          },
+          "assetCount": 50,
+          "clientCount": 30,
+          "evidenceCount": 0,
+          "findingCount": 0,
+          "serverCount": 20
+        },
+        "server_only": {
+          "assessmentCounts": {
+            "clean": 20
+          },
+          "assetCount": 20,
+          "clientCount": 0,
+          "evidenceCount": 0,
+          "findingCount": 0,
+          "serverCount": 20
+        },
+        "summary": {
+          "assessmentCounts": {
+            "clean": 50
+          },
+          "assetCount": 50,
+          "clientCount": 30,
+          "evidenceCount": 0,
+          "findingCount": 0,
+          "serverCount": 20
+        },
+        "technical": {
+          "assessmentCounts": {
+            "clean": 50
+          },
+          "assetCount": 50,
+          "clientCount": 30,
+          "evidenceCount": 0,
+          "findingCount": 0,
+          "serverCount": 20
+        }
+      },
+      "file": "tracking_long_notes_50.csv",
+      "id": "long_notes-50",
+      "inputBytes": 176103,
+      "profile": "long_notes",
+      "seed": 20260733,
+      "serverCount": 20,
+      "sha256": "7adac936ec87445327936884cc05de0a02abfb1209fdbc32a3cd8d07ea0748b7",
+      "validReportTypes": [
+        "full",
+        "server_only",
+        "client_only",
+        "summary",
+        "technical",
+        "incident_response"
+      ]
+    }
+  ],
+  "generator": {
+    "baseSeed": 20260730,
+    "script": "scripts/generate_tracking_fixture.py",
+    "version": "1.0"
+  },
+  "schemaVersion": 1
+}
