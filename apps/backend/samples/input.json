@@ -1,0 +1,30 @@
+{
+  "metadata": {
+    "customer": "Cong ty ABC",
+    "assessment_name": "Compromise Assessment Q2/2026"
+  },
+  "servers": [
+    {
+      "hostname": "SRV-APP-01",
+      "ip": "10.0.0.10",
+      "os": "Windows Server 2019"
+    },
+    {
+      "hostname": "SRV-DB-01",
+      "ip": "10.0.0.20",
+      "os": ""
+    }
+  ],
+  "clients": [
+    {
+      "hostname": "PC-HR-01",
+      "ip": "10.0.1.10",
+      "os": "Windows 11"
+    },
+    {
+      "hostname": "MAC-DESIGN-01",
+      "ip": "10.0.1.21",
+      "os": ""
+    }
+  ]
+}

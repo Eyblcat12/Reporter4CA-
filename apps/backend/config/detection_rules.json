@@ -1,0 +1,75 @@
+{
+  "schemaVersion": "1.0",
+  "rules": [
+    {
+      "id": "MALWARE_EVIDENCE",
+      "name": "Malware evidence detected",
+      "enabled": true,
+      "severity": "high",
+      "classification": "anomaly",
+      "conditions": {
+        "fields": ["result", "notes", "process", "software"],
+        "containsAny": ["phát hiện mã độc", "malware", "trojan", "ransomware", "webshell", "backdoor", "plugx", "mimikatz"],
+        "excludeContainsAny": ["no malware", "not detected", "không phát hiện", "không ghi nhận"]
+      },
+      "remediation": "Isolate the affected asset and validate the evidence with endpoint telemetry.",
+      "mitre": []
+    },
+    {
+      "id": "DECLARED_ANOMALY",
+      "name": "Anomaly explicitly declared in source result",
+      "enabled": true,
+      "severity": "high",
+      "classification": "anomaly",
+      "conditions": {
+        "fields": ["result"],
+        "containsAny": ["ghi nhận dấu hiệu bất thường", "phát hiện dấu hiệu bất thường"],
+        "excludeContainsAny": ["không phát hiện", "không ghi nhận"]
+      },
+      "remediation": "Review the source note and attach supporting evidence before final approval.",
+      "mitre": []
+    },
+    {
+      "id": "INCOMPLETE_ASSESSMENT",
+      "name": "Source result is not conclusive",
+      "enabled": true,
+      "severity": "informational",
+      "classification": "insufficient_data",
+      "conditions": {
+        "fields": ["result", "notes"],
+        "containsAny": ["chưa kết luận", "không đủ dữ liệu"],
+        "excludeContainsAny": []
+      },
+      "remediation": "Collect the missing telemetry and complete analyst validation before final approval.",
+      "mitre": []
+    },
+    {
+      "id": "DECLARED_REVIEW",
+      "name": "Source result requires analyst review",
+      "enabled": true,
+      "severity": "medium",
+      "classification": "needs_review",
+      "conditions": {
+        "fields": ["result"],
+        "containsAny": ["cần xác minh", "cần kiểm tra thêm"],
+        "excludeContainsAny": []
+      },
+      "remediation": "Review the asset evidence and approve a final conclusion before report delivery.",
+      "mitre": []
+    },
+    {
+      "id": "PROXY_TOOL_REVIEW",
+      "name": "Proxy or traffic-tunneling tool detected",
+      "enabled": true,
+      "severity": "medium",
+      "classification": "needs_review",
+      "conditions": {
+        "fields": ["result", "notes", "process", "software", "installed_software"],
+        "containsAny": ["proxifier", "tor browser", "psiphon", "ultrasurf"],
+        "excludeContainsAny": ["approved", "authorized", "được phê duyệt"]
+      },
+      "remediation": "Confirm the business purpose, owner, installation source, and related network traffic.",
+      "mitre": []
+    }
+  ]
+}
