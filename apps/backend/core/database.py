@@ -10,6 +10,7 @@ Security:
 from __future__ import annotations
 
 import hashlib
+import atexit
 import json
 import sqlite3
 import uuid
@@ -1065,3 +1066,16 @@ def get_db() -> Database:
         _db = Database()
         _db.initialize()
     return _db
+
+
+def close_db() -> None:
+    """Close and forget the process-wide database connection, if initialized."""
+
+    global _db
+    database = _db
+    _db = None
+    if database is not None:
+        database.close()
+
+
+atexit.register(close_db)

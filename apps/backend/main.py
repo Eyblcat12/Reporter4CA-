@@ -22,6 +22,7 @@ from fastapi.staticfiles import StaticFiles
 from api.routes import router as api_router, shutdown_report_scheduler
 from api.errors import install_error_handling
 from core.config import APP_NAME, APP_VERSION, cors_origins
+from core.database import close_db
 from core.logging_config import configure_logging
 from core.runtime_lifecycle import runtime_lifecycle
 
@@ -55,6 +56,7 @@ async def lifespan(app: FastAPI):
     finally:
         monitor_task.cancel()
         shutdown_report_scheduler(wait=True)
+        close_db()
         runtime_lifecycle.reset()
         print("Reporter Pro shutting down...")
 

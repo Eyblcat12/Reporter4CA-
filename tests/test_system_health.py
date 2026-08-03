@@ -14,11 +14,22 @@ BACKEND = ROOT / "apps" / "backend"
 sys.path.insert(0, str(BACKEND))
 
 from api.routes import health  # noqa: E402
+from core import database as database_module  # noqa: E402
 from core.config import APP_VERSION, DEFAULT_CORS_ORIGINS, cors_origins  # noqa: E402
-from core.database import Database, LATEST_SCHEMA_VERSION  # noqa: E402
+from core.database import Database, LATEST_SCHEMA_VERSION, close_db  # noqa: E402
 
 
 class SystemHealthTests(unittest.TestCase):
+    def test_global_database_shutdown_is_idempotent(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            database = Database(Path(directory) / "shutdown.db")
+            database.initialize()
+            with patch.object(database_module, "_db", database):
+                close_db()
+                close_db()
+                self.assertIsNone(database_module._db)
+                self.assertIsNone(database._conn)
+
     def test_health_reports_shared_app_and_database_versions(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             database = Database(Path(directory) / "health.db")
