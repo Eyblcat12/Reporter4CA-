@@ -1,0 +1,90 @@
+stages:
+  - test
+  - build
+  - e2e
+
+default:
+  interruptible: true
+
+backend-regression:
+  stage: test
+  image: python:3.12-slim
+  variables:
+    PIP_DISABLE_PIP_VERSION_CHECK: "1"
+    PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+    PYTHONDONTWRITEBYTECODE: "1"
+  cache:
+    key: pip-$CI_COMMIT_REF_SLUG
+    paths:
+      - .cache/pip
+  before_script:
+    - python -m pip install -r apps/backend/requirements-dev.txt
+  script:
+    - >-
+      python -m unittest -v
+      tests.test_api_import
+      tests.test_api_integration
+      tests.test_api_errors
+      tests.test_dashboard_summary
+      tests.test_data_quality
+      tests.test_docx_field_updater
+      tests.test_docx_golden
+      tests.test_fast_cell_path
+      tests.test_incident_validation
+      tests.test_plugin_manager
+      tests.test_performance_harness
+      tests.test_prepared_template
+      tests.test_preview_artifacts
+      tests.test_report_jobs
+      tests.test_report_generator
+      tests.test_report_integrity
+      tests.test_report_snapshot
+      tests.test_rule_engine
+      tests.test_system_health
+      tests.test_soak_harness
+      tests.test_template_categories
+      tests.test_template_blueprint
+      tests.test_compact_prototype_integration
+      tests.test_template_schema
+      tests.test_threat_intelligence
+      tests.test_tracking_import
+      tests.test_upload_limits
+      tests.test_workspace_backup
+  artifacts:
+    when: on_failure
+    expire_in: 7 days
+    paths:
+      - artifacts/golden-docx/
+
+frontend-build:
+  stage: build
+  image: node:20-bookworm-slim
+  cache:
+    key: npm-$CI_COMMIT_REF_SLUG
+    paths:
+      - .cache/npm
+  before_script:
+    - cd apps/frontend
+    - npm ci --cache "$CI_PROJECT_DIR/.cache/npm" --prefer-offline
+  script:
+    - npm test
+    - npm run build
+
+frontend-e2e:
+  stage: e2e
+  image: mcr.microsoft.com/playwright:v1.61.1-noble
+  cache:
+    key: npm-$CI_COMMIT_REF_SLUG
+    paths:
+      - .cache/npm
+  before_script:
+    - cd apps/frontend
+    - npm ci --cache "$CI_PROJECT_DIR/.cache/npm" --prefer-offline
+  script:
+    - npm run test:e2e
+  artifacts:
+    when: always
+    expire_in: 7 days
+    paths:
+      - apps/frontend/playwright-report/
+      - apps/frontend/test-results/

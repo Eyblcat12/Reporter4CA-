@@ -1,25 +1,19 @@
 @echo off
-echo =========================================
-echo   Reporter Pro - Starting both servers
-echo =========================================
-echo.
+setlocal
+chcp 65001 >nul
+title Reporter Pro
 
-echo [1/2] Starting Backend (FastAPI) on port 8000...
-cd /d "%~dp0reporter-backend"
-start "Reporter Backend" cmd /k "python main.py"
+set "SCRIPT=%~dp0scripts\start-reporter.ps1"
+if not exist "%SCRIPT%" (
+  echo [ERROR] Missing launcher: %SCRIPT%
+  exit /b 1
+)
 
-echo [2/2] Starting Frontend (Vite) on port 5173...
-cd /d "%~dp0reporter-frontend"
-start "Reporter Frontend" cmd /k "npm run dev"
-
-echo.
-echo =========================================
-echo   Both servers are starting!
-echo   Backend:  http://127.0.0.1:8000
-echo   Frontend: http://localhost:5173
-echo   API Docs: http://127.0.0.1:8000/docs
-echo =========================================
-echo.
-echo Opening browser...
-timeout /t 3 /nobreak > nul
-start http://localhost:5173
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT%"
+set "EXIT_CODE=%ERRORLEVEL%"
+if not "%EXIT_CODE%"=="0" (
+  echo.
+  echo Reporter Pro could not start. Review the error above, then press any key.
+  pause >nul
+)
+exit /b %EXIT_CODE%

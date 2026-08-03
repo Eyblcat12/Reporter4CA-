@@ -39,6 +39,9 @@ artifacts/desktop/dist/
 artifacts/benchmarks/
 artifacts/soak/
 artifacts/golden-docx/
+artifacts/review/
+artifacts/template-backups/
+artifacts/verification/
 apps/backend/data/cache/
 
 # ─── Database ────────────────────────────────────────────────────────────────
