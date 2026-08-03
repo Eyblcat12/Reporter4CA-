@@ -46,6 +46,11 @@ cáo DOCX có cấu trúc nhất quán.
   relationship và media.
 - **Local-first:** dữ liệu, lịch sử và report được giữ trên máy; plugin ngoài là
   khả năng mở rộng tùy chọn.
+- **Backup/restore an toàn:** dry-run hiển thị preset, history và template trước
+  khi khôi phục; manifest, SHA-256, SQLite/DOCX được kiểm tra và lỗi giữa chừng
+  sẽ tự rollback workspace cũ.
+- **Cài đặt tái lập:** dependency Python trực tiếp và gián tiếp được khóa cùng
+  hash; setup và CI đều cài bằng chế độ `--require-hashes`.
 - **Vòng đời đồng bộ:** đóng tab Reporter cuối cùng sẽ dừng launcher/backend; dừng
   launcher cũng được giao diện nhận biết mà không để tiến trình nền chạy sót.
 

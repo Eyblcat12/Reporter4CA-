@@ -206,11 +206,11 @@ Phạm vi test hiện đã bao phủ các regression có giá trị cao: import 
 | Mức | Hạn chế | Tác động |
 |---|---|---|
 | Cao | Không có xác thực/phân quyền | Không phù hợp mở API ra mạng hoặc dùng chung nhiều người |
-| Cao | Chưa có restore backup có dry-run/rollback | Chưa thể khôi phục trọn workspace trực tiếp từ UI |
+| Cao | Restore backup đã có dry-run/checksum/rollback | Đã xử lý; tiếp tục kiểm tra định kỳ trên backup release thật |
 | Cao | Plugin được nạp như Python code trực tiếp | Plugin không tin cậy có toàn quyền trong process backend |
 | Cao | Custom template/plugin path vẫn dành cho local mode | Đường dẫn template do database quản lý đã được chặn khỏi thao tác ngoài thư mục; cần policy riêng trước server mode |
 | Trung bình | Coverage frontend mới tập trung workflow lõi | Cần mở rộng dần khi thêm component và trạng thái UI mới |
-| Trung bình | Python mới pin dependency trực tiếp, chưa lock toàn bộ cây phụ thuộc | Vẫn có khả năng sai khác transitive dependency |
+| Trung bình | Dependency Python đã lock toàn bộ cây và hash | Đã xử lý; mọi cập nhật phải regenerate và review lockfile |
 | Trung bình | Migration schema v3 chưa có downgrade/restore workflow | Cần quy trình rollback trước các migration lớn hơn |
 | Thấp | Job report chỉ tồn tại trong phiên backend | Khi ứng dụng bị dừng cưỡng bức, job đang chạy không thể tiếp tục sau lần khởi động kế tiếp |
 | Thấp | Bản desktop artifact chưa được build lại theo baseline 2.0.0 | Source và binary bàn giao có thể chưa cùng revision |
@@ -250,11 +250,12 @@ Ngoài ra, Elasticsearch là tích hợp tùy chọn nhưng dependency và quy t
   desktop artifact sẽ đồng bộ ở lần đóng gói kế tiếp.
 - GitHub Actions và quality gate local cho backend/frontend đã hoàn thành.
 - Chuẩn hóa formatter/linter: Ruff cho Python, ESLint/Prettier cho frontend.
-- Dependency Python trực tiếp đã pin; bước còn lại là lock toàn bộ cây phụ thuộc.
+- Dependency Python trực tiếp/gián tiếp và SHA-256 đã khóa trong hai lockfile;
+  setup cùng CI bắt buộc `--require-hashes`.
 - `npm ci` và package lock đã được đưa vào CI.
 - Tách unit test khỏi script integration thủ công.
-- Hoàn thiện quy trình restore có kiểm tra manifest, dry-run và rollback; chức năng
-  tạo/download backup nhất quán đã được triển khai.
+- Restore có kiểm tra manifest/checksum, dry-run preview và rollback database /
+  template đã hoàn thành, cùng API/UI và regression test lỗi giữa chừng.
 - Tạo baseline tag sau khi toàn bộ quality gate đạt.
 
 **Điều kiện hoàn thành:** clone sạch có thể cài, test và build bằng tài liệu; không cần thao tác ngầm ngoài hướng dẫn.

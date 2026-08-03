@@ -48,6 +48,13 @@ Report, database, log và `.env` chỉ nằm trên máy cục bộ và không đ
 Sử dụng Workspace Backup trước các thay đổi lớn về template hoặc rule. Không chia
 sẻ backup nếu chưa loại bỏ dữ liệu nhạy cảm.
 
+Để khôi phục, vào **Configure → Workspace Backup**, chọn file ZIP và đọc dry-run:
+thời điểm tạo, số preset, lịch sử, template và cảnh báo schema. Nút restore chỉ
+xuất hiện sau khi manifest, kích thước, SHA-256, SQLite và DOCX đều hợp lệ. Tool
+không cho restore khi job vẫn chạy; nếu database hoặc template lỗi trong lúc áp
+dụng, workspace trước restore được tự động rollback. Sau khi thành công, nhấn
+**Tải lại** để frontend đồng bộ toàn bộ trạng thái vừa khôi phục.
+
 ## 7. Kết thúc phiên làm việc
 
 Đóng tab Reporter Pro cuối cùng để dừng cả launcher và backend. Có thể nhấn `Enter`
