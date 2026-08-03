@@ -1,6 +1,6 @@
 # Kế hoạch triển khai tối ưu Preview và Generate DOCX
 
-> **Trạng thái:** Phase 0–4 hoàn tất; backend/prototype Phase 5 đã sẵn sàng để duyệt, chưa rollout UI chính  
+> **Trạng thái:** Phase 0–5 đã tích hợp; Preview Job UI chạy sau feature flag và setup prewarm đã đạt ngưỡng Preview 50 máy, chưa bật hai flag mặc định
 > **Phạm vi:** Reporter Pro cho cá nhân và team nội bộ  
 > **Mục tiêu ưu tiên:** Tăng tốc nhưng giữ nguyên template, nội dung, finding, evidence và khả năng quay lại engine hiện tại  
 > **Tài liệu kiến trúc gốc:** `docs/PERFORMANCE_OPTIMIZATION_PLAN.md`  
@@ -106,7 +106,7 @@ Phase 4 không thay đổi workflow UI. Phase 5 là checkpoint bắt buộc trư
 Preview job/artifact reuse lên giao diện vì thay đổi này tác động trực tiếp cách người
 dùng hiểu trạng thái `current`, `stale`, `expired` và hành vi Generate từ Preview.
 
-### Phase 5 — backend prototype hoàn tất ngày 03/08/2026, chờ duyệt UI
+### Phase 5 — tích hợp frontend/backend hoàn tất ngày 03/08/2026, rollout có kiểm soát
 
 - Đã thêm Preview Job API bất đồng bộ: tạo, poll, cancel và tải nội dung; API cũ vẫn
   giữ nguyên và prototype được bảo vệ bằng `AUTO_REPORT_PREVIEW_JOBS=0` mặc định.
@@ -124,14 +124,22 @@ dùng hiểu trạng thái `current`, `stale`, `expired` và hành vi Generate t
   startup đánh dấu job bỏ dở là `PROCESS_INTERRUPTED`.
 - Dashboard không tính `queued/running` vào attempts, recent report hoặc success rate.
 - Prototype độc lập có đủ năm trạng thái `generating`, `current`, `stale`, `expired`,
-  `failed` tại `docs/reporter-preview-job-prototype.html`; chưa nối vào UI sản phẩm.
-- Release gate sau backend prototype đạt: **214 backend tests**, **40 frontend tests**
-  và production build thành công. JavaScript/cấu trúc prototype cũng qua static check.
+  `failed` tại `docs/reporter-preview-job-prototype.html`; frontend sản phẩm đã nối
+  theo feature flag, có fallback API cũ, chống stale race và explicit cancel.
+- Release gate trước vòng prewarm đạt: **214 backend tests**, **43 frontend tests**
+  và production build thành công.
 
 Frontend chính đã được nối theo cơ chế feature-flag/fallback và có kiểm thử promotion,
 stale race, explicit cancel. Benchmark cache-hit Generate 50 máy đạt 73,092 ms và
-byte-identical. Phase 5 chưa rollout mặc định vì cold Preview `full/50` qua đường
-benchmark prototype đã vượt 360 giây; cần profile riêng trước khi bật hai flag Preview.
+byte-identical. Profile tái lập xác định cache-miss Preview `full/50` là 28,131 giây,
+trong đó prepared-template compile chiếm 19,872 giây. Setup hiện prewarm template;
+Preview sau prewarm đạt 7,164 giây, dưới ngưỡng 10 giây. Hai flag vẫn tắt mặc định
+cho đến khi đủ ma trận nhiều trial và kiểm thử máy tham chiếu.
+
+Development gate tiếp theo đạt 5/5 trial prewarmed với min 7,491 giây, median
+7,721 giây và max 7,926 giây. Chưa công bố P95 vì chưa đủ 10 mẫu.
+Release gate sau thay đổi đạt **216 backend tests**, **43 frontend tests** và
+production build; chạy với `ResourceWarning` hiển thị không còn cảnh báo SQLite.
 
 ## 1. Kết luận kỹ thuật làm cơ sở triển khai
 

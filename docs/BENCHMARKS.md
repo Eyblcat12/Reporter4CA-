@@ -310,9 +310,40 @@ signature và template hash trước khi gọi `POST /api/report-jobs` với `pr
 Word field update được đặt `deferred-controlled` vì promotion không chạy lại Word hoặc
 report engine. Script tái lập: `scripts/benchmark_preview_promotion.py`.
 
-Không dùng số này để mô tả cold Preview. Một lần thử cold Preview `full/50` qua API
-prototype đã vượt timeout giám sát 360 giây trong môi trường hiện tại; do đó chưa có
-số cold Preview Phase 5 đủ điều kiện công bố và hai flag Preview tiếp tục mặc định tắt.
+### Profile Preview Job thật và prewarm setup
+
+Profile tái lập ngày 03/08/2026 chạy `POST /api/preview-jobs` với đúng luồng import
+`Tracking_2.csv`, workspace/database/cache biệt lập, Word field update được kiểm soát
+ở trạng thái deferred và kiểm tra lại DOCX ZIP cùng report integrity.
+
+| Chỉ số | Cache-miss | Setup prewarm + Preview | Ngưỡng Preview |
+|---|---:|---:|---:|
+| Prepared-template compile | 19.871,725 ms | 17.705,480 ms chạy trước Preview | Tách khỏi tương tác |
+| Preview API hoàn tất | 28.130,778 ms | **7.164,178 ms** | < 10.000 ms |
+| Product latency | 28.035,822 ms | **7.056,364 ms** | < 10.000 ms |
+| Peak RSS quan sát | — | 734,961 MiB | Theo dõi regression |
+| Integrity/DOCX ZIP | Đạt | Đạt | Bắt buộc |
+
+Nút thắt cache-miss là compile template, không phải dựng 50 asset: `reportBodyBuild`
+chỉ khoảng 2,5–3,0 giây. `setup.ps1` vì vậy prewarm sáu template bundled vào cache
+content-addressed. Lỗi prewarm không chặn cài đặt; engine vẫn có legacy fallback.
+
+Số liệu cũ vượt 360 giây không tái hiện bằng harness đã sửa contract `jobId` và không
+còn được dùng làm baseline. Hai flag Preview vẫn mặc định tắt cho đến khi có đủ trial
+để công bố P95 trên máy tham chiếu.
+
+Development gate bổ sung chạy **5/5 trial prewarmed đạt**: min 7.490,502 ms,
+median 7.721,450 ms và max 7.926,317 ms. Đây là min/median/max, không được diễn giải
+thành P95; ma trận 10 trial trên máy tham chiếu vẫn là điều kiện trước rollout mặc định.
+Release gate cùng revision đạt 216 backend tests, 43 frontend tests và production build.
+
+Tái lập:
+
+```powershell
+apps\backend\.venv\Scripts\python.exe scripts\benchmark_preview_job.py `
+  --cache-state prewarmed --enforce-target `
+  --output artifacts\benchmarks\preview-job-prewarmed-50.json
+```
 
 Artifact gốc:
 

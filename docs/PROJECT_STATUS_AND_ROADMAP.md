@@ -214,7 +214,7 @@ Phạm vi test hiện đã bao phủ các regression có giá trị cao: import 
 | Trung bình | Migration schema v3 chưa có downgrade/restore workflow | Cần quy trình rollback trước các migration lớn hơn |
 | Thấp | Job report chỉ tồn tại trong phiên backend | Khi ứng dụng bị dừng cưỡng bức, job đang chạy không thể tiếp tục sau lần khởi động kế tiếp |
 | Thấp | Bản desktop artifact chưa được build lại theo baseline 2.0.0 | Source và binary bàn giao có thể chưa cùng revision |
-| Thấp | License hiện là private/all rights reserved | Chưa thể phát hành như dự án open source thực sự |
+| Thấp | Release automation chưa tạo changelog/checksum tự động | Release hiện vẫn cần bước rà soát thủ công |
 
 Ngoài ra, Elasticsearch là tích hợp tùy chọn nhưng dependency và quy trình cấu hình/chẩn đoán kết nối chưa được đóng gói đầy đủ. Các script `test_integration.py` và `test_excel.py` hiện thiên về kiểm tra thủ công hơn là test suite có assertion và fixture chuẩn.
 
@@ -309,7 +309,7 @@ Ngoài ra, Elasticsearch là tích hợp tùy chọn nhưng dependency và quy t
 
 **Mục tiêu:** nếu quyết định công khai dự án, biến repository thành sản phẩm cộng đồng có thể đóng góp.
 
-- Chọn license rõ ràng; hiện tại dự án vẫn là private/all rights reserved.
+- MIT License, tài liệu cộng đồng và issue template đã được công bố.
 - Thêm `CONTRIBUTING.md`, `SECURITY.md`, code of conduct và issue templates.
 - Công bố plugin SDK, manifest và compatibility matrix.
 - Tạo tài liệu kiến trúc, API examples và hướng dẫn viết template.
