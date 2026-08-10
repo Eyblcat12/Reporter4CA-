@@ -1,10 +1,14 @@
-# Kế hoạch Formatter và Static Analysis
+# Formatter và Static Analysis
+
+> **Trạng thái:** Đã triển khai baseline ngày 2026-08-10. Ruff, ESLint và Prettier
+> hiện là quality gate bắt buộc trong local check, GitHub Actions và GitLab CI.
 
 ## Mục tiêu
 
 Thiết lập Ruff cho Python và ESLint/Prettier cho React mà không thay đổi hành vi
 report engine, không format file sinh tự động và không tạo một commit khổng lồ khó
-review. Đây là kế hoạch triển khai; chưa bật formatter/linter trong baseline 2.1.x.
+review. Baseline đầu tiên chỉ bật nhóm rule có tín hiệu cao; các nhóm modernization
+`UP`, `B`, `SIM` tiếp tục được giữ cho một đợt review riêng.
 
 ## Phạm vi đề xuất
 
@@ -33,7 +37,7 @@ review. Đây là kế hoạch triển khai; chưa bật formatter/linter trong 
 1. **Audit không chặn CI:** cài tool đã pin, chạy read-only và lưu thống kê lỗi
    theo nhóm; không sửa code trong bước này.
 2. **Cấu hình tối thiểu:** chỉ bật rule chắc chắn là lỗi; thêm lệnh `lint`,
-   `format:check` và `format` nhưng CI mới cảnh báo.
+   `format:check` và `format`.
 3. **Commit format cơ học riêng:** format Python/frontend trong hai commit tách
    biệt, không trộn sửa logic để giữ khả năng review và blame.
 4. **Sửa static finding theo nhóm:** import/unused trước, React hooks sau, rồi mới
@@ -66,5 +70,13 @@ formatter chỉnh sửa.
 - Golden DOCX không thay đổi ngoài ý muốn và benchmark Preview không regression
   quá 5% P50/P95 nếu có sửa logic theo lint.
 
-Ước lượng hợp lý: một buổi audit/cấu hình, một buổi format cơ học và 1–2 ngày sửa
-finding logic/React hooks tùy số lượng cảnh báo thực tế.
+## Kết quả baseline
+
+- Ruff audit ban đầu: 108 finding; đã xử lý toàn bộ bằng safe fix và review thủ công
+  hai finding còn lại.
+- Ruff format: 60 file được chuẩn hóa, không chạm DOCX/CSV/golden/lockfile.
+- ESLint audit sau khi giới hạn rule đúng phạm vi: 21 finding; đã xử lý toàn bộ.
+- Prettier: chuẩn hóa 65 file frontend; `npm audit --audit-level=moderate` không
+  phát hiện vulnerability trong toàn bộ dependency tree.
+- Các rule React compiler nâng cao như `set-state-in-effect` và `static-components`
+  chưa được bật bắt buộc; chúng cần refactor UX riêng và test race/recovery tương ứng.

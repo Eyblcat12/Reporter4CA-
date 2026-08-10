@@ -20,6 +20,8 @@ backend-regression:
   before_script:
     - python -m pip install --require-hashes -r apps/backend/requirements-dev.lock.txt
   script:
+    - python -m ruff check apps/backend scripts tests
+    - python -m ruff format --check apps/backend scripts tests
     - >-
       python -m unittest -v
       tests.test_api_import
@@ -41,6 +43,7 @@ backend-regression:
       tests.test_report_integrity
       tests.test_report_snapshot
       tests.test_rule_engine
+      tests.test_runtime_lifecycle
       tests.test_system_health
       tests.test_soak_harness
       tests.test_template_categories
@@ -68,6 +71,8 @@ frontend-build:
     - cd apps/frontend
     - npm ci --cache "$CI_PROJECT_DIR/.cache/npm" --prefer-offline
   script:
+    - npm run lint
+    - npm run format:check
     - npm test
     - npm run build
 

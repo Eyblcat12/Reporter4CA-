@@ -16,6 +16,15 @@ function Write-Step([string]$Message) {
 if (-not $SkipBackend) {
     $VenvPython = Join-Path $Backend ".venv\Scripts\python.exe"
     $Python = if (Test-Path $VenvPython) { $VenvPython } else { "python" }
+    Write-Step "Running Ruff static analysis and format check..."
+    & $Python -m ruff check $Backend (Join-Path $Root "scripts") (Join-Path $Root "tests")
+    if ($LASTEXITCODE -ne 0) {
+        throw "Python static analysis failed with exit code $LASTEXITCODE."
+    }
+    & $Python -m ruff format --check $Backend (Join-Path $Root "scripts") (Join-Path $Root "tests")
+    if ($LASTEXITCODE -ne 0) {
+        throw "Python format check failed with exit code $LASTEXITCODE."
+    }
     Write-Step "Running backend regression suite..."
     & $Python -m unittest -v `
         tests.test_api_import `
@@ -58,6 +67,15 @@ if (-not $SkipFrontend) {
     $FrontendOutput = Join-Path $Verification "frontend-dist"
     try {
         Push-Location $Frontend
+        Write-Step "Running frontend static analysis..."
+        & $Npm run lint
+        if ($LASTEXITCODE -ne 0) {
+            throw "Frontend lint failed with exit code $LASTEXITCODE."
+        }
+        & $Npm run format:check
+        if ($LASTEXITCODE -ne 0) {
+            throw "Frontend format check failed with exit code $LASTEXITCODE."
+        }
         Write-Step "Running frontend component tests..."
         & $Npm test
         if ($LASTEXITCODE -ne 0) {

@@ -26,8 +26,24 @@ Chỉ commit lockfile sau khi review diff và chạy quality gate trên virtuale
 powershell -ExecutionPolicy Bypass -File .\scripts\check.ps1
 ```
 
-Lệnh này chạy backend regression/API tests, Vitest/React Testing Library và build
-frontend vào thư mục kiểm tra tạm.
+Lệnh này chạy Ruff check/format check, ESLint, Prettier check, backend regression/API
+tests, Vitest/React Testing Library và build frontend vào thư mục kiểm tra tạm.
+
+Chạy từng nhóm kiểm tra khi đang phát triển:
+
+```powershell
+# Python
+apps\backend\.venv\Scripts\python.exe -m ruff check apps\backend scripts tests
+apps\backend\.venv\Scripts\python.exe -m ruff format --check apps\backend scripts tests
+
+# Frontend
+cd apps\frontend
+npm run lint
+npm run format:check
+```
+
+Chỉ dùng `ruff format` hoặc `npm run format` cho source do dự án quản lý. DOCX, CSV
+fixture, golden snapshot, lockfile và release artifact nằm ngoài phạm vi formatter.
 
 E2E:
 

@@ -9,6 +9,14 @@ Mọi thay đổi đáng chú ý của Reporter Pro được ghi tại đây. D�
 
 - Đồng bộ E2E rule-builder với response contract và nhãn UI hiện tại; kiểm tra
   download qua HTTP response ổn định thay vì phụ thuộc sự kiện blob của trình duyệt.
+- Sửa script tạo Python lockfile truyền sai đường dẫn output cho `pip-compile`.
+
+### Added
+
+- Ruff 0.16.2 cho Python và ESLint 10/Prettier 3 cho frontend, được pin trong
+  dependency lock và bắt buộc trong local check, GitHub Actions và GitLab CI.
+- `.editorconfig`, cấu hình lint/format thống nhất và các lệnh `lint`, `format`,
+  `format:check` dành cho contributor.
 
 ## [2.1.2] - 2026-08-03
 
