@@ -24,9 +24,7 @@ const PERIODS = [30, 90, 180];
 const BUCKET_COUNT = 8;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-const getField = (item, camel, snake, fallback = '') => (
-  item?.[camel] ?? item?.[snake] ?? fallback
-);
+const getField = (item, camel, snake, fallback = '') => item?.[camel] ?? item?.[snake] ?? fallback;
 
 const parseDate = (item) => {
   const value = getField(item, 'createdAt', 'created_at');
@@ -49,7 +47,8 @@ function buildSummary(history, days, locale) {
     const timestamp = date.getTime();
     const status = getField(item, 'status', 'status', 'success');
     if (timestamp >= start && timestamp <= now) current.push(item);
-    else if (timestamp >= previousStart && timestamp < start && status === 'success') previousCount += 1;
+    else if (timestamp >= previousStart && timestamp < start && status === 'success')
+      previousCount += 1;
   });
 
   const bucketMs = (days * DAY_MS) / BUCKET_COUNT;
@@ -63,7 +62,10 @@ function buildSummary(history, days, locale) {
     if (getField(item, 'status', 'status', 'success') !== 'success') return;
     const timestamp = parseDate(item)?.getTime();
     if (!timestamp) return;
-    const index = Math.min(BUCKET_COUNT - 1, Math.max(0, Math.floor((timestamp - start) / bucketMs)));
+    const index = Math.min(
+      BUCKET_COUNT - 1,
+      Math.max(0, Math.floor((timestamp - start) / bucketMs)),
+    );
     buckets[index].count += 1;
   });
 
@@ -85,9 +87,10 @@ function buildSummary(history, days, locale) {
   const reportTypes = new Set(
     completed.map((item) => getField(item, 'reportType', 'report_type', 'full')).filter(Boolean),
   );
-  const delta = previousCount > 0
-    ? Math.round(((completed.length - previousCount) / previousCount) * 100)
-    : null;
+  const delta =
+    previousCount > 0
+      ? Math.round(((completed.length - previousCount) / previousCount) * 100)
+      : null;
 
   return {
     reports: completed.length,
@@ -96,7 +99,9 @@ function buildSummary(history, days, locale) {
     cancelled,
     assets,
     types: reportTypes.size,
-    successRate: current.length ? Math.round((completed.length / current.length) * 1000) / 10 : null,
+    successRate: current.length
+      ? Math.round((completed.length / current.length) * 1000) / 10
+      : null,
     delta,
     values: buckets.map((bucket) => bucket.count),
     labels: buckets.map((bucket) => dateFormatter.format(new Date(bucket.end))),
@@ -121,7 +126,9 @@ function ActivityChart({ values, labels, emptyLabel }) {
     value,
     label: labels[index],
   }));
-  const path = points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ');
+  const path = points
+    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`)
+    .join(' ');
   const area = points.length
     ? `${path} L ${points[points.length - 1].x} ${bottom} L ${points[0].x} ${bottom} Z`
     : '';
@@ -141,7 +148,12 @@ function ActivityChart({ values, labels, emptyLabel }) {
           return (
             <g key={value}>
               <line className="dashboard-home__grid-line" x1={left} y1={y} x2={right} y2={y} />
-              <text className="dashboard-home__y-axis-label" x={left - 12} y={y + 4} textAnchor="end">
+              <text
+                className="dashboard-home__y-axis-label"
+                x={left - 12}
+                y={y + 4}
+                textAnchor="end"
+              >
                 {value}
               </text>
             </g>
@@ -196,40 +208,33 @@ export default function DashboardHome({ onOpenImport }) {
 
   useEffect(() => {
     let active = true;
-    const hasRetainedData = Boolean(dashboardSummary || reportHistory?.length);
     setDashboardState((current) => ({
       ...current,
-      status: hasRetainedData ? 'refreshing' : 'loading',
+      status: current.updatedAt ? 'refreshing' : 'loading',
     }));
 
-    Promise.all([
-      fetchReportHistory(),
-      fetchDashboardSummary(period),
-    ]).then(([historyResult, summaryResult]) => {
-      if (!active) return;
-      const degraded = historyResult?.ok === false || summaryResult?.ok === false;
-      const generatedAt = summaryResult?.data?.generatedAt
-        || historyResult?.data?.generatedAt
-        || (degraded ? null : new Date().toISOString());
-      setDashboardState({
-        status: degraded ? 'degraded' : 'ready',
-        updatedAt: generatedAt,
+    Promise.all([fetchReportHistory(), fetchDashboardSummary(period)])
+      .then(([historyResult, summaryResult]) => {
+        if (!active) return;
+        const degraded = historyResult?.ok === false || summaryResult?.ok === false;
+        const generatedAt =
+          summaryResult?.data?.generatedAt ||
+          historyResult?.data?.generatedAt ||
+          (degraded ? null : new Date().toISOString());
+        setDashboardState({
+          status: degraded ? 'degraded' : 'ready',
+          updatedAt: generatedAt,
+        });
+      })
+      .catch(() => {
+        if (!active) return;
+        setDashboardState({ status: 'degraded', updatedAt: null });
       });
-    }).catch(() => {
-      if (!active) return;
-      setDashboardState({ status: 'degraded', updatedAt: null });
-    });
 
     return () => {
       active = false;
     };
-  }, [
-    fetchDashboardSummary,
-    fetchReportHistory,
-    lastReportId,
-    period,
-    refreshToken,
-  ]);
+  }, [fetchDashboardSummary, fetchReportHistory, lastReportId, period, refreshToken]);
 
   const localSummary = useMemo(
     () => buildSummary(reportHistory || [], period, locale),
@@ -256,9 +261,9 @@ export default function DashboardHome({ onOpenImport }) {
       avgDurationMs: metrics.avgDurationMs || 0,
       delta: metrics.deltaPercent,
       values: series.map((item) => item.count || 0),
-      labels: series.map((item) => (
-        dateFormatter.format(new Date(item.end || (new Date(item.start).getTime() + bucketMs)))
-      )),
+      labels: series.map((item) =>
+        dateFormatter.format(new Date(item.end || new Date(item.start).getTime() + bucketMs)),
+      ),
     };
   }, [dashboardSummary, localSummary, locale, period]);
 
@@ -280,21 +285,33 @@ export default function DashboardHome({ onOpenImport }) {
     [locale],
   );
   const dateFormatter = useMemo(
-    () => new Intl.DateTimeFormat(locale === 'vi' ? 'vi-VN' : 'en-US', {
-      day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
-    }),
+    () =>
+      new Intl.DateTimeFormat(locale === 'vi' ? 'vi-VN' : 'en-US', {
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
     [locale],
   );
   const dateTimeFormatter = useMemo(
-    () => new Intl.DateTimeFormat(locale === 'vi' ? 'vi-VN' : 'en-US', {
-      day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
-    }),
+    () =>
+      new Intl.DateTimeFormat(locale === 'vi' ? 'vi-VN' : 'en-US', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
     [locale],
   );
   const syncFormatter = useMemo(
-    () => new Intl.DateTimeFormat(locale === 'vi' ? 'vi-VN' : 'en-US', {
-      hour: '2-digit', minute: '2-digit', second: '2-digit',
-    }),
+    () =>
+      new Intl.DateTimeFormat(locale === 'vi' ? 'vi-VN' : 'en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      }),
     [locale],
   );
 
@@ -323,9 +340,10 @@ export default function DashboardHome({ onOpenImport }) {
     recentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   };
 
-  const deltaText = summary.delta === null
-    ? t('dashboard.noPrevious')
-    : `${summary.delta >= 0 ? '+' : ''}${summary.delta}%`;
+  const deltaText =
+    summary.delta === null
+      ? t('dashboard.noPrevious')
+      : `${summary.delta >= 0 ? '+' : ''}${summary.delta}%`;
   const successText = summary.successRate == null ? '—' : `${summary.successRate}%`;
   const successContext = summary.attempts
     ? `${numberFormatter.format(summary.reports)}/${numberFormatter.format(summary.attempts)} ${t('dashboard.completed')}`
@@ -335,12 +353,9 @@ export default function DashboardHome({ onOpenImport }) {
     text: t('dashboard.source.textDesc'),
     sample: t('dashboard.source.sampleDesc'),
   };
-  const isInitialLoading = dashboardState.status === 'loading'
-    && !dashboardSummary
-    && !(reportHistory || []).length;
-  const updatedAt = dashboardState.updatedAt
-    ? new Date(dashboardState.updatedAt)
-    : null;
+  const isInitialLoading =
+    dashboardState.status === 'loading' && !dashboardSummary && !(reportHistory || []).length;
+  const updatedAt = dashboardState.updatedAt ? new Date(dashboardState.updatedAt) : null;
   const canFormatUpdatedAt = updatedAt && !Number.isNaN(updatedAt.getTime());
 
   return (
@@ -405,7 +420,11 @@ export default function DashboardHome({ onOpenImport }) {
                 <X size={16} />
               </button>
             </div>
-            <div className="dashboard-home__source-row" role="group" aria-label={t('dashboard.chooseSource')}>
+            <div
+              className="dashboard-home__source-row"
+              role="group"
+              aria-label={t('dashboard.chooseSource')}
+            >
               {[
                 { id: 'file', icon: Upload, label: t('dashboard.source.file') },
                 { id: 'text', icon: Type, label: t('dashboard.source.text') },
@@ -426,7 +445,12 @@ export default function DashboardHome({ onOpenImport }) {
                   </button>
                 );
               })}
-              <button className="btn btn-secondary dashboard-home__continue" type="button" onClick={continueWithSource} disabled={loading}>
+              <button
+                className="btn btn-secondary dashboard-home__continue"
+                type="button"
+                onClick={continueWithSource}
+                disabled={loading}
+              >
                 {t('dashboard.continue')}
                 <ArrowRight size={15} />
               </button>
@@ -463,7 +487,10 @@ export default function DashboardHome({ onOpenImport }) {
         <article className="dashboard-home__kpi card">
           <div className="dashboard-home__kpi-head">
             <span>{t('dashboard.reports')}</span>
-            <span className="dashboard-home__delta"><TrendingUp size={14} />{deltaText}</span>
+            <span className="dashboard-home__delta">
+              <TrendingUp size={14} />
+              {deltaText}
+            </span>
           </div>
           <strong>{numberFormatter.format(summary.reports)}</strong>
           <small>{t('dashboard.periodContext')}</small>
@@ -491,9 +518,15 @@ export default function DashboardHome({ onOpenImport }) {
           <div className="dashboard-home__section-head">
             <div>
               <span id="dashboard-activity-title">{t('dashboard.activity')}</span>
-              <strong>{numberFormatter.format(summary.reports)} {t('dashboard.reports').toLowerCase()}</strong>
+              <strong>
+                {numberFormatter.format(summary.reports)} {t('dashboard.reports').toLowerCase()}
+              </strong>
             </div>
-            <div className="dashboard-home__periods" role="group" aria-label={t('dashboard.period')}>
+            <div
+              className="dashboard-home__periods"
+              role="group"
+              aria-label={t('dashboard.period')}
+            >
               {PERIODS.map((days) => (
                 <button
                   key={days}
@@ -507,7 +540,11 @@ export default function DashboardHome({ onOpenImport }) {
               ))}
             </div>
           </div>
-          <ActivityChart values={summary.values} labels={summary.labels} emptyLabel={t('dashboard.noActivity')} />
+          <ActivityChart
+            values={summary.values}
+            labels={summary.labels}
+            emptyLabel={t('dashboard.noActivity')}
+          />
           <div className="dashboard-home__chart-detail" aria-label={t('dashboard.metrics')}>
             <span className="dashboard-home__legend-item dashboard-home__legend-item--success">
               <i />
@@ -527,11 +564,19 @@ export default function DashboardHome({ onOpenImport }) {
           </div>
         </section>
 
-        <section ref={recentRef} className="dashboard-home__recent" aria-labelledby="dashboard-recent-title">
+        <section
+          ref={recentRef}
+          className="dashboard-home__recent"
+          aria-labelledby="dashboard-recent-title"
+        >
           <div className="dashboard-home__section-head">
             <span id="dashboard-recent-title">{t('dashboard.recent')}</span>
             {Math.max(compactRecentSource.length, fullHistorySource.length) > 4 && (
-              <button className="btn btn-ghost btn-sm" type="button" onClick={() => setShowAll((value) => !value)}>
+              <button
+                className="btn btn-ghost btn-sm"
+                type="button"
+                onClick={() => setShowAll((value) => !value)}
+              >
                 {showAll ? t('dashboard.showLess') : t('dashboard.viewAll')}
               </button>
             )}
@@ -542,39 +587,57 @@ export default function DashboardHome({ onOpenImport }) {
                 <FileText size={18} />
                 <span>{t('dashboard.noReports')}</span>
               </div>
-            ) : recent.map((item) => {
-              const createdAt = parseDate(item);
-              const title = getField(item, 'title', 'title') || getField(item, 'outputFilename', 'output_filename') || t('dashboard.untitled');
-              const type = getField(item, 'reportType', 'report_type', 'full');
-              const status = getField(item, 'status', 'status', 'success');
-              const failed = status === 'failed';
-              const cancelled = status === 'cancelled';
-              const statusLabel = failed
-                ? t('dashboard.reportFailed')
-                : cancelled ? t('dashboard.reportCancelled') : t('dashboard.reportSuccess');
-              return (
-                <article className={`dashboard-home__report ${failed ? 'dashboard-home__report--failed' : ''} ${cancelled ? 'dashboard-home__report--cancelled' : ''}`} key={getField(item, 'id', 'id', `${title}-${createdAt?.getTime()}`)}>
-                  <div>
-                    <strong title={title}>{title}</strong>
-                    <span>
-                      <i />
-                      {statusLabel} · {type} · {numberFormatter.format(reportRows(item))} {t('dashboard.assets').toLowerCase()}
-                    </span>
-                  </div>
-                  <time
-                    dateTime={createdAt?.toISOString()}
-                    title={createdAt ? dateTimeFormatter.format(createdAt) : undefined}
+            ) : (
+              recent.map((item) => {
+                const createdAt = parseDate(item);
+                const title =
+                  getField(item, 'title', 'title') ||
+                  getField(item, 'outputFilename', 'output_filename') ||
+                  t('dashboard.untitled');
+                const type = getField(item, 'reportType', 'report_type', 'full');
+                const status = getField(item, 'status', 'status', 'success');
+                const failed = status === 'failed';
+                const cancelled = status === 'cancelled';
+                const statusLabel = failed
+                  ? t('dashboard.reportFailed')
+                  : cancelled
+                    ? t('dashboard.reportCancelled')
+                    : t('dashboard.reportSuccess');
+                return (
+                  <article
+                    className={`dashboard-home__report ${failed ? 'dashboard-home__report--failed' : ''} ${cancelled ? 'dashboard-home__report--cancelled' : ''}`}
+                    key={getField(item, 'id', 'id', `${title}-${createdAt?.getTime()}`)}
                   >
-                    {createdAt ? (showAll ? dateTimeFormatter.format(createdAt) : dateFormatter.format(createdAt)) : '—'}
-                  </time>
-                </article>
-              );
-            })}
+                    <div>
+                      <strong title={title}>{title}</strong>
+                      <span>
+                        <i />
+                        {statusLabel} · {type} · {numberFormatter.format(reportRows(item))}{' '}
+                        {t('dashboard.assets').toLowerCase()}
+                      </span>
+                    </div>
+                    <time
+                      dateTime={createdAt?.toISOString()}
+                      title={createdAt ? dateTimeFormatter.format(createdAt) : undefined}
+                    >
+                      {createdAt
+                        ? showAll
+                          ? dateTimeFormatter.format(createdAt)
+                          : dateFormatter.format(createdAt)
+                        : '—'}
+                    </time>
+                  </article>
+                );
+              })
+            )}
           </div>
         </section>
       </div>
 
-      <footer className={`dashboard-home__status dashboard-home__status--${dashboardState.status}`} aria-live="polite">
+      <footer
+        className={`dashboard-home__status dashboard-home__status--${dashboardState.status}`}
+        aria-live="polite"
+      >
         {dashboardState.status === 'degraded' ? <AlertTriangle size={13} /> : <span />}
         {dashboardState.status === 'loading' || dashboardState.status === 'refreshing'
           ? t('dashboard.loading')

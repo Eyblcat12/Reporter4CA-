@@ -1,19 +1,18 @@
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
-from io import BytesIO
 import json
 import os
-from pathlib import Path
 import sys
 import tempfile
 import threading
 import time
 import unittest
+from concurrent.futures import ThreadPoolExecutor
+from io import BytesIO
+from pathlib import Path
 from unittest.mock import patch
 
 from docx import Document
-
 
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "apps" / "backend"
@@ -28,8 +27,8 @@ from core.prepared_template import (  # noqa: E402
     PreparedTemplateCache,
     PreparedTemplateError,
 )
-from tests.test_docx_golden import document_snapshot, fixture_data  # noqa: E402
 
+from tests.test_docx_golden import document_snapshot, fixture_data  # noqa: E402
 
 REPORT_TEMPLATE_PATHS = {
     "full": TEMPLATE_ROOT / "report_template.docx",
@@ -132,10 +131,12 @@ class PreparedTemplateCacheTests(unittest.TestCase):
 
             cache = PreparedTemplateCache(root / "cache")
             with ThreadPoolExecutor(max_workers=4) as executor:
-                results = list(executor.map(
-                    lambda _index: cache.get_or_compile(source, "full", compiler),
-                    range(4),
-                ))
+                results = list(
+                    executor.map(
+                        lambda _index: cache.get_or_compile(source, "full", compiler),
+                        range(4),
+                    )
+                )
             self.assertEqual(calls, 1)
             self.assertEqual(sum(not item.cache_hit for item in results), 1)
             self.assertEqual(len({item.key for item in results}), 1)
@@ -220,13 +221,12 @@ class PreparedTemplateIntegrationTests(unittest.TestCase):
                 {item["reportType"] for item in results},
                 {item.value for item in generator.ReportType},
             )
-            technical = next(
-                item for item in results if item["reportType"] == "technical"
-            )
+            technical = next(item for item in results if item["reportType"] == "technical")
             self.assertEqual(technical["outcome"], "deferred")
             self.assertEqual(technical["errorCode"], "PreparedTemplateError")
             server_call = next(
-                call for call in called.call_args_list
+                call
+                for call in called.call_args_list
                 if call.args[1] == generator.ReportType.SERVER_ONLY
             )
             self.assertTrue(os.path.samefile(server_call.args[0], server))
@@ -235,13 +235,15 @@ class PreparedTemplateIntegrationTests(unittest.TestCase):
         with patch.dict(os.environ, {}, clear=True):
             self.assertTrue(prepared_template_enabled())
         for value in ("1", "true", "YES", "on"):
-            with self.subTest(value=value), patch.dict(
-                os.environ, {"AUTO_REPORT_PREPARED_TEMPLATE": value}
+            with (
+                self.subTest(value=value),
+                patch.dict(os.environ, {"AUTO_REPORT_PREPARED_TEMPLATE": value}),
             ):
                 self.assertTrue(prepared_template_enabled())
         for value in ("0", "false", "no", "off", ""):
-            with self.subTest(value=value), patch.dict(
-                os.environ, {"AUTO_REPORT_PREPARED_TEMPLATE": value}
+            with (
+                self.subTest(value=value),
+                patch.dict(os.environ, {"AUTO_REPORT_PREPARED_TEMPLATE": value}),
             ):
                 self.assertFalse(prepared_template_enabled())
 
@@ -252,40 +254,59 @@ class PreparedTemplateIntegrationTests(unittest.TestCase):
             source_hash_before = template.read_bytes()
             with patch.object(generator, "prepared_template_enabled", return_value=False):
                 legacy = generator.generate_report(
-                    fixture_data(), title="Prepared", organization="Reporter Team",
-                    assessment_date="2026-07-20", template_path=template, report_type="full",
+                    fixture_data(),
+                    title="Prepared",
+                    organization="Reporter Team",
+                    assessment_date="2026-07-20",
+                    template_path=template,
+                    report_type="full",
                 )
-            with patch.object(generator, "prepared_template_enabled", return_value=True), patch.object(
-                generator, "_get_prepared_template_cache", return_value=cache
+            with (
+                patch.object(generator, "prepared_template_enabled", return_value=True),
+                patch.object(generator, "_get_prepared_template_cache", return_value=cache),
             ):
                 generator.generate_report(
-                    fixture_data(), title="Prepared", organization="Reporter Team",
-                    assessment_date="2026-07-20", template_path=template, report_type="full",
+                    fixture_data(),
+                    title="Prepared",
+                    organization="Reporter Team",
+                    assessment_date="2026-07-20",
+                    template_path=template,
+                    report_type="full",
                 )
                 metrics = PerformanceMetrics()
                 prepared = generator.generate_report(
-                    fixture_data(), title="Prepared", organization="Reporter Team",
-                    assessment_date="2026-07-20", template_path=template, report_type="full",
+                    fixture_data(),
+                    title="Prepared",
+                    organization="Reporter Team",
+                    assessment_date="2026-07-20",
+                    template_path=template,
+                    report_type="full",
                     metrics=metrics,
                 )
             self.assertEqual(document_snapshot(legacy), document_snapshot(prepared))
             phases = [item["name"] for item in metrics.public()["phases"]]
             self.assertIn("preparedTemplate", phases)
             self.assertNotIn("templateTrim", phases)
-            self.assertEqual(metrics.public()["metadata"].get("cacheState"), "cache-warm/prepared-hit")
+            self.assertEqual(
+                metrics.public()["metadata"].get("cacheState"), "cache-warm/prepared-hit"
+            )
             self.assertEqual(template.read_bytes(), source_hash_before)
 
     def test_six_report_types_match_golden_with_prepared_cache(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             cache = PreparedTemplateCache(Path(directory) / "cache")
-            with patch.object(generator, "prepared_template_enabled", return_value=True), patch.object(
-                generator, "_get_prepared_template_cache", return_value=cache
+            with (
+                patch.object(generator, "prepared_template_enabled", return_value=True),
+                patch.object(generator, "_get_prepared_template_cache", return_value=cache),
             ):
                 for report_type, template in REPORT_TEMPLATE_PATHS.items():
                     with self.subTest(report_type=report_type):
                         document = generator.generate_report(
-                            fixture_data(), title="Golden Report", organization="Reporter Team",
-                            assessment_date="2026-07-20", template_path=template,
+                            fixture_data(),
+                            title="Golden Report",
+                            organization="Reporter Team",
+                            assessment_date="2026-07-20",
+                            template_path=template,
                             report_type=report_type,
                         )
                         expected = json.loads(
@@ -305,12 +326,18 @@ class PreparedTemplateIntegrationTests(unittest.TestCase):
                 raise PreparedTemplateError("C:/secret/customer/template.docx")
 
         template = REPORT_TEMPLATE_PATHS["summary"]
-        with self.assertLogs("core.report_generator", level="WARNING") as logs, patch.object(
-            generator, "prepared_template_enabled", return_value=True
-        ), patch.object(generator, "_get_prepared_template_cache", return_value=BrokenCache()):
+        with (
+            self.assertLogs("core.report_generator", level="WARNING") as logs,
+            patch.object(generator, "prepared_template_enabled", return_value=True),
+            patch.object(generator, "_get_prepared_template_cache", return_value=BrokenCache()),
+        ):
             document = generator.generate_report(
-                fixture_data(), title="Fallback", organization="Reporter Team",
-                assessment_date="2026-07-20", template_path=template, report_type="summary",
+                fixture_data(),
+                title="Fallback",
+                organization="Reporter Team",
+                assessment_date="2026-07-20",
+                template_path=template,
+                report_type="summary",
             )
         self.assertTrue(document._reporter_integrity["valid"])
         self.assertNotIn("C:/secret", "\n".join(logs.output))

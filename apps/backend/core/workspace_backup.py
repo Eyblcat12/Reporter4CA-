@@ -12,8 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from core.database import Database, LATEST_SCHEMA_VERSION
-
+from core.database import LATEST_SCHEMA_VERSION, Database
 
 BACKUP_SCHEMA_VERSION = 1
 MAX_BACKUP_BYTES = 512 * 1024 * 1024
@@ -38,14 +37,18 @@ def create_workspace_backup(
     destination = Path(output_path)
     destination.parent.mkdir(parents=True, exist_ok=True)
 
-    template_files = sorted(
-        (
-            path
-            for path in template_root.rglob("*.docx")
-            if path.is_file() and not path.name.startswith("~$")
-        ),
-        key=lambda path: path.relative_to(template_root).as_posix().lower(),
-    ) if template_root.exists() else []
+    template_files = (
+        sorted(
+            (
+                path
+                for path in template_root.rglob("*.docx")
+                if path.is_file() and not path.name.startswith("~$")
+            ),
+            key=lambda path: path.relative_to(template_root).as_posix().lower(),
+        )
+        if template_root.exists()
+        else []
+    )
 
     with tempfile.TemporaryDirectory(prefix="reporter-pro-backup-") as directory:
         snapshot_path = Path(directory) / "reporter.db"
@@ -118,11 +121,15 @@ def inspect_workspace_backup(
         }
         for entry in validated["templates"]
     ]
-    current_template_count = sum(
-        1
-        for path in Path(templates_dir).rglob("*.docx")
-        if path.is_file() and not path.name.startswith("~$")
-    ) if Path(templates_dir).exists() else 0
+    current_template_count = (
+        sum(
+            1
+            for path in Path(templates_dir).rglob("*.docx")
+            if path.is_file() and not path.name.startswith("~$")
+        )
+        if Path(templates_dir).exists()
+        else 0
+    )
     return {
         "valid": True,
         "dryRun": True,
@@ -181,13 +188,9 @@ def restore_workspace_backup(
             try:
                 database.restore_from(staged_db)
                 database.initialize()
-                installed_paths = _install_templates(
-                    staged / "templates", template_root
-                )
+                installed_paths = _install_templates(staged / "templates", template_root)
                 database.relocate_template_paths(installed_paths)
-                final_counts = _validate_live_restore(
-                    database, restored_counts, installed_paths
-                )
+                final_counts = _validate_live_restore(database, restored_counts, installed_paths)
             except Exception as exc:
                 rollback_errors: list[str] = []
                 try:
@@ -265,13 +268,9 @@ def _validate_archive(archive_path: Path) -> dict[str, Any]:
             for entry in (manifest["database"], *manifest["templates"]):
                 info = archive.getinfo(entry["path"])
                 if info.file_size != entry["size"]:
-                    raise WorkspaceBackupError(
-                        f"Size mismatch for {entry['path']}."
-                    )
+                    raise WorkspaceBackupError(f"Size mismatch for {entry['path']}.")
                 if _sha256_stream(archive.open(info)) != entry["sha256"]:
-                    raise WorkspaceBackupError(
-                        f"Checksum mismatch for {entry['path']}."
-                    )
+                    raise WorkspaceBackupError(f"Checksum mismatch for {entry['path']}.")
             return manifest
     except zipfile.BadZipFile as exc:
         raise WorkspaceBackupError("Backup is not a valid ZIP archive.") from exc
@@ -303,8 +302,10 @@ def _validate_manifest_shape(manifest: Any) -> None:
         if not isinstance(entry.get("size"), int) or entry["size"] < 0:
             raise WorkspaceBackupError(f"Invalid size for {path}.")
         digest = entry.get("sha256")
-        if not isinstance(digest, str) or len(digest) != 64 or any(
-            char not in "0123456789abcdef" for char in digest
+        if (
+            not isinstance(digest, str)
+            or len(digest) != 64
+            or any(char not in "0123456789abcdef" for char in digest)
         ):
             raise WorkspaceBackupError(f"Invalid SHA-256 for {path}.")
     if database["path"] != "database/reporter.db":
@@ -312,13 +313,11 @@ def _validate_manifest_shape(manifest: Any) -> None:
     if not isinstance(database.get("schemaVersion"), int):
         raise WorkspaceBackupError("Backup database schema version is missing.")
     if database["schemaVersion"] > LATEST_SCHEMA_VERSION:
-        raise WorkspaceBackupError(
-            "Backup database is newer than this Reporter Pro version."
-        )
+        raise WorkspaceBackupError("Backup database is newer than this Reporter Pro version.")
     for template in templates:
-        if not template["path"].startswith("templates/") or not template[
-            "path"
-        ].lower().endswith(".docx"):
+        if not template["path"].startswith("templates/") or not template["path"].lower().endswith(
+            ".docx"
+        ):
             raise WorkspaceBackupError("Backup contains an invalid template path.")
 
 
@@ -378,20 +377,14 @@ def _validate_database_manifest(
     finally:
         connection.close()
     if actual_version != manifest["schemaVersion"]:
-        raise WorkspaceBackupError(
-            "Database schema version does not match the backup manifest."
-        )
+        raise WorkspaceBackupError("Database schema version does not match the backup manifest.")
     expected_counts = manifest.get("records")
     if isinstance(expected_counts, dict):
         comparable = {
-            key: int(value)
-            for key, value in expected_counts.items()
-            if key in actual_counts
+            key: int(value) for key, value in expected_counts.items() if key in actual_counts
         }
         if any(actual_counts[key] != value for key, value in comparable.items()):
-            raise WorkspaceBackupError(
-                "Database record counts do not match the backup manifest."
-            )
+            raise WorkspaceBackupError("Database record counts do not match the backup manifest.")
 
 
 def _database_counts_connection(connection: sqlite3.Connection) -> dict[str, int]:
@@ -407,7 +400,9 @@ def _database_counts_connection(connection: sqlite3.Connection) -> dict[str, int
         exists = connection.execute(
             "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (table,)
         ).fetchone()
-        counts[table] = int(connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]) if exists else 0
+        counts[table] = (
+            int(connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]) if exists else 0
+        )
     return counts
 
 
@@ -485,9 +480,7 @@ def _validate_live_restore(
         )
     }
     if differences:
-        raise WorkspaceBackupError(
-            f"Restored database record counts differ: {differences}."
-        )
+        raise WorkspaceBackupError(f"Restored database record counts differ: {differences}.")
     for path in installed_paths.values():
         try:
             with zipfile.ZipFile(path) as document:

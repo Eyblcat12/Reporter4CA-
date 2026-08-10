@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Database, ChevronDown, ChevronUp, Wifi, WifiOff, Key, Shield } from 'lucide-react';
+import { Database, ChevronDown, ChevronUp, WifiOff, Key, Shield } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import './SourceConfig.css';
 
@@ -31,7 +31,7 @@ export default function SourceConfig() {
   });
 
   const update = (field, value) => {
-    setConfig(prev => ({ ...prev, [field]: value }));
+    setConfig((prev) => ({ ...prev, [field]: value }));
   };
 
   const saveProfile = () => {
@@ -40,10 +40,6 @@ export default function SourceConfig() {
     if (!name) return;
     profiles.push({ name, config: { ...config } });
     localStorage.setItem('reporter_es_profiles', JSON.stringify(profiles));
-  };
-
-  const loadProfiles = () => {
-    return JSON.parse(localStorage.getItem('reporter_es_profiles') || '[]');
   };
 
   return (
@@ -123,14 +119,18 @@ export default function SourceConfig() {
           </div>
 
           <div className="form-group">
-            <label className="form-label"><Key size={14} /> Authentication</label>
+            <label className="form-label">
+              <Key size={14} /> Authentication
+            </label>
             <select
               className="form-input form-select"
               value={config.authType}
               onChange={(e) => update('authType', e.target.value)}
             >
-              {AUTH_TYPES.map(a => (
-                <option key={a.value} value={a.value}>{a.label}</option>
+              {AUTH_TYPES.map((a) => (
+                <option key={a.value} value={a.value}>
+                  {a.label}
+                </option>
               ))}
             </select>
           </div>
@@ -139,13 +139,20 @@ export default function SourceConfig() {
             <div className="source-config__row">
               <div className="form-group" style={{ flex: 1 }}>
                 <label className="form-label">Username</label>
-                <input className="form-input" value={config.username}
-                  onChange={(e) => update('username', e.target.value)} />
+                <input
+                  className="form-input"
+                  value={config.username}
+                  onChange={(e) => update('username', e.target.value)}
+                />
               </div>
               <div className="form-group" style={{ flex: 1 }}>
                 <label className="form-label">Password</label>
-                <input className="form-input" type="password" value={config.password}
-                  onChange={(e) => update('password', e.target.value)} />
+                <input
+                  className="form-input"
+                  type="password"
+                  value={config.password}
+                  onChange={(e) => update('password', e.target.value)}
+                />
               </div>
             </div>
           )}
@@ -153,23 +160,28 @@ export default function SourceConfig() {
           {config.authType === 'api_key' && (
             <div className="form-group">
               <label className="form-label">API Key</label>
-              <input className="form-input" type="password" value={config.apiKey}
-                onChange={(e) => update('apiKey', e.target.value)} />
+              <input
+                className="form-input"
+                type="password"
+                value={config.apiKey}
+                onChange={(e) => update('apiKey', e.target.value)}
+              />
             </div>
           )}
 
           {config.authType === 'bearer' && (
             <div className="form-group">
               <label className="form-label">Bearer Token</label>
-              <input className="form-input" type="password" value={config.bearerToken}
-                onChange={(e) => update('bearerToken', e.target.value)} />
+              <input
+                className="form-input"
+                type="password"
+                value={config.bearerToken}
+                onChange={(e) => update('bearerToken', e.target.value)}
+              />
             </div>
           )}
 
-          <button
-            className="source-config__advanced-toggle"
-            onClick={() => setExpanded(!expanded)}
-          >
+          <button className="source-config__advanced-toggle" onClick={() => setExpanded(!expanded)}>
             {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             Advanced
           </button>
@@ -178,14 +190,23 @@ export default function SourceConfig() {
             <div className="source-config__advanced">
               <div className="form-group">
                 <label className="form-label">Result Size</label>
-                <input className="form-input" type="number" value={config.size}
-                  onChange={(e) => update('size', e.target.value)} />
+                <input
+                  className="form-input"
+                  type="number"
+                  value={config.size}
+                  onChange={(e) => update('size', e.target.value)}
+                />
               </div>
               <div className="form-group form-group--inline">
-                <label className="form-label"><Shield size={14} /> SSL Verify</label>
+                <label className="form-label">
+                  <Shield size={14} /> SSL Verify
+                </label>
                 <label className="toggle-label">
-                  <input type="checkbox" checked={config.sslVerify}
-                    onChange={(e) => update('sslVerify', e.target.checked)} />
+                  <input
+                    type="checkbox"
+                    checked={config.sslVerify}
+                    onChange={(e) => update('sslVerify', e.target.checked)}
+                  />
                   <span className="toggle-switch" />
                 </label>
               </div>

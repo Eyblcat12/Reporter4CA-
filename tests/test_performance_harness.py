@@ -12,7 +12,6 @@ from unittest.mock import Mock, patch
 
 from docx import Document
 
-
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "apps" / "backend"
 SCRIPTS = ROOT / "scripts"
@@ -20,6 +19,8 @@ FIXTURES = ROOT / "tests" / "fixtures" / "performance"
 sys.path.insert(0, str(BACKEND))
 sys.path.insert(0, str(SCRIPTS))
 
+from api.models import GenerateRequest  # noqa: E402
+from api.models import ReportType as ApiReportType
 from benchmark_report_generation import (  # noqa: E402
     BenchmarkConfigurationError,
     aggregate_trials,
@@ -28,7 +29,6 @@ from benchmark_report_generation import (  # noqa: E402
     select_fixture,
     validate_fixture,
 )
-from api.models import GenerateRequest, ReportType as ApiReportType  # noqa: E402
 from core.config import (  # noqa: E402
     performance_metrics_enabled,
     preview_cache_enabled,
@@ -75,14 +75,16 @@ class PerformanceMetricsTests(unittest.TestCase):
         self.assertEqual([phase["name"] for phase in payload["phases"]], ["build", "reopen"])
 
     def test_metadata_is_opt_in_and_drops_source_content(self) -> None:
-        sanitized = sanitize_metadata({
-            "fixtureId": "mixed-50",
-            "featureFlags": {"AUTO_REPORT_FAST_CELL": "0"},
-            "hostname": "PC-SECRET",
-            "notes": "secret analyst note",
-            "payload": {"servers": [{"hostname": "PC-SECRET"}]},
-            "unknown": "not explicitly approved",
-        })
+        sanitized = sanitize_metadata(
+            {
+                "fixtureId": "mixed-50",
+                "featureFlags": {"AUTO_REPORT_FAST_CELL": "0"},
+                "hostname": "PC-SECRET",
+                "notes": "secret analyst note",
+                "payload": {"servers": [{"hostname": "PC-SECRET"}]},
+                "unknown": "not explicitly approved",
+            }
+        )
         self.assertEqual(
             sanitized,
             {
@@ -139,15 +141,19 @@ class PerformanceMetricsTests(unittest.TestCase):
             self.assertFalse(preview_cache_enabled())
 
     def test_emitted_json_contains_only_sanitized_metadata(self) -> None:
-        metrics = PerformanceMetrics(metadata={
-            "operation": "generate-job",
-            "assetCount": 2,
-            "hostname": "SECRET-HOST",
-        })
-        metrics.update_metadata({
-            "pluginCount": 1,
-            "notes": "secret note",
-        })
+        metrics = PerformanceMetrics(
+            metadata={
+                "operation": "generate-job",
+                "assetCount": 2,
+                "hostname": "SECRET-HOST",
+            }
+        )
+        metrics.update_metadata(
+            {
+                "pluginCount": 1,
+                "notes": "secret note",
+            }
+        )
         with self.assertLogs("reporter.performance", level="INFO") as captured:
             payload = emit_performance_metrics(metrics, outcome="passed")
         self.assertEqual(
@@ -163,8 +169,7 @@ class PerformanceMetricsTests(unittest.TestCase):
         metrics.record_aggregate("tableCreate", "assetDetail", 5.0)
         metrics.record_aggregate("tableStyle", "hostname-secret", 2.0)
         aggregates = {
-            (item["name"], item["category"]): item
-            for item in metrics.public()["aggregates"]
+            (item["name"], item["category"]): item for item in metrics.public()["aggregates"]
         }
         self.assertEqual(
             aggregates[("tableCreate", "assetDetail")],
@@ -265,20 +270,24 @@ class BenchmarkAggregationTests(unittest.TestCase):
 
     def test_table_aggregates_are_summarized_across_trials(self) -> None:
         trials = [self._trial(1), self._trial(2)]
-        trials[0]["metrics"]["aggregates"] = [{
-            "name": "tableCreate",
-            "category": "assetDetail",
-            "count": 2,
-            "totalDurationMs": 10.0,
-            "maxDurationMs": 6.0,
-        }]
-        trials[1]["metrics"]["aggregates"] = [{
-            "name": "tableCreate",
-            "category": "assetDetail",
-            "count": 4,
-            "totalDurationMs": 20.0,
-            "maxDurationMs": 8.0,
-        }]
+        trials[0]["metrics"]["aggregates"] = [
+            {
+                "name": "tableCreate",
+                "category": "assetDetail",
+                "count": 2,
+                "totalDurationMs": 10.0,
+                "maxDurationMs": 6.0,
+            }
+        ]
+        trials[1]["metrics"]["aggregates"] = [
+            {
+                "name": "tableCreate",
+                "category": "assetDetail",
+                "count": 4,
+                "totalDurationMs": 20.0,
+                "maxDurationMs": 8.0,
+            }
+        ]
         aggregate = aggregate_trials(trials)["aggregates"]["tableCreate:assetDetail"]
         self.assertEqual(aggregate["count"]["p50"], 3.0)
         self.assertEqual(aggregate["totalDurationMs"]["p50"], 15.0)
@@ -321,13 +330,15 @@ class RuntimeOrchestrationMetricsTests(unittest.TestCase):
         from api import routes
 
         request = GenerateRequest(
-            rows=[{
-                "type": "server",
-                "hostname": "SRV-ROUTE-01",
-                "ip": "10.0.0.1",
-                "os": "Windows Server 2022",
-                "result": "Không phát hiện",
-            }],
+            rows=[
+                {
+                    "type": "server",
+                    "hostname": "SRV-ROUTE-01",
+                    "ip": "10.0.0.1",
+                    "os": "Windows Server 2022",
+                    "result": "Không phát hiện",
+                }
+            ],
             title="Private report title",
             reportType=ApiReportType.FULL,
         )
@@ -351,21 +362,29 @@ class RuntimeOrchestrationMetricsTests(unittest.TestCase):
             template_path = Path(directory) / "template.docx"
             template_path.write_bytes(b"controlled-template")
             with (
-                patch("api.routes.assess_rows", return_value={
-                    "valid": True,
-                    "summary": {"validRows": 1},
-                }),
+                patch(
+                    "api.routes.assess_rows",
+                    return_value={
+                        "valid": True,
+                        "summary": {"validRows": 1},
+                    },
+                ),
                 patch("api.routes._metadata_with_custom_rules", side_effect=lambda value: value),
                 patch("api.routes._load_plugins", return_value=[Mock(), Mock()]),
                 patch("api.routes._apply_input_plugins", side_effect=lambda value, _plugins: value),
-                patch("api.routes._apply_document_plugins", side_effect=lambda value, *_args: value),
+                patch(
+                    "api.routes._apply_document_plugins", side_effect=lambda value, *_args: value
+                ),
                 patch("api.routes._default_template_path", return_value=str(template_path)),
                 patch("api.routes._assert_template_compatible"),
                 patch("api.routes.generate_report", return_value=document) as generate,
-                patch("api.routes.verify_report_document", return_value={
-                    "valid": True,
-                    "verifiedAssets": 1,
-                }),
+                patch(
+                    "api.routes.verify_report_document",
+                    return_value={
+                        "valid": True,
+                        "verifiedAssets": 1,
+                    },
+                ),
                 patch("api.routes.save_report", side_effect=fake_save),
                 patch(
                     "api.routes.refresh_docx_fields",
@@ -383,18 +402,20 @@ class RuntimeOrchestrationMetricsTests(unittest.TestCase):
             output_path = Path(artifact["outputPath"])
             try:
                 phase_names = {phase["name"] for phase in metrics.public()["phases"]}
-                self.assertTrue({
-                    "queueWait",
-                    "artifactBuildTotal",
-                    "snapshotValidation",
-                    "pluginLoad",
-                    "pluginInput",
-                    "templatePreparation",
-                    "pluginDocument",
-                    "postPluginIntegrityVerify",
-                    "saveZip",
-                    "wordFieldUpdate",
-                }.issubset(phase_names))
+                self.assertTrue(
+                    {
+                        "queueWait",
+                        "artifactBuildTotal",
+                        "snapshotValidation",
+                        "pluginLoad",
+                        "pluginInput",
+                        "templatePreparation",
+                        "pluginDocument",
+                        "postPluginIntegrityVerify",
+                        "saveZip",
+                        "wordFieldUpdate",
+                    }.issubset(phase_names)
+                )
                 self.assertEqual(metrics.public()["metadata"]["pluginCount"], 2)
                 self.assertNotIn("Private report title", json.dumps(metrics.public()))
                 self.assertIs(generate.call_args.kwargs["metrics"], metrics)
@@ -418,20 +439,24 @@ class GeneratorInstrumentationTests(unittest.TestCase):
     @staticmethod
     def _fixture_data() -> dict:
         return {
-            "servers": [{
-                "hostname": "SRV-METRICS-01",
-                "ip": "10.0.0.10",
-                "os": "Windows Server 2022",
-                "result": "Phát hiện mã độc",
-                "notes": "PlugX evidence from controlled test",
-            }],
-            "clients": [{
-                "hostname": "PC-METRICS-01",
-                "ip": "10.0.0.20",
-                "os": "Windows 11",
-                "result": "Không phát hiện",
-                "notes": "Controlled clean endpoint",
-            }],
+            "servers": [
+                {
+                    "hostname": "SRV-METRICS-01",
+                    "ip": "10.0.0.10",
+                    "os": "Windows Server 2022",
+                    "result": "Phát hiện mã độc",
+                    "notes": "PlugX evidence from controlled test",
+                }
+            ],
+            "clients": [
+                {
+                    "hostname": "PC-METRICS-01",
+                    "ip": "10.0.0.20",
+                    "os": "Windows 11",
+                    "result": "Không phát hiện",
+                    "notes": "Controlled clean endpoint",
+                }
+            ],
             "metadata": {},
         }
 
@@ -439,8 +464,7 @@ class GeneratorInstrumentationTests(unittest.TestCase):
     def _semantic_projection(document) -> dict:
         return {
             "paragraphs": [
-                (paragraph.style.name, paragraph.text)
-                for paragraph in document.paragraphs
+                (paragraph.style.name, paragraph.text) for paragraph in document.paragraphs
             ],
             "tables": [
                 [[cell.text for cell in row.cells] for row in table.rows]
@@ -460,12 +484,15 @@ class GeneratorInstrumentationTests(unittest.TestCase):
             template.save(template_path)
 
             metrics = PerformanceMetrics(run_id="instrumented")
-            with patch(
-                "core.report_generator.prepared_template_enabled",
-                return_value=False,
-            ), patch(
-                "core.report_generator._detect_template_mode",
-                return_value="full",
+            with (
+                patch(
+                    "core.report_generator.prepared_template_enabled",
+                    return_value=False,
+                ),
+                patch(
+                    "core.report_generator._detect_template_mode",
+                    return_value="full",
+                ),
             ):
                 baseline = generate_report(
                     self._fixture_data(),
@@ -504,17 +531,27 @@ class GeneratorInstrumentationTests(unittest.TestCase):
         self.assertTrue(all(phase["durationMs"] >= 0 for phase in phases))
         aggregates = metrics.public()["aggregates"]
         self.assertTrue(aggregates)
-        self.assertTrue(all(
-            item["category"] in {
-                "assetDetail", "assetInventory", "assetSummary", "ioc",
-                "other", "remediation", "rows",
-            }
-            for item in aggregates
-        ))
-        self.assertTrue(any(
-            item["name"] == "tableCreate" and item["category"] == "assetDetail"
-            for item in aggregates
-        ))
+        self.assertTrue(
+            all(
+                item["category"]
+                in {
+                    "assetDetail",
+                    "assetInventory",
+                    "assetSummary",
+                    "ioc",
+                    "other",
+                    "remediation",
+                    "rows",
+                }
+                for item in aggregates
+            )
+        )
+        self.assertTrue(
+            any(
+                item["name"] == "tableCreate" and item["category"] == "assetDetail"
+                for item in aggregates
+            )
+        )
         self.assertEqual(
             self._semantic_projection(baseline),
             self._semantic_projection(instrumented),

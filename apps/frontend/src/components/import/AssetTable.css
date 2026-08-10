@@ -32,7 +32,9 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: var(--space-2) var(--space-3);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
   min-width: 220px;
 }
 
@@ -82,7 +84,9 @@
   font-family: var(--font-mono);
   letter-spacing: 0.02em;
   white-space: nowrap;
-  transition: transform 0.15s, box-shadow 0.15s;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
 }
 
 .badge:hover {
@@ -233,7 +237,7 @@
 
 .type-badge:hover {
   transform: scale(1.06);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .type-badge:active {
@@ -245,7 +249,9 @@
   cursor: text;
   padding: 3px 8px;
   border-radius: var(--radius-sm);
-  transition: background 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease;
   color: var(--text-primary);
   display: block;
   min-height: 1.5em;

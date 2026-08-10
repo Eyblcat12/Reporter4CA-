@@ -15,10 +15,33 @@ export default function DataQualityPanel({
   if (!summary) return null;
 
   const cards = [
-    { id: 'all', label: t('quality.validRows'), value: summary.validRows, icon: CheckCircle2, tone: 'success' },
-    { id: 'errors', label: t('quality.errors'), value: summary.errorRows, icon: ShieldAlert, tone: 'danger' },
-    { id: 'warnings', label: t('quality.warnings'), value: summary.warningRows, icon: AlertTriangle, tone: 'warning' },
-    { id: 'duplicate_hostname', label: t('quality.duplicates'), value: summary.duplicateHostnames, icon: Copy },
+    {
+      id: 'all',
+      label: t('quality.validRows'),
+      value: summary.validRows,
+      icon: CheckCircle2,
+      tone: 'success',
+    },
+    {
+      id: 'errors',
+      label: t('quality.errors'),
+      value: summary.errorRows,
+      icon: ShieldAlert,
+      tone: 'danger',
+    },
+    {
+      id: 'warnings',
+      label: t('quality.warnings'),
+      value: summary.warningRows,
+      icon: AlertTriangle,
+      tone: 'warning',
+    },
+    {
+      id: 'duplicate_hostname',
+      label: t('quality.duplicates'),
+      value: summary.duplicateHostnames,
+      icon: Copy,
+    },
     { id: 'invalid_ip', label: t('quality.invalidIps'), value: summary.invalidIps },
     { id: 'missing_os', label: t('quality.missingOs'), value: summary.missingOs },
     { id: 'missing_result', label: t('quality.missingResult'), value: summary.missingResult },
@@ -31,7 +54,8 @@ export default function DataQualityPanel({
           <strong>{t('quality.title')}</strong>
           <span>
             {quality.valid ? t('quality.ready') : t('quality.blocked')}
-            {' · '}{t('quality.serverClient')} {summary.servers || 0}:{summary.clients || 0}
+            {' · '}
+            {t('quality.serverClient')} {summary.servers || 0}:{summary.clients || 0}
           </span>
         </div>
         <div className="quality-panel__actions">
@@ -54,7 +78,10 @@ export default function DataQualityPanel({
             onClick={() => onFilter(id)}
             aria-pressed={activeFilter === id}
           >
-            <span>{Icon && <Icon size={13} />}{label}</span>
+            <span>
+              {Icon && <Icon size={13} />}
+              {label}
+            </span>
             <strong>{value || 0}</strong>
           </button>
         ))}
@@ -68,7 +95,9 @@ export default function DataQualityPanel({
               onClick={() => onIssue(issue)}
             >
               <span className={`quality-panel__dot quality-panel__dot--${issue.level}`} />
-              <b>{t('quality.row')} {issue.row}</b>
+              <b>
+                {t('quality.row')} {issue.row}
+              </b>
               <span>{issue.message}</span>
             </button>
           ))}

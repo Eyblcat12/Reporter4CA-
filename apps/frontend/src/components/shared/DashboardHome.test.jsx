@@ -9,40 +9,69 @@ vi.mock('../../hooks/useReporter', () => ({ useReporterContext: () => reporter }
 vi.mock('../../i18n', () => ({
   useI18n: () => ({
     locale: 'en',
-    t: (key) => ({
-      'dashboard.title': 'Overview', 'dashboard.subtitle': 'Workspace activity',
-      'dashboard.history': 'History', 'dashboard.newReport': 'New report',
-      'dashboard.chooseSource': 'Choose source', 'dashboard.continue': 'Continue',
-      'dashboard.source.file': 'File', 'dashboard.source.text': 'Raw text',
-      'dashboard.source.sample': 'Sample', 'dashboard.source.fileDesc': 'File description',
-      'dashboard.source.textDesc': 'Text description', 'dashboard.source.sampleDesc': 'Sample description',
-      'dashboard.metrics': 'Metrics', 'dashboard.reports': 'Reports',
-      'dashboard.assets': 'Assets', 'dashboard.success': 'Success',
-      'dashboard.completed': 'completed', 'dashboard.noAttempts': 'no attempts',
-      'dashboard.noPrevious': 'No previous period', 'dashboard.periodContext': 'selected period',
-      'dashboard.assetsContext': 'assets context', 'dashboard.activity': 'Activity',
-      'dashboard.period': 'Period', 'dashboard.sixMonths': '6m',
-      'dashboard.noActivity': 'No activity', 'dashboard.latestPeriod': 'Latest period',
-      'dashboard.recent': 'Recent reports', 'dashboard.viewAll': 'View all',
-      'dashboard.showLess': 'Show less', 'dashboard.noReports': 'No reports yet',
-      'dashboard.reportSuccess': 'Success', 'dashboard.reportFailed': 'Failed',
-      'dashboard.reportCancelled': 'Cancelled',
-      'dashboard.untitled': 'Untitled', 'dashboard.ready': 'Ready', 'common.close': 'Close',
-      'dashboard.loading': 'Syncing workspace data',
-      'dashboard.degradedTitle': 'Latest dashboard data is unavailable',
-      'dashboard.degradedBody': 'Showing retained data',
-      'dashboard.retry': 'Retry', 'dashboard.lastUpdated': 'Last updated',
-      'dashboard.successful': 'Completed', 'dashboard.failed': 'Failed',
-      'dashboard.cancelled': 'Cancelled',
-    }[key] || key),
+    t: (key) =>
+      ({
+        'dashboard.title': 'Overview',
+        'dashboard.subtitle': 'Workspace activity',
+        'dashboard.history': 'History',
+        'dashboard.newReport': 'New report',
+        'dashboard.chooseSource': 'Choose source',
+        'dashboard.continue': 'Continue',
+        'dashboard.source.file': 'File',
+        'dashboard.source.text': 'Raw text',
+        'dashboard.source.sample': 'Sample',
+        'dashboard.source.fileDesc': 'File description',
+        'dashboard.source.textDesc': 'Text description',
+        'dashboard.source.sampleDesc': 'Sample description',
+        'dashboard.metrics': 'Metrics',
+        'dashboard.reports': 'Reports',
+        'dashboard.assets': 'Assets',
+        'dashboard.success': 'Success',
+        'dashboard.completed': 'completed',
+        'dashboard.noAttempts': 'no attempts',
+        'dashboard.noPrevious': 'No previous period',
+        'dashboard.periodContext': 'selected period',
+        'dashboard.assetsContext': 'assets context',
+        'dashboard.activity': 'Activity',
+        'dashboard.period': 'Period',
+        'dashboard.sixMonths': '6m',
+        'dashboard.noActivity': 'No activity',
+        'dashboard.latestPeriod': 'Latest period',
+        'dashboard.recent': 'Recent reports',
+        'dashboard.viewAll': 'View all',
+        'dashboard.showLess': 'Show less',
+        'dashboard.noReports': 'No reports yet',
+        'dashboard.reportSuccess': 'Success',
+        'dashboard.reportFailed': 'Failed',
+        'dashboard.reportCancelled': 'Cancelled',
+        'dashboard.untitled': 'Untitled',
+        'dashboard.ready': 'Ready',
+        'common.close': 'Close',
+        'dashboard.loading': 'Syncing workspace data',
+        'dashboard.degradedTitle': 'Latest dashboard data is unavailable',
+        'dashboard.degradedBody': 'Showing retained data',
+        'dashboard.retry': 'Retry',
+        'dashboard.lastUpdated': 'Last updated',
+        'dashboard.successful': 'Completed',
+        'dashboard.failed': 'Failed',
+        'dashboard.cancelled': 'Cancelled',
+      })[key] || key,
   }),
 }));
 
 const summary = (overrides = {}) => ({
   days: 90,
   metrics: {
-    reports: 3, attempts: 5, failed: 1, cancelled: 1, assets: 42, reportTypes: 2,
-    successRate: 75, avgDurationMs: 120, deltaPercent: 50, ...overrides,
+    reports: 3,
+    attempts: 5,
+    failed: 1,
+    cancelled: 1,
+    assets: 42,
+    reportTypes: 2,
+    successRate: 75,
+    avgDurationMs: 120,
+    deltaPercent: 50,
+    ...overrides,
   },
   series: Array.from({ length: 8 }, (_, index) => {
     const start = new Date(Date.now() - (8 - index) * 86400000);
@@ -52,17 +81,27 @@ const summary = (overrides = {}) => ({
       count: index === 7 ? 3 : 0,
     };
   }),
-  recent: [{
-    id: 'r1', title: 'Assessment Alpha', report_type: 'full', row_count: 12,
-    created_at: new Date().toISOString(),
-  }],
+  recent: [
+    {
+      id: 'r1',
+      title: 'Assessment Alpha',
+      report_type: 'full',
+      row_count: 12,
+      created_at: new Date().toISOString(),
+    },
+  ],
 });
 
 beforeEach(() => {
   reporter = {
-    importFile: vi.fn(), loadSample: vi.fn(), reportHistory: [], dashboardSummary: null,
+    importFile: vi.fn(),
+    loadSample: vi.fn(),
+    reportHistory: [],
+    dashboardSummary: null,
     fetchReportHistory: vi.fn().mockResolvedValue(null),
-    fetchDashboardSummary: vi.fn().mockResolvedValue(null), lastReportId: null, loading: false,
+    fetchDashboardSummary: vi.fn().mockResolvedValue(null),
+    lastReportId: null,
+    loading: false,
   };
 });
 
@@ -83,10 +122,14 @@ describe('DashboardHome', () => {
     expect(screen.getByText('Failed: 1')).toBeInTheDocument();
     expect(screen.getByText('Cancelled: 1')).toBeInTheDocument();
     expect(
-      [...container.querySelectorAll('.dashboard-home__y-axis-label')].map((node) => node.textContent),
+      [...container.querySelectorAll('.dashboard-home__y-axis-label')].map(
+        (node) => node.textContent,
+      ),
     ).toEqual(['0', '1', '2', '3', '4']);
     expect(
-      [...container.querySelectorAll('.dashboard-home__axis-label')].map((node) => node.textContent),
+      [...container.querySelectorAll('.dashboard-home__axis-label')].map(
+        (node) => node.textContent,
+      ),
     ).toContain('Jul 22');
   });
 
@@ -113,9 +156,13 @@ describe('DashboardHome', () => {
     expect(screen.getByText('Assessment 11')).toBeInTheDocument();
     expect(screen.getByText(/Failed · full · 0 assets/)).toBeInTheDocument();
     expect(screen.getByText(/Cancelled · full · 0 assets/)).toBeInTheDocument();
-    const timestamps = [...container.querySelectorAll('.dashboard-home__report time')].map((node) => node.textContent);
+    const timestamps = [...container.querySelectorAll('.dashboard-home__report time')].map(
+      (node) => node.textContent,
+    );
     expect(timestamps).toHaveLength(11);
-    expect(timestamps.every((value) => value.includes('2026') && /\d{1,2}:\d{2}/.test(value))).toBe(true);
+    expect(timestamps.every((value) => value.includes('2026') && /\d{1,2}:\d{2}/.test(value))).toBe(
+      true,
+    );
   });
 
   it('derives bucket end labels when an older backend only returns bucket starts', () => {
@@ -126,7 +173,9 @@ describe('DashboardHome', () => {
     };
     const { container } = render(<DashboardHome />);
     expect(
-      [...container.querySelectorAll('.dashboard-home__axis-label')].map((node) => node.textContent),
+      [...container.querySelectorAll('.dashboard-home__axis-label')].map(
+        (node) => node.textContent,
+      ),
     ).toContain('Jul 22');
   });
 

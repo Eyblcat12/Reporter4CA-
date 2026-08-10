@@ -15,7 +15,6 @@ from typing import Any, Callable
 
 from core.performance_metrics import PerformanceMetrics
 
-
 TERMINAL_STATES = {"completed", "failed", "cancelled"}
 
 
@@ -88,8 +87,12 @@ class ReportJob:
 class ReportJobManager:
     """One-worker queue with bounded capacity and active-request deduplication."""
 
-    def __init__(self, *, max_workers: int = 1, max_pending: int = 2, max_retained: int = 100) -> None:
-        self._executor = ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix="report-job")
+    def __init__(
+        self, *, max_workers: int = 1, max_pending: int = 2, max_retained: int = 100
+    ) -> None:
+        self._executor = ThreadPoolExecutor(
+            max_workers=max_workers, thread_name_prefix="report-job"
+        )
         self._capacity = max_workers + max_pending
         self._max_retained = max(max_retained, self._capacity)
         self._jobs: dict[str, ReportJob] = {}
@@ -170,9 +173,7 @@ class ReportJobManager:
             result = runner(job)
             with self._lock:
                 output_path = str(result.get("outputPath", ""))
-                if job.requires_output and (
-                    not output_path or not Path(output_path).is_file()
-                ):
+                if job.requires_output and (not output_path or not Path(output_path).is_file()):
                     raise RuntimeError("Document job completed without an output artifact")
                 job.report_id = str(result.get("reportId", ""))
                 job.filename = str(result.get("filename", ""))
@@ -183,8 +184,13 @@ class ReportJobManager:
                     **{
                         key: result.get(key)
                         for key in (
-                            "fieldEngine", "requestSignature", "contentSignature",
-                            "previewId", "templateHash", "cacheMode", "expiresAt",
+                            "fieldEngine",
+                            "requestSignature",
+                            "contentSignature",
+                            "previewId",
+                            "templateHash",
+                            "cacheMode",
+                            "expiresAt",
                             "fallbackReason",
                         )
                         if result.get(key) is not None
@@ -272,10 +278,7 @@ class ReportJobManager:
     def list(self, limit: int = 20, *, kind: str | None = None) -> list[dict[str, Any]]:
         with self._lock:
             jobs = sorted(
-                (
-                    job for job in self._jobs.values()
-                    if kind is None or job.kind == kind
-                ),
+                (job for job in self._jobs.values() if kind is None or job.kind == kind),
                 key=lambda item: item.created_at,
                 reverse=True,
             )
@@ -303,8 +306,7 @@ class ReportJobManager:
     def shutdown(self, *, wait: bool = True) -> None:
         with self._lock:
             active_ids = [
-                job.id for job in self._jobs.values()
-                if job.status not in TERMINAL_STATES
+                job.id for job in self._jobs.values() if job.status not in TERMINAL_STATES
             ]
         for job_id in active_ids:
             self.cancel(job_id)

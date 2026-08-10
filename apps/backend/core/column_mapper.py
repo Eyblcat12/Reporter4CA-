@@ -5,8 +5,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from core.input_preprocessor import COLUMN_ALIASES, CANONICAL_COLUMN_MAP, normalize_token
-
+from core.input_preprocessor import CANONICAL_COLUMN_MAP, COLUMN_ALIASES, normalize_token
 
 # ---------------------------------------------------------------------------
 # Danh sách các trường có thể map tới
@@ -32,12 +31,14 @@ def get_mappable_fields() -> list[dict[str, Any]]:
     for field_info in MAPPABLE_FIELDS:
         field_name = field_info["field"]
         aliases = sorted(COLUMN_ALIASES.get(field_name, {field_name}))
-        result.append({
-            "field": field_name,
-            "label": field_info["label"],
-            "required": field_info.get("required", False),
-            "aliases": aliases,
-        })
+        result.append(
+            {
+                "field": field_name,
+                "label": field_info["label"],
+                "required": field_info.get("required", False),
+                "aliases": aliases,
+            }
+        )
     return result
 
 
@@ -125,8 +126,7 @@ def split_dual_hostname_rows(records: list[dict[str, Any]]) -> list[dict[str, An
         client_name = str(record.get("hostname_client", "")).strip()
 
         # Build base record without dual hostname fields
-        base = {k: v for k, v in record.items()
-                if k not in ("hostname_server", "hostname_client")}
+        base = {k: v for k, v in record.items() if k not in ("hostname_server", "hostname_client")}
 
         if server_name and server_name.lower() not in ("", "nan", "none", "null"):
             server_rec = {**base, "hostname": server_name, "type": "server"}

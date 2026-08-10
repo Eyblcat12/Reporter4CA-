@@ -47,7 +47,7 @@ export default function ImportStep({ initialTab = 'file' }) {
             {t('step.import')}
           </h3>
           <div className="import-tabs">
-            {TABS.map(tab => (
+            {TABS.map((tab) => (
               <button
                 key={tab.id}
                 className={`import-tab ${activeTab === tab.id ? 'import-tab--active' : ''}`}

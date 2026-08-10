@@ -4,8 +4,16 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Upload, Trash2, FileText, Shield, Wand2, X,
-  ChevronDown, ChevronUp, Info, Star, Sparkles, Clock,
+  Upload,
+  Trash2,
+  FileText,
+  Wand2,
+  X,
+  ChevronUp,
+  Info,
+  Star,
+  Sparkles,
+  Clock,
 } from 'lucide-react';
 import { useReporterContext } from '../../hooks/useReporter';
 import { useI18n } from '../../i18n';
@@ -24,9 +32,15 @@ const REPORT_TYPES = [
 
 export default function TemplateManager({ onClose }) {
   const {
-    templates, uploadTemplate, updateTemplate, deleteTemplate, analyzeTemplate,
-    fetchTemplates, loading, setReportSettings, reportSettings,
-    fetchReportHistory, reportHistory,
+    templates,
+    uploadTemplate,
+    updateTemplate,
+    deleteTemplate,
+    analyzeTemplate,
+    setReportSettings,
+    reportSettings,
+    fetchReportHistory,
+    reportHistory,
   } = useReporterContext();
   const { t } = useI18n();
   const fileInputRef = useRef(null);
@@ -41,33 +55,44 @@ export default function TemplateManager({ onClose }) {
     (tpl) => (tpl.reportType || 'full') === activeType,
   );
 
-  const handleFiles = useCallback(async (files) => {
-    const file = files[0];
-    if (!file) return;
-    if (!file.name.toLowerCase().endsWith('.docx')) {
-      alert('Chỉ chấp nhận file .docx');
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const uploaded = await uploadTemplate(
-        file.name, reader.result, uploadName || '', '', activeType, makeDefault,
-      );
-      if (uploaded?.analysis) {
-        setAnalysisData(uploaded.analysis);
-        setAnalysisId(uploaded.id);
+  const handleFiles = useCallback(
+    async (files) => {
+      const file = files[0];
+      if (!file) return;
+      if (!file.name.toLowerCase().endsWith('.docx')) {
+        alert('Chỉ chấp nhận file .docx');
+        return;
       }
-      setUploadName('');
-      setMakeDefault(false);
-    };
-    reader.readAsDataURL(file);
-  }, [uploadTemplate, uploadName, activeType, makeDefault]);
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const uploaded = await uploadTemplate(
+          file.name,
+          reader.result,
+          uploadName || '',
+          '',
+          activeType,
+          makeDefault,
+        );
+        if (uploaded?.analysis) {
+          setAnalysisData(uploaded.analysis);
+          setAnalysisId(uploaded.id);
+        }
+        setUploadName('');
+        setMakeDefault(false);
+      };
+      reader.readAsDataURL(file);
+    },
+    [uploadTemplate, uploadName, activeType, makeDefault],
+  );
 
-  const handleDrop = useCallback((e) => {
-    e.preventDefault();
-    setDragOver(false);
-    handleFiles(e.dataTransfer.files);
-  }, [handleFiles]);
+  const handleDrop = useCallback(
+    (e) => {
+      e.preventDefault();
+      setDragOver(false);
+      handleFiles(e.dataTransfer.files);
+    },
+    [handleFiles],
+  );
 
   const handleAnalyze = async (tpl) => {
     if (analysisId === tpl.id) {
@@ -158,7 +183,10 @@ export default function TemplateManager({ onClose }) {
       {/* Upload Zone */}
       <div
         className={`tpl-mgr__dropzone ${dragOver ? 'tpl-mgr__dropzone--active' : ''}`}
-        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
@@ -289,7 +317,9 @@ export default function TemplateManager({ onClose }) {
                   aria-label={`Phân loại template ${tpl.name}`}
                 >
                   {REPORT_TYPES.map((type) => (
-                    <option key={type.id} value={type.id}>{type.label}</option>
+                    <option key={type.id} value={type.id}>
+                      {type.label}
+                    </option>
                   ))}
                 </select>
                 {!tpl.isDefault && tpl.compatibilityStatus !== 'incompatible' && (
@@ -308,7 +338,11 @@ export default function TemplateManager({ onClose }) {
                 >
                   {analysisId === tpl.id ? <ChevronUp size={14} /> : <Info size={14} />}
                 </button>
-                <button className="tpl-mgr__action-btn" onClick={() => setVersionsId(versionsId === tpl.id ? null : tpl.id)} title="Lịch sử phiên bản">
+                <button
+                  className="tpl-mgr__action-btn"
+                  onClick={() => setVersionsId(versionsId === tpl.id ? null : tpl.id)}
+                  title="Lịch sử phiên bản"
+                >
                   <Clock size={14} />
                 </button>
                 {!tpl.isDefault && (
@@ -354,7 +388,9 @@ export default function TemplateManager({ onClose }) {
                       <div className="tpl-analysis__tokens">
                         <span className="tpl-analysis__label">Tokens:</span>
                         {analysisData.tokensFound.map((tok) => (
-                          <code key={tok} className="tpl-analysis__token">{tok}</code>
+                          <code key={tok} className="tpl-analysis__token">
+                            {tok}
+                          </code>
                         ))}
                       </div>
                     )}
@@ -372,18 +408,34 @@ export default function TemplateManager({ onClose }) {
                       <div className="tpl-analysis__protos">
                         <span className="tpl-analysis__label">Bảng mẫu:</span>
                         {analysisData.prototypeTables.map((p) => (
-                          <span key={p} className="tpl-badge tpl-badge--proto">{p}</span>
+                          <span key={p} className="tpl-badge tpl-badge--proto">
+                            {p}
+                          </span>
                         ))}
                       </div>
                     )}
                     {analysisData.compatibility && (
-                      <div className={`tpl-analysis__compat tpl-analysis__compat--${analysisData.compatibility.status}`}>
-                        <strong>{t(`template.compatibility.${analysisData.compatibility.status}`)}</strong>
-                        <span>Schema {analysisData.compatibility.version} · {analysisData.compatibility.reportType}</span>
-                        {[...(analysisData.compatibility.errors || []), ...(analysisData.compatibility.warnings || [])].map((issue) => (
-                          <p key={`${issue.code}-${issue.item}`}><code>{issue.item}</code> — {issue.message}</p>
+                      <div
+                        className={`tpl-analysis__compat tpl-analysis__compat--${analysisData.compatibility.status}`}
+                      >
+                        <strong>
+                          {t(`template.compatibility.${analysisData.compatibility.status}`)}
+                        </strong>
+                        <span>
+                          Schema {analysisData.compatibility.version} ·{' '}
+                          {analysisData.compatibility.reportType}
+                        </span>
+                        {[
+                          ...(analysisData.compatibility.errors || []),
+                          ...(analysisData.compatibility.warnings || []),
+                        ].map((issue) => (
+                          <p key={`${issue.code}-${issue.item}`}>
+                            <code>{issue.item}</code> — {issue.message}
+                          </p>
                         ))}
-                        {analysisData.compatibility.guidance?.map((item) => <small key={item}>• {item}</small>)}
+                        {analysisData.compatibility.guidance?.map((item) => (
+                          <small key={item}>• {item}</small>
+                        ))}
                       </div>
                     )}
                   </motion.div>

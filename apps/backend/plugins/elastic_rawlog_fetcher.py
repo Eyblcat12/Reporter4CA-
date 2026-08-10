@@ -34,7 +34,9 @@ class Plugin(BasePlugin):
         try:
             from elasticsearch import Elasticsearch
         except ImportError:
-            print("Plugin Elastic RawLog Fetcher: Can cai dat elasticsearch (pip install elasticsearch)")
+            print(
+                "Plugin Elastic RawLog Fetcher: Can cai dat elasticsearch (pip install elasticsearch)"
+            )
             return data
 
         try:

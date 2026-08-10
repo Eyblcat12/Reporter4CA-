@@ -5,8 +5,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  X, ZoomIn, ZoomOut, Download, FileText, Save, Loader2,
-  RefreshCw, CheckCircle2, AlertTriangle, Clock3,
+  X,
+  ZoomIn,
+  ZoomOut,
+  Download,
+  FileText,
+  Save,
+  Loader2,
+  RefreshCw,
+  CheckCircle2,
+  AlertTriangle,
+  Clock3,
 } from 'lucide-react';
 import { useReporterContext } from '../../hooks/useReporter';
 import { useI18n } from '../../i18n';
@@ -14,10 +23,15 @@ import './DocxPreviewModal.css';
 
 export default function DocxPreviewModal() {
   const {
-    showPreview, previewBlob, closePreview,
-    generateReport, savePreviewAsTemplate, loading,
+    showPreview,
+    previewBlob,
+    closePreview,
+    generateReport,
+    savePreviewAsTemplate,
+    loading,
     previewState = { status: 'none', progress: 0 },
-    previewDocx = () => Promise.resolve(), cancelPreview = () => Promise.resolve(),
+    previewDocx = () => Promise.resolve(),
+    cancelPreview = () => Promise.resolve(),
     documentRevision = 0,
   } = useReporterContext();
   const { t } = useI18n();
@@ -56,7 +70,8 @@ export default function DocxPreviewModal() {
           renderFootnotes: true,
           renderEndnotes: true,
         });
-        if (cancelled || generation !== renderGenerationRef.current || !containerRef.current) return;
+        if (cancelled || generation !== renderGenerationRef.current || !containerRef.current)
+          return;
         containerRef.current.replaceChildren(...staging.childNodes);
       } catch (err) {
         console.error('DOCX render error:', err);
@@ -87,23 +102,52 @@ export default function DocxPreviewModal() {
 
   const handleGenerate = () => {
     if (previewState.status !== 'current') {
-      previewDocx().catch(() => { /* handled in context */ });
+      previewDocx().catch(() => {
+        /* handled in context */
+      });
       return;
     }
-    generateReport().catch(() => { /* handled in context */ });
+    generateReport().catch(() => {
+      /* handled in context */
+    });
     closePreview();
   };
 
   const statusView = {
-    none: { icon: FileText, title: 'Chưa có Preview', detail: 'Tạo Preview để kiểm tra báo cáo trước khi xuất.' },
-    generating: { icon: Loader2, title: 'Đang tạo Preview', detail: 'Bạn có thể đóng cửa sổ; job vẫn tiếp tục.' },
-    current: { icon: CheckCircle2, title: 'Preview hiện hành', detail: 'Generate sẽ dùng lại chính DOCX đang xem.' },
-    stale: { icon: AlertTriangle, title: 'Preview đã cũ', detail: 'Dữ liệu hoặc cấu hình đã thay đổi.' },
-    expired: { icon: Clock3, title: 'Preview đã hết hạn', detail: 'Artifact cục bộ đã được dọn an toàn.' },
-    failed: { icon: AlertTriangle, title: 'Preview thất bại', detail: previewState.errorMessage || 'Không có artifact nào được phát hành.' },
+    none: {
+      icon: FileText,
+      title: 'Chưa có Preview',
+      detail: 'Tạo Preview để kiểm tra báo cáo trước khi xuất.',
+    },
+    generating: {
+      icon: Loader2,
+      title: 'Đang tạo Preview',
+      detail: 'Bạn có thể đóng cửa sổ; job vẫn tiếp tục.',
+    },
+    current: {
+      icon: CheckCircle2,
+      title: 'Preview hiện hành',
+      detail: 'Generate sẽ dùng lại chính DOCX đang xem.',
+    },
+    stale: {
+      icon: AlertTriangle,
+      title: 'Preview đã cũ',
+      detail: 'Dữ liệu hoặc cấu hình đã thay đổi.',
+    },
+    expired: {
+      icon: Clock3,
+      title: 'Preview đã hết hạn',
+      detail: 'Artifact cục bộ đã được dọn an toàn.',
+    },
+    failed: {
+      icon: AlertTriangle,
+      title: 'Preview thất bại',
+      detail: previewState.errorMessage || 'Không có artifact nào được phát hành.',
+    },
   }[previewState.status] || { icon: AlertTriangle, title: 'Preview chưa sẵn sàng', detail: '' };
   const StatusIcon = statusView.icon;
-  const canSaveTemplate = Boolean(previewBlob) && ['current', 'stale'].includes(previewState.status);
+  const canSaveTemplate =
+    Boolean(previewBlob) && ['current', 'stale'].includes(previewState.status);
 
   const handleSaveAsTemplate = async () => {
     if (!templateName.trim()) return;
@@ -160,9 +204,11 @@ export default function DocxPreviewModal() {
               {(rendering || previewState.status === 'generating') && (
                 <div className="docx-modal__loading">
                   <Loader2 size={24} className="docx-modal__spinner" />
-                  <span>{previewState.status === 'generating'
-                    ? `Đang tạo Preview · ${previewState.progress || 0}%`
-                    : (t('preview.rendering') || 'Đang render...')}</span>
+                  <span>
+                    {previewState.status === 'generating'
+                      ? `Đang tạo Preview · ${previewState.progress || 0}%`
+                      : t('preview.rendering') || 'Đang render...'}
+                  </span>
                 </div>
               )}
               <div
@@ -173,15 +219,40 @@ export default function DocxPreviewModal() {
             </div>
             <aside className={`docx-modal__status docx-modal__status--${previewState.status}`}>
               <div className="docx-modal__status-heading">
-                <span className="docx-modal__status-icon"><StatusIcon size={18} /></span>
-                <div><strong>{statusView.title}</strong><p>{statusView.detail}</p></div>
+                <span className="docx-modal__status-icon">
+                  <StatusIcon size={18} />
+                </span>
+                <div>
+                  <strong>{statusView.title}</strong>
+                  <p>{statusView.detail}</p>
+                </div>
               </div>
-              <div className="docx-modal__progress"><span style={{ width: `${previewState.progress || 0}%` }} /></div>
+              <div className="docx-modal__progress">
+                <span style={{ width: `${previewState.progress || 0}%` }} />
+              </div>
               <dl className="docx-modal__status-meta">
-                <div><dt>Revision</dt><dd>#{documentRevision} · {previewState.status}</dd></div>
-                <div><dt>Cache</dt><dd>{previewState.cacheMode || 'pending'}</dd></div>
-                <div><dt>Phase</dt><dd>{previewState.phase || '—'}</dd></div>
-                <div><dt>Signature</dt><dd><code>{previewState.signature ? `${previewState.signature.slice(0, 8)}…` : '—'}</code></dd></div>
+                <div>
+                  <dt>Revision</dt>
+                  <dd>
+                    #{documentRevision} · {previewState.status}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Cache</dt>
+                  <dd>{previewState.cacheMode || 'pending'}</dd>
+                </div>
+                <div>
+                  <dt>Phase</dt>
+                  <dd>{previewState.phase || '—'}</dd>
+                </div>
+                <div>
+                  <dt>Signature</dt>
+                  <dd>
+                    <code>
+                      {previewState.signature ? `${previewState.signature.slice(0, 8)}…` : '—'}
+                    </code>
+                  </dd>
+                </div>
               </dl>
               {previewState.status === 'generating' && previewState.previewId && (
                 <button className="btn btn--ghost btn--sm" onClick={() => cancelPreview()}>
@@ -223,7 +294,11 @@ export default function DocxPreviewModal() {
                   </button>
                 </div>
               ) : (
-                <button className="btn btn--ghost btn--sm" onClick={() => setShowSaveForm(true)} disabled={!canSaveTemplate}>
+                <button
+                  className="btn btn--ghost btn--sm"
+                  onClick={() => setShowSaveForm(true)}
+                  disabled={!canSaveTemplate}
+                >
                   <Save size={14} />
                   {t('preview.saveAsTemplate') || 'Lưu làm template'}
                 </button>
@@ -234,12 +309,12 @@ export default function DocxPreviewModal() {
               <button className="btn btn--ghost" onClick={closePreview}>
                 {t('common.close')}
               </button>
-              <button
-                className="btn btn--primary"
-                onClick={handleGenerate}
-                disabled={loading}
-              >
-                {previewState.status === 'current' ? <Download size={16} /> : <RefreshCw size={16} />}
+              <button className="btn btn--primary" onClick={handleGenerate} disabled={loading}>
+                {previewState.status === 'current' ? (
+                  <Download size={16} />
+                ) : (
+                  <RefreshCw size={16} />
+                )}
                 {previewState.status === 'current' ? 'Generate từ Preview này' : 'Tạo Preview mới'}
               </button>
             </div>

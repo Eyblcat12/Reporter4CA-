@@ -6,17 +6,16 @@ from pathlib import Path
 
 from docx import Document
 
-
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "apps" / "backend"
 sys.path.insert(0, str(BACKEND))
 
+from core import report_integrity  # noqa: E402
 from core.report_integrity import (  # noqa: E402
     ReportIntegrityError,
     build_report_manifest,
     verify_report_document,
 )
-from core import report_integrity  # noqa: E402
 from core.rule_engine import evaluate_payload  # noqa: E402
 
 
@@ -28,15 +27,14 @@ class ReportIntegrityTests(unittest.TestCase):
 
     def _add_summary_rows(self, document, manifest, *, force_type: str | None = None) -> None:
         for asset_type, label in (("server", "Máy chủ"), ("client", "Máy trạm")):
-            assets = [
-                asset for asset in manifest["assets"]
-                if asset["assetType"] == asset_type
-            ]
+            assets = [asset for asset in manifest["assets"] if asset["assetType"] == asset_type]
             if not assets:
                 continue
             rendered_label = (
-                "Máy chủ" if force_type == "server"
-                else "Máy trạm" if force_type == "client"
+                "Máy chủ"
+                if force_type == "server"
+                else "Máy trạm"
+                if force_type == "client"
                 else label
             )
             table = document.add_table(rows=len(assets) + 1, cols=3)
@@ -52,9 +50,7 @@ class ReportIntegrityTests(unittest.TestCase):
 
     def _add_technical_findings(self, document, manifest, *, evidence: str | None = None) -> None:
         findings = [
-            (asset, finding)
-            for asset in manifest["assets"]
-            for finding in asset["findings"]
+            (asset, finding) for asset in manifest["assets"] for finding in asset["findings"]
         ]
         table = document.add_table(rows=len(findings) + 1, cols=5)
         for cell, value in zip(
@@ -72,14 +68,16 @@ class ReportIntegrityTests(unittest.TestCase):
             )
 
     def test_manifest_counts_every_evaluated_asset_and_conclusion(self) -> None:
-        data = evaluate_payload({
-            "servers": [
-                {"hostname": "SRV-01", "result": "Ghi nhận dấu hiệu bất thường"},
-                {"hostname": "SRV-02", "result": "Không phát hiện"},
-            ],
-            "clients": [{"hostname": "PC-01", "result": "Chưa kết luận"}],
-            "metadata": {},
-        })
+        data = evaluate_payload(
+            {
+                "servers": [
+                    {"hostname": "SRV-01", "result": "Ghi nhận dấu hiệu bất thường"},
+                    {"hostname": "SRV-02", "result": "Không phát hiện"},
+                ],
+                "clients": [{"hostname": "PC-01", "result": "Chưa kết luận"}],
+                "metadata": {},
+            }
+        )
         manifest = build_report_manifest(data, "full")
 
         self.assertEqual(manifest["assetCount"], 3)
@@ -91,21 +89,23 @@ class ReportIntegrityTests(unittest.TestCase):
 
     def test_manifest_counts_only_evidence_backed_rules(self) -> None:
         data = {
-            "servers": [{
-                "hostname": "SRV-01",
-                "findings": [
-                    {
-                        "ruleId": "MALWARE_EVIDENCE",
-                        "classification": "anomaly",
-                        "evidence": [{"field": "notes", "value": "suspicious.exe"}],
-                    },
-                    {
-                        "ruleId": "NO_EVIDENCE",
-                        "classification": "anomaly",
-                        "evidence": [],
-                    },
-                ],
-            }],
+            "servers": [
+                {
+                    "hostname": "SRV-01",
+                    "findings": [
+                        {
+                            "ruleId": "MALWARE_EVIDENCE",
+                            "classification": "anomaly",
+                            "evidence": [{"field": "notes", "value": "suspicious.exe"}],
+                        },
+                        {
+                            "ruleId": "NO_EVIDENCE",
+                            "classification": "anomaly",
+                            "evidence": [],
+                        },
+                    ],
+                }
+            ],
             "clients": [],
         }
 
@@ -134,11 +134,13 @@ class ReportIntegrityTests(unittest.TestCase):
                 self.assertIn(section, manifest["requiredSections"])
 
     def test_verifier_rejects_a_missing_asset_conclusion(self) -> None:
-        data = evaluate_payload({
-            "servers": [{"hostname": "SRV-01", "result": "Ghi nhận dấu hiệu bất thường"}],
-            "clients": [{"hostname": "PC-01", "result": "Không phát hiện"}],
-            "metadata": {},
-        })
+        data = evaluate_payload(
+            {
+                "servers": [{"hostname": "SRV-01", "result": "Ghi nhận dấu hiệu bất thường"}],
+                "clients": [{"hostname": "PC-01", "result": "Không phát hiện"}],
+                "metadata": {},
+            }
+        )
         manifest = build_report_manifest(data, "full")
         document = Document()
         table = document.add_table(rows=2, cols=2)
@@ -149,11 +151,13 @@ class ReportIntegrityTests(unittest.TestCase):
             verify_report_document(document, manifest)
 
     def test_verifier_requires_hostname_and_conclusion_in_the_same_row(self) -> None:
-        data = evaluate_payload({
-            "servers": [{"hostname": "SRV-01", "result": "Ghi nhận dấu hiệu bất thường"}],
-            "clients": [],
-            "metadata": {},
-        })
+        data = evaluate_payload(
+            {
+                "servers": [{"hostname": "SRV-01", "result": "Ghi nhận dấu hiệu bất thường"}],
+                "clients": [],
+                "metadata": {},
+            }
+        )
         manifest = build_report_manifest(data, "full")
         document = Document()
         table = document.add_table(rows=2, cols=2)
@@ -165,15 +169,19 @@ class ReportIntegrityTests(unittest.TestCase):
 
     def test_technical_verifier_reports_all_applicable_counters(self) -> None:
         data = {
-            "servers": [{
-                "hostname": "SRV-01",
-                "findings": [{
-                    "ruleId": "MALWARE_EVIDENCE",
-                    "classification": "anomaly",
-                    "severity": "high",
-                    "evidence": [{"field": "notes", "value": "suspicious.exe"}],
-                }],
-            }],
+            "servers": [
+                {
+                    "hostname": "SRV-01",
+                    "findings": [
+                        {
+                            "ruleId": "MALWARE_EVIDENCE",
+                            "classification": "anomaly",
+                            "severity": "high",
+                            "evidence": [{"field": "notes", "value": "suspicious.exe"}],
+                        }
+                    ],
+                }
+            ],
             "clients": [],
         }
         manifest = build_report_manifest(data, "technical")
@@ -205,15 +213,19 @@ class ReportIntegrityTests(unittest.TestCase):
 
     def test_verifier_exposes_structured_section_and_evidence_errors(self) -> None:
         data = {
-            "servers": [{
-                "hostname": "SRV-01",
-                "findings": [{
-                    "ruleId": "MALWARE_EVIDENCE",
-                    "classification": "anomaly",
-                    "severity": "high",
-                    "evidence": [{"field": "notes", "value": "suspicious.exe"}],
-                }],
-            }],
+            "servers": [
+                {
+                    "hostname": "SRV-01",
+                    "findings": [
+                        {
+                            "ruleId": "MALWARE_EVIDENCE",
+                            "classification": "anomaly",
+                            "severity": "high",
+                            "evidence": [{"field": "notes", "value": "suspicious.exe"}],
+                        }
+                    ],
+                }
+            ],
             "clients": [],
         }
         manifest = build_report_manifest(data, "technical")
@@ -236,11 +248,13 @@ class ReportIntegrityTests(unittest.TestCase):
         self.assertEqual(error.result["verifiedEvidence"], 0)
 
     def test_asset_in_wrong_scope_is_not_counted_as_verified(self) -> None:
-        data = evaluate_payload({
-            "servers": [{"hostname": "SRV-01", "result": "Không phát hiện"}],
-            "clients": [],
-            "metadata": {},
-        })
+        data = evaluate_payload(
+            {
+                "servers": [{"hostname": "SRV-01", "result": "Không phát hiện"}],
+                "clients": [],
+                "metadata": {},
+            }
+        )
         manifest = build_report_manifest(data, "server_only")
         document = Document()
         self._add_required_sections(document, manifest)
@@ -259,15 +273,19 @@ class ReportIntegrityTests(unittest.TestCase):
 
     def test_wrong_rule_row_returns_finding_and_rule_error_codes(self) -> None:
         data = {
-            "servers": [{
-                "hostname": "SRV-01",
-                "findings": [{
-                    "ruleId": "MALWARE_EVIDENCE",
-                    "classification": "anomaly",
-                    "severity": "high",
-                    "evidence": [{"field": "notes", "value": "suspicious.exe"}],
-                }],
-            }],
+            "servers": [
+                {
+                    "hostname": "SRV-01",
+                    "findings": [
+                        {
+                            "ruleId": "MALWARE_EVIDENCE",
+                            "classification": "anomaly",
+                            "severity": "high",
+                            "evidence": [{"field": "notes", "value": "suspicious.exe"}],
+                        }
+                    ],
+                }
+            ],
             "clients": [],
         }
         manifest = build_report_manifest(data, "technical")
@@ -290,14 +308,16 @@ class ReportIntegrityTests(unittest.TestCase):
         self.assertEqual(result["verifiedRules"], {})
 
     def test_duplicate_manifest_assets_require_distinct_rendered_rows(self) -> None:
-        data = evaluate_payload({
-            "servers": [
-                {"hostname": "SRV-DUP", "result": "Không phát hiện"},
-                {"hostname": "SRV-DUP", "result": "Không phát hiện"},
-            ],
-            "clients": [],
-            "metadata": {},
-        })
+        data = evaluate_payload(
+            {
+                "servers": [
+                    {"hostname": "SRV-DUP", "result": "Không phát hiện"},
+                    {"hostname": "SRV-DUP", "result": "Không phát hiện"},
+                ],
+                "clients": [],
+                "metadata": {},
+            }
+        )
         manifest = build_report_manifest(data, "server_only")
         document = Document()
         self._add_required_sections(document, manifest)

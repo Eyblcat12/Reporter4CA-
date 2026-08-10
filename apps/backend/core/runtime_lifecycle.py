@@ -12,7 +12,6 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
-
 RUNTIME_PROTOCOL_VERSION = 2
 
 
@@ -75,14 +74,10 @@ class RuntimeLifecycle:
             if self._shutdown_requested:
                 raise ValueError("Reporter Pro backend is already shutting down.")
 
-            same_owner = (
-                launcher_id == self._launcher_id
-                and pid == self._launcher_pid
-            )
+            same_owner = launcher_id == self._launcher_id and pid == self._launcher_pid
             if self._launcher_lease_active_locked(now) and not same_owner:
                 raise ValueError(
-                    "Reporter Pro is already managed by launcher "
-                    f"PID {self._launcher_pid}."
+                    f"Reporter Pro is already managed by launcher PID {self._launcher_pid}."
                 )
 
             recovered = bool(self._launcher_id and not same_owner)
@@ -129,10 +124,7 @@ class RuntimeLifecycle:
     ) -> bool:
         with self._lock:
             self._assert_identity_locked(instance_id, workspace_id)
-            if (
-                launcher_id != self._launcher_id
-                or (pid and pid != self._launcher_pid)
-            ):
+            if launcher_id != self._launcher_id or (pid and pid != self._launcher_pid):
                 return False
             self._shutdown_requested = True
             return True
@@ -176,10 +168,7 @@ class RuntimeLifecycle:
             return bool(
                 self._launcher_id
                 and self._active_operations == 0
-                and (
-                    self._shutdown_requested
-                    or not self._launcher_lease_active_locked(now)
-                )
+                and (self._shutdown_requested or not self._launcher_lease_active_locked(now))
             )
 
     @contextmanager
@@ -230,8 +219,7 @@ class RuntimeLifecycle:
         active_ids = []
         for session_id, session in list(self._sessions.items()):
             is_active = (
-                session.closed_at is None
-                and now - session.last_seen <= self.browser_ttl_seconds
+                session.closed_at is None and now - session.last_seen <= self.browser_ttl_seconds
             )
             if is_active:
                 active_ids.append(session_id)

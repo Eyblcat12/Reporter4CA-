@@ -36,12 +36,21 @@ def validate_rule(rule: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("Rule phải có conditions")
     fields = [str(item).strip() for item in conditions.get("fields", []) if str(item).strip()]
     allowed_fields = {
-        "type", "hostname", "ip", "os", "result", "notes",
-        "software", "process", "installed_software",
+        "type",
+        "hostname",
+        "ip",
+        "os",
+        "result",
+        "notes",
+        "software",
+        "process",
+        "installed_software",
     }
     if not fields or any(field not in allowed_fields for field in fields):
         raise ValueError("Trường tìm kiếm không hợp lệ")
-    contains_any = [str(item).strip() for item in conditions.get("containsAny", []) if str(item).strip()]
+    contains_any = [
+        str(item).strip() for item in conditions.get("containsAny", []) if str(item).strip()
+    ]
     regex_any = [str(item).strip() for item in conditions.get("regexAny", []) if str(item).strip()]
     if not contains_any and not regex_any:
         raise ValueError("Cần ít nhất một từ khóa hoặc biểu thức tìm kiếm")
@@ -51,20 +60,32 @@ def validate_rule(rule: dict[str, Any]) -> dict[str, Any]:
         if len(pattern) > 200:
             raise ValueError("Biểu thức tìm kiếm quá dài")
         re.compile(pattern)
-    normalized.update({
-        "name": name,
-        "version": str(normalized.get("version", "1")),
-        "severity": severity,
-        "classification": classification,
-        "enabled": bool(normalized.get("enabled", True)),
-    })
+    normalized.update(
+        {
+            "name": name,
+            "version": str(normalized.get("version", "1")),
+            "severity": severity,
+            "classification": classification,
+            "enabled": bool(normalized.get("enabled", True)),
+        }
+    )
     normalized["conditions"] = {
         "fields": fields,
         "containsAny": contains_any,
-        "containsAll": [str(item).strip() for item in conditions.get("containsAll", []) if str(item).strip()],
-        "excludeContainsAny": [str(item).strip() for item in conditions.get("excludeContainsAny", []) if str(item).strip()],
+        "containsAll": [
+            str(item).strip() for item in conditions.get("containsAll", []) if str(item).strip()
+        ],
+        "excludeContainsAny": [
+            str(item).strip()
+            for item in conditions.get("excludeContainsAny", [])
+            if str(item).strip()
+        ],
         "regexAny": regex_any,
-        "assetTypes": [str(item).strip().lower() for item in conditions.get("assetTypes", []) if str(item).strip()],
+        "assetTypes": [
+            str(item).strip().lower()
+            for item in conditions.get("assetTypes", [])
+            if str(item).strip()
+        ],
     }
     return normalized
 
@@ -103,17 +124,21 @@ def evaluate_asset(
         evidence = _match_evidence(asset, conditions)
         if not evidence:
             continue
-        findings.append({
-            "ruleId": rule_id,
-            "ruleVersion": str(rule.get("version", "1")),
-            "source": str(rule.get("source") or ("custom" if rule_id.startswith("CUSTOM_") else "builtin")),
-            "name": str(rule.get("name", rule_id)),
-            "severity": rule["severity"],
-            "classification": rule["classification"],
-            "evidence": evidence,
-            "remediation": str(rule.get("remediation", "")),
-            "mitre": deepcopy(rule.get("mitre", [])),
-        })
+        findings.append(
+            {
+                "ruleId": rule_id,
+                "ruleVersion": str(rule.get("version", "1")),
+                "source": str(
+                    rule.get("source") or ("custom" if rule_id.startswith("CUSTOM_") else "builtin")
+                ),
+                "name": str(rule.get("name", rule_id)),
+                "severity": rule["severity"],
+                "classification": rule["classification"],
+                "evidence": evidence,
+                "remediation": str(rule.get("remediation", "")),
+                "mitre": deepcopy(rule.get("mitre", [])),
+            }
+        )
     return findings
 
 
@@ -135,17 +160,25 @@ def _match_evidence(asset: dict[str, Any], conditions: dict[str, Any]) -> list[d
         matches = [term for term in contains_any if term and term in folded]
         matches.extend(match.group(0) for pattern in regexes if (match := pattern.search(raw)))
         if matches:
-            evidence.append({"field": str(field), "value": raw, "matched": ", ".join(dict.fromkeys(matches))})
+            evidence.append(
+                {"field": str(field), "value": raw, "matched": ", ".join(dict.fromkeys(matches))}
+            )
     return evidence
 
 
-def evaluate_payload(payload: dict[str, Any], *, disabled_rule_ids: list[str] | None = None) -> dict[str, Any]:
+def evaluate_payload(
+    payload: dict[str, Any], *, disabled_rule_ids: list[str] | None = None
+) -> dict[str, Any]:
     result = deepcopy(payload)
     pack = load_rule_pack()
     metadata = result.get("metadata", {}) if isinstance(result.get("metadata"), dict) else {}
-    rule_settings = metadata.get("ruleSettings", {}) if isinstance(metadata.get("ruleSettings"), dict) else {}
+    rule_settings = (
+        metadata.get("ruleSettings", {}) if isinstance(metadata.get("ruleSettings"), dict) else {}
+    )
     configured_disabled = rule_settings.get("disabledRuleIds", metadata.get("disabledRuleIds", []))
-    disabled = set(disabled_rule_ids if disabled_rule_ids is not None else configured_disabled or [])
+    disabled = set(
+        disabled_rule_ids if disabled_rule_ids is not None else configured_disabled or []
+    )
     custom_rules = rule_settings.get("customRules", [])
     validated_custom = [validate_rule(rule) for rule in custom_rules if isinstance(rule, dict)]
     rules = [*pack["rules"], *validated_custom]
@@ -160,17 +193,19 @@ def evaluate_payload(payload: dict[str, Any], *, disabled_rule_ids: list[str] | 
         for asset_index, asset in enumerate(result.get(section, [])):
             findings = evaluate_asset(asset, rules, disabled_rule_ids=disabled)
             if not str(asset.get("result", "")).strip():
-                findings.append({
-                    "ruleId": "SOURCE_RESULT_MISSING",
-                    "ruleVersion": "1",
-                    "source": "data_quality",
-                    "name": "Missing source assessment result",
-                    "severity": "informational",
-                    "classification": "insufficient_data",
-                    "evidence": [{"field": "result", "value": "", "matched": "<missing>"}],
-                    "remediation": "Complete the source assessment result before final approval.",
-                    "mitre": [],
-                })
+                findings.append(
+                    {
+                        "ruleId": "SOURCE_RESULT_MISSING",
+                        "ruleVersion": "1",
+                        "source": "data_quality",
+                        "name": "Missing source assessment result",
+                        "severity": "informational",
+                        "classification": "insufficient_data",
+                        "evidence": [{"field": "result", "value": "", "matched": "<missing>"}],
+                        "remediation": "Complete the source assessment result before final approval.",
+                        "mitre": [],
+                    }
+                )
             asset["findings"] = findings
             assessment = assess_asset(findings)
             asset["assessment"] = {
@@ -217,23 +252,33 @@ def find_rule_conflicts(rules: list[dict[str, Any]]) -> list[dict[str, Any]]:
         left_conditions = left.get("conditions", {})
         left_fields = {str(item) for item in left_conditions.get("fields", [])}
         left_terms = {
-            str(item).strip().casefold() for item in left_conditions.get("containsAny", [])
+            str(item).strip().casefold()
+            for item in left_conditions.get("containsAny", [])
             if str(item).strip()
         }
-        for right in enabled[index + 1:]:
+        for right in enabled[index + 1 :]:
             right_conditions = right.get("conditions", {})
-            shared_fields = sorted(left_fields & {str(item) for item in right_conditions.get("fields", [])})
-            shared_terms = sorted(left_terms & {
-                str(item).strip().casefold() for item in right_conditions.get("containsAny", [])
-                if str(item).strip()
-            })
+            shared_fields = sorted(
+                left_fields & {str(item) for item in right_conditions.get("fields", [])}
+            )
+            shared_terms = sorted(
+                left_terms
+                & {
+                    str(item).strip().casefold()
+                    for item in right_conditions.get("containsAny", [])
+                    if str(item).strip()
+                }
+            )
             if not shared_fields or not shared_terms:
                 continue
-            conflicts.append({
-                "ruleIds": [str(left.get("id", "")), str(right.get("id", ""))],
-                "ruleNames": [str(left.get("name", "")), str(right.get("name", ""))],
-                "sharedFields": shared_fields,
-                "sharedTerms": shared_terms,
-                "classificationConflict": left.get("classification") != right.get("classification"),
-            })
+            conflicts.append(
+                {
+                    "ruleIds": [str(left.get("id", "")), str(right.get("id", ""))],
+                    "ruleNames": [str(left.get("name", "")), str(right.get("name", ""))],
+                    "sharedFields": shared_fields,
+                    "sharedTerms": shared_terms,
+                    "classificationConflict": left.get("classification")
+                    != right.get("classification"),
+                }
+            )
     return conflicts

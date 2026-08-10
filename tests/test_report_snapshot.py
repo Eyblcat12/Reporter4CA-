@@ -5,11 +5,11 @@ import sys
 import unittest
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "apps" / "backend"
 sys.path.insert(0, str(BACKEND))
 
+from core.report_orchestrator import ReportOrchestrator  # noqa: E402
 from core.report_signature import CanonicalValueError, canonical_sha256  # noqa: E402
 from core.report_snapshot import (  # noqa: E402
     DEFAULT_REPORT_TITLE,
@@ -17,7 +17,6 @@ from core.report_snapshot import (  # noqa: E402
     PreparedReportSnapshot,
     thaw_json,
 )
-from core.report_orchestrator import ReportOrchestrator  # noqa: E402
 
 
 def accepted(**overrides):
@@ -30,13 +29,15 @@ def accepted(**overrides):
         "report_type": "full",
         "template_bytes": b"template-v1",
         "template_key": "default/full",
-        "plugin_manifest": [{
-            "pluginId": "os-detector",
-            "version": "1",
-            "cachePolicy": "deterministic",
-            "sourceHash": "abc",
-            "cacheIdentity": {},
-        }],
+        "plugin_manifest": [
+            {
+                "pluginId": "os-detector",
+                "version": "1",
+                "cachePolicy": "deterministic",
+                "sourceHash": "abc",
+                "cacheIdentity": {},
+            }
+        ],
     }
     values.update(overrides)
     return AcceptedReportSnapshot.create(**values)
@@ -45,7 +46,9 @@ def accepted(**overrides):
 class ReportSignatureTests(unittest.TestCase):
     def test_mapping_order_is_ignored_but_row_order_is_preserved(self) -> None:
         self.assertEqual(canonical_sha256({"b": 2, "a": 1}), canonical_sha256({"a": 1, "b": 2}))
-        self.assertNotEqual(canonical_sha256([{"id": 1}, {"id": 2}]), canonical_sha256([{"id": 2}, {"id": 1}]))
+        self.assertNotEqual(
+            canonical_sha256([{"id": 1}, {"id": 2}]), canonical_sha256([{"id": 2}, {"id": 1}])
+        )
 
     def test_unicode_nfc_has_one_identity(self) -> None:
         self.assertEqual(canonical_sha256("Café"), canonical_sha256("Cafe\u0301"))
@@ -92,10 +95,17 @@ class ReportSnapshotTests(unittest.TestCase):
         baseline = accepted().request_signature
         changed_rule = accepted(metadata={"ruleSettings": {"customRules": [{"id": "RULE-2"}]}})
         changed_template = accepted(template_bytes=b"template-v2")
-        changed_plugin = accepted(plugin_manifest=[{
-            "pluginId": "os-detector", "version": "2", "cachePolicy": "deterministic",
-            "sourceHash": "def", "cacheIdentity": {},
-        }])
+        changed_plugin = accepted(
+            plugin_manifest=[
+                {
+                    "pluginId": "os-detector",
+                    "version": "2",
+                    "cachePolicy": "deterministic",
+                    "sourceHash": "def",
+                    "cacheIdentity": {},
+                }
+            ]
+        )
         self.assertNotEqual(baseline, changed_rule.request_signature)
         self.assertNotEqual(baseline, changed_template.request_signature)
         self.assertNotEqual(baseline, changed_plugin.request_signature)

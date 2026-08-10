@@ -3,9 +3,8 @@
    ═══════════════════════════════════════════════════════════ */
 import { useState, useRef, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Send, Server, Monitor, Columns, LayoutList, Sparkles } from 'lucide-react';
+import { Server, Monitor, Columns, LayoutList, Sparkles } from 'lucide-react';
 import { useReporterContext } from '../../hooks/useReporter';
-import { useI18n } from '../../i18n';
 import './RawTextInput.css';
 
 const PLACEHOLDER = `type,hostname,os,ip
@@ -27,8 +26,6 @@ export default function RawTextInput() {
   const [defaultType, setDefaultType] = useState('client');
   const textareaRef = useRef(null);
   const { normalizeRaw, loading } = useReporterContext();
-  const { t } = useI18n();
-
   const handleNormalize = () => {
     if (text.trim()) {
       normalizeRaw(text, defaultType);
@@ -107,7 +104,9 @@ export default function RawTextInput() {
       <div className="raw-text__editor">
         <div className="raw-text__line-numbers" aria-hidden="true">
           {lineNumbers.map((num) => (
-            <span key={num} className="raw-text__line-num">{num}</span>
+            <span key={num} className="raw-text__line-num">
+              {num}
+            </span>
           ))}
         </div>
         <textarea

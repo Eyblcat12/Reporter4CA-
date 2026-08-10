@@ -16,7 +16,10 @@ vi.mock('../../i18n', () => ({ useI18n: () => ({ t: (key) => key }) }));
 it('switches report type and selects its compatible default template', async () => {
   render(<ReportTypeSelector />);
   await userEvent.click(screen.getByText('export.technical'));
-  expect(setReportSettings).toHaveBeenCalledWith(expect.objectContaining({
-    reportType: 'technical', templatePath: 'technical.docx',
-  }));
+  expect(setReportSettings).toHaveBeenCalledWith(
+    expect.objectContaining({
+      reportType: 'technical',
+      templatePath: 'technical.docx',
+    }),
+  );
 });

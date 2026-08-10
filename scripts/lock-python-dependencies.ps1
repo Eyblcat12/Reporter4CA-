@@ -19,6 +19,8 @@ if (-not (Test-Path -LiteralPath $PipCompile)) {
 
 function Compile-Lock([string]$InputName, [string]$OutputName) {
     Write-Host "[Reporter Pro Lock] $InputName -> $OutputName" -ForegroundColor Cyan
+    $InputPath = Join-Path $Backend $InputName
+    $OutputPath = Join-Path $Backend $OutputName
     & $PipCompile `
         --generate-hashes `
         --resolver=backtracking `
@@ -26,8 +28,8 @@ function Compile-Lock([string]$InputName, [string]$OutputName) {
         --no-emit-index-url `
         --no-emit-trusted-host `
         --newline=lf `
-        --output-file=(Join-Path $Backend $OutputName) `
-        (Join-Path $Backend $InputName)
+        --output-file $OutputPath `
+        $InputPath
     if ($LASTEXITCODE -ne 0) { throw "Could not compile $OutputName." }
 }
 

@@ -32,15 +32,9 @@ export default function StepIndicator({ currentStep, onStepClick }) {
               onClick={() => onStepClick(step.key)}
               aria-label={t(step.labelKey)}
             >
-              {isCompleted ? (
-                <Check size={14} strokeWidth={3} />
-              ) : (
-                <Icon size={14} />
-              )}
+              {isCompleted ? <Check size={14} strokeWidth={3} /> : <Icon size={14} />}
             </button>
-            <span className={`step-label ${status}`}>
-              {t(step.labelKey)}
-            </span>
+            <span className={`step-label ${status}`}>{t(step.labelKey)}</span>
           </div>
         );
       })}

@@ -11,7 +11,6 @@ from unittest.mock import patch
 
 from fastapi import HTTPException
 
-
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "apps" / "backend"
 sys.path.insert(0, str(BACKEND))
@@ -38,9 +37,11 @@ class DashboardSummaryTests(unittest.TestCase):
 
             database = Database(path)
             database.initialize()
-            row = database._get_conn().execute(
-                "SELECT id, status, duration_ms, error_code FROM report_history"
-            ).fetchone()
+            row = (
+                database._get_conn()
+                .execute("SELECT id, status, duration_ms, error_code FROM report_history")
+                .fetchone()
+            )
             self.assertEqual(tuple(row), ("legacy", "success", 0, ""))
             self.assertEqual(database.schema_version, 9)
             database.close()

@@ -45,9 +45,7 @@ describe('RuntimeLifecycle', () => {
   });
 
   it('shows a stopped state and attempts to close after backend loss', async () => {
-    fetch
-      .mockResolvedValueOnce(okResponse)
-      .mockRejectedValue(new Error('backend stopped'));
+    fetch.mockResolvedValueOnce(okResponse).mockRejectedValue(new Error('backend stopped'));
     render(<RuntimeLifecycle />);
     await act(async () => Promise.resolve());
 

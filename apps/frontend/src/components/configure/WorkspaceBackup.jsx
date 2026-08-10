@@ -14,11 +14,8 @@ import { useI18n } from '../../i18n';
 import './WorkspaceBackup.css';
 
 export default function WorkspaceBackup() {
-  const {
-    downloadWorkspaceBackup,
-    previewWorkspaceRestore,
-    restoreWorkspaceBackup,
-  } = useReporterContext();
+  const { downloadWorkspaceBackup, previewWorkspaceRestore, restoreWorkspaceBackup } =
+    useReporterContext();
   const { t } = useI18n();
   const [status, setStatus] = useState({ state: 'idle', detail: '' });
   const [restoreStatus, setRestoreStatus] = useState({ state: 'idle', detail: '' });
@@ -141,14 +138,31 @@ export default function WorkspaceBackup() {
             <strong>{restoreFile?.name}</strong>
           </div>
           <dl>
-            <div><dt>{t('backup.restoreCreated')}</dt><dd>{new Date(restorePreview.archive.createdAt).toLocaleString()}</dd></div>
-            <div><dt>Presets</dt><dd>{restorePreview.database.records.presets}</dd></div>
-            <div><dt>History</dt><dd>{restorePreview.database.records.report_history}</dd></div>
-            <div><dt>Rules</dt><dd>{restorePreview.database.records.detection_rules ?? 0}</dd></div>
-            <div><dt>Templates</dt><dd>{restorePreview.templateCount}</dd></div>
+            <div>
+              <dt>{t('backup.restoreCreated')}</dt>
+              <dd>{new Date(restorePreview.archive.createdAt).toLocaleString()}</dd>
+            </div>
+            <div>
+              <dt>Presets</dt>
+              <dd>{restorePreview.database.records.presets}</dd>
+            </div>
+            <div>
+              <dt>History</dt>
+              <dd>{restorePreview.database.records.report_history}</dd>
+            </div>
+            <div>
+              <dt>Rules</dt>
+              <dd>{restorePreview.database.records.detection_rules ?? 0}</dd>
+            </div>
+            <div>
+              <dt>Templates</dt>
+              <dd>{restorePreview.templateCount}</dd>
+            </div>
           </dl>
           {restorePreview.warnings?.map((warning) => (
-            <p className="workspace-backup__preview-warning" key={warning}>{warning}</p>
+            <p className="workspace-backup__preview-warning" key={warning}>
+              {warning}
+            </p>
           ))}
           <button
             type="button"
@@ -167,8 +181,12 @@ export default function WorkspaceBackup() {
       )}
 
       {restoreStatus.detail && (
-        <div className={`workspace-backup__status workspace-backup__status--${restoreStatus.state}`}>
-          {(restoreStatus.state === 'success' || restoreStatus.state === 'restored') && <CheckCircle2 size={15} />}
+        <div
+          className={`workspace-backup__status workspace-backup__status--${restoreStatus.state}`}
+        >
+          {(restoreStatus.state === 'success' || restoreStatus.state === 'restored') && (
+            <CheckCircle2 size={15} />
+          )}
           <span>{restoreStatus.detail}</span>
           {restoreStatus.state === 'restored' && (
             <button type="button" onClick={() => window.location.reload()}>

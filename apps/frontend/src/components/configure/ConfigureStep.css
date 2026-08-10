@@ -20,7 +20,9 @@
   padding: var(--space-6);
   position: relative;
   overflow: hidden;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
 .configure-section::before {
@@ -30,12 +32,7 @@
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(var(--accent-rgb), 0.4),
-    transparent
-  );
+  background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb), 0.4), transparent);
   opacity: 0;
   transition: opacity 0.3s ease;
 }

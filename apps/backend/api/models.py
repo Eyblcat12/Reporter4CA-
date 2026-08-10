@@ -5,8 +5,8 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
 from core.report_snapshot import DEFAULT_REPORT_TITLE
+from pydantic import BaseModel, Field
 
 
 class ReportType(str, Enum):
@@ -107,6 +107,7 @@ class ColumnPreviewResponse(BaseModel):
 
 class SheetSelectRequest(BaseModel):
     """Request để chọn sheet và header row cụ thể cho file Excel."""
+
     filename: str = ""
     content_base64: str = Field(alias="contentBase64", default="")
     sheet_name: str = Field(alias="sheetName", default="")
@@ -117,16 +118,19 @@ class SheetSelectRequest(BaseModel):
 
 class ValidateRowsRequest(BaseModel):
     """Request kiểm tra dữ liệu rows trước khi tạo báo cáo."""
+
     rows: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class ValidateIncidentRequest(BaseModel):
     """Request kiểm tra metadata trước khi tạo báo cáo Incident Response."""
+
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class ValidationIssue(BaseModel):
     """Một vấn đề phát hiện được trong quá trình validate."""
+
     row: int
     field: str
     level: str  # 'error' hoặc 'warning'
@@ -153,6 +157,7 @@ class DataQualitySummary(BaseModel):
 
 class ValidateRowsResponse(BaseModel):
     """Kết quả validate rows."""
+
     valid: bool
     issues: list[ValidationIssue] = Field(default_factory=list)
     summary: DataQualitySummary = Field(default_factory=DataQualitySummary)
@@ -161,6 +166,7 @@ class ValidateRowsResponse(BaseModel):
 # ---------------------------------------------------------------------------
 # Detection rule models
 # ---------------------------------------------------------------------------
+
 
 class DetectionRuleRequest(BaseModel):
     name: str
@@ -191,8 +197,10 @@ class ImportRulesRequest(BaseModel):
 # Template management models
 # ---------------------------------------------------------------------------
 
+
 class UploadTemplateRequest(BaseModel):
     """Upload a new DOCX template."""
+
     filename: str
     content_base64: str = Field(alias="contentBase64", default="")
     name: str = ""
@@ -205,6 +213,7 @@ class UploadTemplateRequest(BaseModel):
 
 class TemplateInfo(BaseModel):
     """Template metadata returned by API."""
+
     id: str = ""
     name: str = ""
     filename: str = ""
@@ -226,6 +235,7 @@ class TemplateInfo(BaseModel):
 
 class UpdateTemplateRequest(BaseModel):
     """Reclassify a template or make it the default for its report type."""
+
     name: str | None = None
     description: str | None = None
     report_type: ReportType | None = Field(alias="reportType", default=None)
@@ -243,6 +253,7 @@ class TemplateVersionRequest(BaseModel):
 
 class TemplateAnalysis(BaseModel):
     """Detailed template analysis result."""
+
     template_mode: str = Field(alias="templateMode", default="cover")
     has_tokens: bool = Field(alias="hasTokens", default=False)
     tokens_found: list[str] = Field(alias="tokensFound", default_factory=list)
@@ -261,8 +272,10 @@ class TemplateAnalysis(BaseModel):
 # Preset models
 # ---------------------------------------------------------------------------
 
+
 class SavePresetRequest(BaseModel):
     """Create or update a report preset."""
+
     id: str | None = None
     name: str
     description: str = ""
@@ -275,6 +288,7 @@ class SavePresetRequest(BaseModel):
 
 class PresetInfo(BaseModel):
     """Preset metadata."""
+
     id: str = ""
     name: str = ""
     description: str = ""
@@ -291,8 +305,10 @@ class PresetInfo(BaseModel):
 # Preview / History models
 # ---------------------------------------------------------------------------
 
+
 class PreviewDocxRequest(BaseModel):
     """Generate a DOCX for preview (no save)."""
+
     rows: list[dict[str, Any]] = Field(default_factory=list)
     title: str = DEFAULT_REPORT_TITLE
     organization: str = ""
@@ -309,6 +325,7 @@ class PreviewDocxRequest(BaseModel):
 
 class SaveAsTemplateRequest(BaseModel):
     """Save a generated report as a reusable template."""
+
     name: str
     description: str = ""
     report_type: ReportType = Field(alias="reportType", default=ReportType.FULL)
@@ -318,6 +335,7 @@ class SaveAsTemplateRequest(BaseModel):
 
 class ReportHistoryItem(BaseModel):
     """Report history entry."""
+
     id: str = ""
     title: str = ""
     organization: str = ""

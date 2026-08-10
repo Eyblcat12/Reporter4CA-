@@ -97,7 +97,9 @@ export default function RuntimeLifecycle() {
   return (
     <div className="runtime-stopped" role="alert" aria-live="assertive">
       <div className="runtime-stopped__card">
-        <span className="runtime-stopped__icon"><Power size={26} /></span>
+        <span className="runtime-stopped__icon">
+          <Power size={26} />
+        </span>
         <h1>{isVietnamese ? 'Reporter Pro đã dừng' : 'Reporter Pro has stopped'}</h1>
         <p>
           {isVietnamese

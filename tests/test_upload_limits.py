@@ -8,7 +8,6 @@ from unittest.mock import patch
 
 from fastapi import HTTPException
 
-
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "apps" / "backend"
 sys.path.insert(0, str(BACKEND))

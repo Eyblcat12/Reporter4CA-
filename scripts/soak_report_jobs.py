@@ -11,7 +11,6 @@ import ctypes
 import gc
 import json
 import os
-import statistics
 import sys
 import threading
 import time
@@ -26,21 +25,30 @@ BACKEND = ROOT / "apps" / "backend"
 sys.path.insert(0, str(BACKEND))
 
 from core.report_generator import ReportType, generate_report  # noqa: E402
-from core.report_jobs import ReportJob, ReportJobManager, TERMINAL_STATES  # noqa: E402
-
+from core.report_jobs import TERMINAL_STATES, ReportJob, ReportJobManager  # noqa: E402
 
 PROFILES = {
-    "smoke": {"duration_minutes": 1.0, "rows": 50, "max_jobs": 4, "job_timeout": 180.0, "memory_growth_mb": 128.0},
-    "long": {"duration_minutes": 120.0, "rows": 1000, "max_jobs": 0, "job_timeout": 900.0, "memory_growth_mb": 384.0},
+    "smoke": {
+        "duration_minutes": 1.0,
+        "rows": 50,
+        "max_jobs": 4,
+        "job_timeout": 180.0,
+        "memory_growth_mb": 128.0,
+    },
+    "long": {
+        "duration_minutes": 120.0,
+        "rows": 1000,
+        "max_jobs": 0,
+        "job_timeout": 900.0,
+        "memory_growth_mb": 384.0,
+    },
 }
 
 
 def atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
     """Replace a JSON state file atomically so a killed process cannot truncate it."""
     temporary = path.with_suffix(path.suffix + ".tmp")
-    temporary.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
-    )
+    temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     temporary.replace(path)
 
 
@@ -63,21 +71,30 @@ def process_is_alive(pid: int) -> bool:
 def current_rss_mb() -> float:
     """Return resident/working-set memory without adding a runtime dependency."""
     if os.name == "nt":
+
         class ProcessMemoryCounters(ctypes.Structure):
             _fields_ = [
-                ("cb", ctypes.c_ulong), ("PageFaultCount", ctypes.c_ulong),
-                ("PeakWorkingSetSize", ctypes.c_size_t), ("WorkingSetSize", ctypes.c_size_t),
-                ("QuotaPeakPagedPoolUsage", ctypes.c_size_t), ("QuotaPagedPoolUsage", ctypes.c_size_t),
-                ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t), ("QuotaNonPagedPoolUsage", ctypes.c_size_t),
-                ("PagefileUsage", ctypes.c_size_t), ("PeakPagefileUsage", ctypes.c_size_t),
+                ("cb", ctypes.c_ulong),
+                ("PageFaultCount", ctypes.c_ulong),
+                ("PeakWorkingSetSize", ctypes.c_size_t),
+                ("WorkingSetSize", ctypes.c_size_t),
+                ("QuotaPeakPagedPoolUsage", ctypes.c_size_t),
+                ("QuotaPagedPoolUsage", ctypes.c_size_t),
+                ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t),
+                ("QuotaNonPagedPoolUsage", ctypes.c_size_t),
+                ("PagefileUsage", ctypes.c_size_t),
+                ("PeakPagefileUsage", ctypes.c_size_t),
             ]
+
         counters = ProcessMemoryCounters()
         counters.cb = ctypes.sizeof(counters)
         get_current_process = ctypes.windll.kernel32.GetCurrentProcess
         get_current_process.restype = ctypes.c_void_p
         get_memory_info = ctypes.windll.psapi.GetProcessMemoryInfo
         get_memory_info.argtypes = [
-            ctypes.c_void_p, ctypes.POINTER(ProcessMemoryCounters), ctypes.c_ulong,
+            ctypes.c_void_p,
+            ctypes.POINTER(ProcessMemoryCounters),
+            ctypes.c_ulong,
         ]
         get_memory_info.restype = ctypes.c_int
         process = get_current_process()
@@ -89,6 +106,8 @@ def current_rss_mb() -> float:
         resident_pages = int(statm.read_text(encoding="ascii").split()[1])
         return resident_pages * os.sysconf("SC_PAGE_SIZE") / 1024 / 1024
     return 0.0
+
+
 def reconcile_stale_statuses(directory: Path) -> list[Path]:
     """Mark orphaned running statuses as interrupted on the next harness launch."""
     reconciled: list[Path] = []
@@ -97,11 +116,13 @@ def reconcile_stale_statuses(directory: Path) -> list[Path]:
             state = json.loads(path.read_text(encoding="utf-8"))
             if state.get("status") != "running" or process_is_alive(int(state.get("pid", 0))):
                 continue
-            state.update({
-                "status": "interrupted",
-                "finishedAt": datetime.now(timezone.utc).isoformat(),
-                "reason": "Process exited before writing a terminal result",
-            })
+            state.update(
+                {
+                    "status": "interrupted",
+                    "finishedAt": datetime.now(timezone.utc).isoformat(),
+                    "reason": "Process exited before writing a terminal result",
+                }
+            )
             atomic_write_json(path, state)
             reconciled.append(path)
         except (OSError, ValueError, TypeError, json.JSONDecodeError):
@@ -146,15 +167,19 @@ def build_rows(count: int, iteration: int) -> dict[str, Any]:
     for index in range(count):
         target = servers if index % 3 == 0 else clients
         is_proxy = index == count - 1 and iteration % 2 == 0
-        target.append({
-            "type": "server" if target is servers else "client",
-            "hostname": f"SOAK-{iteration:04d}-{index:06d}",
-            "ip": f"10.{iteration % 250}.{(index // 250) % 250}.{index % 250 + 1}",
-            "os": "Windows Server 2022" if target is servers else "Windows 11",
-            "result": "Needs review" if is_proxy else "No finding",
-            "notes": "Proxifier observed in software inventory" if is_proxy else "Validated by soak fixture",
-            "software": "Proxifier 4" if is_proxy else "",
-        })
+        target.append(
+            {
+                "type": "server" if target is servers else "client",
+                "hostname": f"SOAK-{iteration:04d}-{index:06d}",
+                "ip": f"10.{iteration % 250}.{(index // 250) % 250}.{index % 250 + 1}",
+                "os": "Windows Server 2022" if target is servers else "Windows 11",
+                "result": "Needs review" if is_proxy else "No finding",
+                "notes": "Proxifier observed in software inventory"
+                if is_proxy
+                else "Validated by soak fixture",
+                "software": "Proxifier 4" if is_proxy else "",
+            }
+        )
     return {"servers": servers, "clients": clients, "metadata": {"soakIteration": iteration}}
 
 
@@ -183,8 +208,10 @@ def run_soak(config: dict[str, Any], checkpoint: Any | None = None) -> dict[str,
         if job.request.get("plannedFailure"):
             raise RuntimeError("planned soak failure")
         document = generate_report(
-            job.request["payload"], title=f"Soak report {job.request['iteration']}",
-            organization="Reporter Soak", assessment_date="2026-07-20",
+            job.request["payload"],
+            title=f"Soak report {job.request['iteration']}",
+            organization="Reporter Soak",
+            assessment_date="2026-07-20",
             report_type=ReportType(job.request["reportType"]),
         )
         manager.check_cancelled(job)
@@ -231,7 +258,9 @@ def run_soak(config: dict[str, Any], checkpoint: Any | None = None) -> dict[str,
                 time.sleep(0.05)
             durations.append(time.perf_counter() - job_started)
             statuses[job.status] = statuses.get(job.status, 0) + 1
-            expected = "cancelled" if planned_cancel else "failed" if planned_failure else "completed"
+            expected = (
+                "cancelled" if planned_cancel else "failed" if planned_failure else "completed"
+            )
             if job.status != expected:
                 unexpected_failures += 1
             iteration_gates.pop(iteration, None)
@@ -241,18 +270,22 @@ def run_soak(config: dict[str, Any], checkpoint: Any | None = None) -> dict[str,
             current_rss = current_rss_mb()
             rss_samples.append(current_rss)
             if checkpoint:
-                checkpoint({
-                    "iteration": iteration, "submitted": submitted,
-                    "completed": statuses.get("completed", 0),
-                    "failed": statuses.get("failed", 0),
-                    "cancelled": statuses.get("cancelled", 0),
-                    "deduplicated": deduplicated, "timeouts": timeouts,
-                    "unexpectedFailures": unexpected_failures,
-                    "dedupMismatches": dedup_mismatches,
-                    "heapCurrentMb": round(current_heap_mb, 3),
-                    "rssCurrentMb": round(current_rss, 3),
-                    "elapsedSeconds": round(time.perf_counter() - started, 3),
-                })
+                checkpoint(
+                    {
+                        "iteration": iteration,
+                        "submitted": submitted,
+                        "completed": statuses.get("completed", 0),
+                        "failed": statuses.get("failed", 0),
+                        "cancelled": statuses.get("cancelled", 0),
+                        "deduplicated": deduplicated,
+                        "timeouts": timeouts,
+                        "unexpectedFailures": unexpected_failures,
+                        "dedupMismatches": dedup_mismatches,
+                        "heapCurrentMb": round(current_heap_mb, 3),
+                        "rssCurrentMb": round(current_rss, 3),
+                        "elapsedSeconds": round(time.perf_counter() - started, 3),
+                    }
+                )
     finally:
         manager.shutdown(wait=True)
 
@@ -260,11 +293,16 @@ def run_soak(config: dict[str, Any], checkpoint: Any | None = None) -> dict[str,
     tracemalloc.stop()
     elapsed = time.perf_counter() - started
     metrics = {
-        "profile": config["profile"], "elapsedSeconds": round(elapsed, 3),
-        "configuredRows": int(config["rows"]), "submitted": submitted,
-        "completed": statuses.get("completed", 0), "failed": statuses.get("failed", 0),
-        "cancelled": statuses.get("cancelled", 0), "deduplicated": deduplicated,
-        "dedupMismatches": dedup_mismatches, "timeouts": timeouts,
+        "profile": config["profile"],
+        "elapsedSeconds": round(elapsed, 3),
+        "configuredRows": int(config["rows"]),
+        "submitted": submitted,
+        "completed": statuses.get("completed", 0),
+        "failed": statuses.get("failed", 0),
+        "cancelled": statuses.get("cancelled", 0),
+        "deduplicated": deduplicated,
+        "dedupMismatches": dedup_mismatches,
+        "timeouts": timeouts,
         "unexpectedFailures": unexpected_failures,
         "durationSeconds": {
             "min": round(min(durations, default=0), 3),
@@ -314,45 +352,69 @@ def main() -> int:
     checkpoint_path = output.with_suffix(".checkpoint.json")
     started_at = datetime.now(timezone.utc).isoformat()
     base_status = {
-        "status": "running", "pid": os.getpid(), "startedAt": started_at,
-        "config": config, "output": str(output), "checkpoint": str(checkpoint_path),
+        "status": "running",
+        "pid": os.getpid(),
+        "startedAt": started_at,
+        "config": config,
+        "output": str(output),
+        "checkpoint": str(checkpoint_path),
     }
     atomic_write_json(status_path, base_status)
 
     def save_checkpoint(progress: dict[str, Any]) -> None:
         heartbeat = datetime.now(timezone.utc).isoformat()
-        atomic_write_json(checkpoint_path, {
-            "status": "running", "pid": os.getpid(), "startedAt": started_at,
-            "heartbeatAt": heartbeat, "config": config, "progress": progress,
-        })
-        atomic_write_json(status_path, {**base_status, "heartbeatAt": heartbeat, "progress": progress})
+        atomic_write_json(
+            checkpoint_path,
+            {
+                "status": "running",
+                "pid": os.getpid(),
+                "startedAt": started_at,
+                "heartbeatAt": heartbeat,
+                "config": config,
+                "progress": progress,
+            },
+        )
+        atomic_write_json(
+            status_path, {**base_status, "heartbeatAt": heartbeat, "progress": progress}
+        )
 
     try:
         metrics = run_soak(config, checkpoint=save_checkpoint)
     except KeyboardInterrupt:
         terminal = {
-            **base_status, "status": "interrupted",
+            **base_status,
+            "status": "interrupted",
             "finishedAt": datetime.now(timezone.utc).isoformat(),
-            "reason": "Interrupted by operator", "lastCheckpoint": str(checkpoint_path),
+            "reason": "Interrupted by operator",
+            "lastCheckpoint": str(checkpoint_path),
         }
         atomic_write_json(status_path, terminal)
         atomic_write_json(checkpoint_path, terminal)
         return 130
     except Exception as exc:
         terminal = {
-            **base_status, "status": "failed",
+            **base_status,
+            "status": "failed",
             "finishedAt": datetime.now(timezone.utc).isoformat(),
-            "reason": type(exc).__name__, "lastCheckpoint": str(checkpoint_path),
+            "reason": type(exc).__name__,
+            "lastCheckpoint": str(checkpoint_path),
         }
         atomic_write_json(status_path, terminal)
         atomic_write_json(checkpoint_path, terminal)
         raise
-    report = {"createdAt": datetime.now(timezone.utc).isoformat(), "config": config, "metrics": metrics}
+    report = {
+        "createdAt": datetime.now(timezone.utc).isoformat(),
+        "config": config,
+        "metrics": metrics,
+    }
     atomic_write_json(output, report)
     terminal = {
-        "status": "completed" if metrics["passed"] else "failed", "pid": os.getpid(),
-        "finishedAt": datetime.now(timezone.utc).isoformat(), "output": str(output),
-        "passed": metrics["passed"], "failures": metrics["failures"],
+        "status": "completed" if metrics["passed"] else "failed",
+        "pid": os.getpid(),
+        "finishedAt": datetime.now(timezone.utc).isoformat(),
+        "output": str(output),
+        "passed": metrics["passed"],
+        "failures": metrics["failures"],
         "lastCheckpoint": str(checkpoint_path),
     }
     atomic_write_json(status_path, terminal)

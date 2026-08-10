@@ -2,8 +2,22 @@ import path from 'node:path';
 import { expect, test } from '@playwright/test';
 
 const sampleRows = [
-  { type: 'server', hostname: 'srv-e2e-01', ip: '10.0.0.10', os: 'Linux', result: 'Clean', notes: '' },
-  { type: 'client', hostname: 'ws-e2e-01', ip: '10.0.0.20', os: 'Windows', result: 'Reviewed', notes: 'Acme Relay observed' },
+  {
+    type: 'server',
+    hostname: 'srv-e2e-01',
+    ip: '10.0.0.10',
+    os: 'Linux',
+    result: 'Clean',
+    notes: '',
+  },
+  {
+    type: 'client',
+    hostname: 'ws-e2e-01',
+    ip: '10.0.0.20',
+    os: 'Windows',
+    result: 'Reviewed',
+    notes: 'Acme Relay observed',
+  },
 ];
 
 test('import sample → configure → preview → generate', async ({ page }) => {
@@ -18,37 +32,69 @@ test('import sample → configure → preview → generate', async ({ page }) =>
     const url = new URL(route.request().url());
     const pathname = url.pathname;
     if (pathname === '/api/sample') {
-      return route.fulfill({ json: {
-        rows: sampleRows, payload: {}, counts: { servers: 1, clients: 1, total: 2 }, previewText: 'sample',
-      } });
+      return route.fulfill({
+        json: {
+          rows: sampleRows,
+          payload: {},
+          counts: { servers: 1, clients: 1, total: 2 },
+          previewText: 'sample',
+        },
+      });
     }
     if (pathname === '/api/validate-rows') {
-      return route.fulfill({ json: {
-        valid: true, issues: [], summary: {
-          totalRows: 2, validRows: 2, errorRows: 0, warningRows: 0,
-          errors: 0, warnings: 0, servers: 1, clients: 1,
-          duplicateHostnames: 0, invalidIps: 0, missingOs: 0, missingResult: 0,
+      return route.fulfill({
+        json: {
+          valid: true,
+          issues: [],
+          summary: {
+            totalRows: 2,
+            validRows: 2,
+            errorRows: 0,
+            warningRows: 0,
+            errors: 0,
+            warnings: 0,
+            servers: 1,
+            clients: 1,
+            duplicateHostnames: 0,
+            invalidIps: 0,
+            missingOs: 0,
+            missingResult: 0,
+          },
         },
-      } });
+      });
     }
     if (pathname === '/api/preview-docx') {
       previewRequested = true;
-      return route.fulfill({ path: docxPath, contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+      return route.fulfill({
+        path: docxPath,
+        contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      });
     }
     if (pathname === '/api/rules/evaluate' && route.request().method() === 'POST') {
       const request = route.request().postDataJSON();
-      ruleEvaluated = request.rule.name === 'Acme Relay review'
-        && request.rule.conditions.containsAny.includes('Acme Relay');
-      return route.fulfill({ json: {
-        matchedRows: 1, changedRows: 1, totalRows: 2,
-        impact: { servers: 0, clients: 1 },
-        conflicts: [], truncated: false,
-        matches: [{
-          row: 1, hostname: 'ws-e2e-01', type: 'client',
-          assessmentBefore: 'Không phát hiện', assessmentAfter: 'Cần xác minh',
-          evidence: [{ field: 'notes', value: 'Acme Relay observed', matched: 'acme relay' }],
-        }],
-      } });
+      ruleEvaluated =
+        request.rule.name === 'Acme Relay review' &&
+        request.rule.conditions.containsAny.includes('Acme Relay');
+      return route.fulfill({
+        json: {
+          matchedRows: 1,
+          changedRows: 1,
+          totalRows: 2,
+          impact: { servers: 0, clients: 1 },
+          conflicts: [],
+          truncated: false,
+          matches: [
+            {
+              row: 1,
+              hostname: 'ws-e2e-01',
+              type: 'client',
+              assessmentBefore: 'Không phát hiện',
+              assessmentAfter: 'Cần xác minh',
+              evidence: [{ field: 'notes', value: 'Acme Relay observed', matched: 'acme relay' }],
+            },
+          ],
+        },
+      });
     }
     if (pathname === '/api/rules' && route.request().method() === 'POST') {
       const request = route.request().postDataJSON();
@@ -62,16 +108,28 @@ test('import sample → configure → preview → generate', async ({ page }) =>
     }
     if (pathname === '/api/report-jobs' && route.request().method() === 'POST') {
       generateRequested = true;
-      return route.fulfill({ status: 202, json: {
-        job: { id: 'e2e-job', status: 'queued', phase: 'queued', progress: 0 },
-        deduplicated: false,
-      } });
+      return route.fulfill({
+        status: 202,
+        json: {
+          job: { id: 'e2e-job', status: 'queued', phase: 'queued', progress: 0 },
+          deduplicated: false,
+        },
+      });
     }
     if (pathname === '/api/report-jobs/e2e-job') {
-      return route.fulfill({ json: { job: {
-        id: 'e2e-job', status: 'completed', phase: 'completed', progress: 100,
-        filename: 'e2e-report.docx', reportId: 'e2e-1', message: 'Completed',
-      } } });
+      return route.fulfill({
+        json: {
+          job: {
+            id: 'e2e-job',
+            status: 'completed',
+            phase: 'completed',
+            progress: 100,
+            filename: 'e2e-report.docx',
+            reportId: 'e2e-1',
+            message: 'Completed',
+          },
+        },
+      });
     }
     if (pathname === '/api/report-jobs/e2e-job/download') {
       return route.fulfill({
@@ -84,7 +142,14 @@ test('import sample → configure → preview → generate', async ({ page }) =>
     if (pathname === '/api/presets') return route.fulfill({ json: { presets: [] } });
     if (pathname === '/api/reports/history') return route.fulfill({ json: { reports: [] } });
     if (pathname === '/api/dashboard/summary') {
-      return route.fulfill({ json: { days: Number(url.searchParams.get('days') || 90), metrics: {}, series: [], recent: [] } });
+      return route.fulfill({
+        json: {
+          days: Number(url.searchParams.get('days') || 90),
+          metrics: {},
+          series: [],
+          recent: [],
+        },
+      });
     }
     return route.fulfill({ status: 404, json: { detail: 'Not mocked' } });
   });
@@ -115,10 +180,13 @@ test('import sample → configure → preview → generate', async ({ page }) =>
   await expect(page.locator('.docx-modal')).toBeVisible();
   expect(previewRequested).toBe(true);
 
-  const downloadResponse = page.waitForResponse((response) => (
-    response.url().endsWith('/api/report-jobs/e2e-job/download') && response.ok()
-  ));
-  await page.locator('.docx-modal__footer').getByRole('button', { name: /Generate từ Preview này/i }).click();
+  const downloadResponse = page.waitForResponse(
+    (response) => response.url().endsWith('/api/report-jobs/e2e-job/download') && response.ok(),
+  );
+  await page
+    .locator('.docx-modal__footer')
+    .getByRole('button', { name: /Generate từ Preview này/i })
+    .click();
   const response = await downloadResponse;
   expect(response.headers()['content-disposition']).toContain('e2e-report.docx');
   expect(generateRequested).toBe(true);

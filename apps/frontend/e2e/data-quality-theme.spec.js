@@ -111,10 +111,12 @@ test('Data quality remains readable after switching from dark to light', async (
 
   await page.getByRole('button', { name: 'Toggle theme' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
-  await expect.poll(async () => {
-    const colors = await readQualityColors(page);
-    return colors.panel[0] + colors.panel[1] + colors.panel[2];
-  }).toBeGreaterThan(700);
+  await expect
+    .poll(async () => {
+      const colors = await readQualityColors(page);
+      return colors.panel[0] + colors.panel[1] + colors.panel[2];
+    })
+    .toBeGreaterThan(700);
   const light = await readQualityColors(page);
 
   expect(light.card[0] + light.card[1] + light.card[2]).toBeGreaterThan(700);

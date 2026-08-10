@@ -32,7 +32,9 @@ def _category(path: str) -> str:
     }.get(root, "Other")
 
 
-def _difference(change: str, path: str, expected: Any = _MISSING, actual: Any = _MISSING) -> dict[str, Any]:
+def _difference(
+    change: str, path: str, expected: Any = _MISSING, actual: Any = _MISSING
+) -> dict[str, Any]:
     result: dict[str, Any] = {"change": change, "category": _category(path), "path": path}
     if expected is not _MISSING:
         result["expected"] = expected
@@ -120,17 +122,21 @@ def render_diff_html(report: dict[str, Any]) -> str:
             "<th>Golden</th><th>Actual</th></tr></thead><tbody>"
             + "".join(rows)
             + "</tbody></table>"
-            if rows else "<p class='passed'>No structural differences.</p>"
+            if rows
+            else "<p class='passed'>No structural differences.</p>"
         )
         sections.append(
             f"<section><h2>{html.escape(item['reportType'])} "
             f"<span class='count'>{item['summary']['total']} differences</span></h2>{table}</section>"
         )
 
-    summary_cards = "".join(
-        f"<div class='card'><strong>{count}</strong><span>{html.escape(category)}</span></div>"
-        for category, count in report["summary"]["byCategory"].items()
-    ) or "<div class='card'><strong>0</strong><span>Differences</span></div>"
+    summary_cards = (
+        "".join(
+            f"<div class='card'><strong>{count}</strong><span>{html.escape(category)}</span></div>"
+            for category, count in report["summary"]["byCategory"].items()
+        )
+        or "<div class='card'><strong>0</strong><span>Differences</span></div>"
+    )
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Golden DOCX structural diff</title><style>
@@ -148,8 +154,8 @@ th {{ color:#9ba3b8; }} code {{ color:#b8a7ff; }} pre {{ max-width:420px; margin
 .changed {{ background:#4a3513; color:#ffd37a; }} .added {{ background:#123b2f; color:#74e0b7; }} .removed {{ background:#491e28; color:#ff9cac; }}
 .passed {{ color:#74e0b7; }}
 </style></head><body><main><h1>Golden DOCX structural diff</h1>
-<p class="meta">Status: {html.escape(report['status'].upper())} · Generated {html.escape(report['createdAt'])}</p>
-<div class="summary">{summary_cards}</div>{''.join(sections)}</main></body></html>"""
+<p class="meta">Status: {html.escape(report["status"].upper())} · Generated {html.escape(report["createdAt"])}</p>
+<div class="summary">{summary_cards}</div>{"".join(sections)}</main></body></html>"""
 
 
 def write_diff_reports(results: list[dict[str, Any]], output_dir: Path) -> tuple[Path, Path]:

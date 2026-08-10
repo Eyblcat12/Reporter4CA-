@@ -10,7 +10,6 @@ from docx import Document
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 
-
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "apps" / "backend"
 TEMPLATE_ROOT = BACKEND / "templates"
@@ -18,8 +17,8 @@ sys.path.insert(0, str(BACKEND))
 
 from core import report_generator as generator  # noqa: E402
 from core.config import compact_prototype_enabled  # noqa: E402
-from tests.test_docx_golden import document_snapshot  # noqa: E402
 
+from tests.test_docx_golden import document_snapshot  # noqa: E402
 
 INVENTORY_HEADERS = [
     "STT",
@@ -33,16 +32,10 @@ OUTPUT_ROWS = [
 ]
 REPORT_TEMPLATE_PATHS = {
     "full": TEMPLATE_ROOT / "report_template.docx",
-    "server_only": (
-        TEMPLATE_ROOT / "server_only" / "report_server_only_default.docx"
-    ),
-    "client_only": (
-        TEMPLATE_ROOT / "client_only" / "report_client_only_default.docx"
-    ),
+    "server_only": (TEMPLATE_ROOT / "server_only" / "report_server_only_default.docx"),
+    "client_only": (TEMPLATE_ROOT / "client_only" / "report_client_only_default.docx"),
     "summary": TEMPLATE_ROOT / "summary" / "report_summary_default.docx",
-    "technical": (
-        TEMPLATE_ROOT / "technical" / "report_technical_default.docx"
-    ),
+    "technical": (TEMPLATE_ROOT / "technical" / "report_technical_default.docx"),
     "incident_response": TEMPLATE_ROOT / "report_template.docx",
 }
 
@@ -104,28 +97,34 @@ def _capture(document: Document, *, enabled: bool) -> None:
 
 def _fixture_data() -> dict:
     return {
-        "servers": [{
-            "hostname": "SRV-COMPACT-01",
-            "ip": "10.10.0.10",
-            "os": "Windows Server 2022",
-            "result": "Malware detected",
-            "notes": "SHA256 evidence linked to T1055",
-        }],
-        "clients": [{
-            "hostname": "WS-COMPACT-01",
-            "ip": "10.10.0.20",
-            "os": "Windows 11",
-            "result": "No finding",
-            "notes": "Validated by endpoint telemetry",
-        }],
+        "servers": [
+            {
+                "hostname": "SRV-COMPACT-01",
+                "ip": "10.10.0.10",
+                "os": "Windows Server 2022",
+                "result": "Malware detected",
+                "notes": "SHA256 evidence linked to T1055",
+            }
+        ],
+        "clients": [
+            {
+                "hostname": "WS-COMPACT-01",
+                "ip": "10.10.0.20",
+                "os": "Windows 11",
+                "result": "No finding",
+                "notes": "Validated by endpoint telemetry",
+            }
+        ],
         "metadata": {
             "incidentName": "Compact prototype parity",
             "severity": "high",
-            "timeline": [{
-                "time": "2026-07-20T10:00:00Z",
-                "event": "Detection",
-                "evidence": "EDR-001",
-            }],
+            "timeline": [
+                {
+                    "time": "2026-07-20T10:00:00Z",
+                    "event": "Detection",
+                    "evidence": "EDR-001",
+                }
+            ],
         },
     }
 
@@ -179,9 +178,7 @@ class CompactPrototypeIntegrationTests(unittest.TestCase):
             document._reporter_table_blueprints,
         )
         self.assertEqual(
-            document._reporter_table_blueprints[
-                "inventory_server"
-            ].data_row_variant_count,
+            document._reporter_table_blueprints["inventory_server"].data_row_variant_count,
             1,
         )
 
@@ -224,15 +221,18 @@ class CompactPrototypeIntegrationTests(unittest.TestCase):
         for name, document in cases.items():
             with self.subTest(case=name):
                 _capture(document, enabled=True)
-                with patch.object(
-                    generator,
-                    "_create_table_from_blueprint",
-                    wraps=generator._create_table_from_blueprint,
-                ) as fast_builder, patch.object(
-                    generator,
-                    "_create_table_from_prototype",
-                    wraps=generator._create_table_from_prototype,
-                ) as legacy_builder:
+                with (
+                    patch.object(
+                        generator,
+                        "_create_table_from_blueprint",
+                        wraps=generator._create_table_from_blueprint,
+                    ) as fast_builder,
+                    patch.object(
+                        generator,
+                        "_create_table_from_prototype",
+                        wraps=generator._create_table_from_prototype,
+                    ) as legacy_builder,
+                ):
                     generator._create_table(
                         document,
                         INVENTORY_HEADERS,
@@ -288,15 +288,18 @@ class CompactPrototypeIntegrationTests(unittest.TestCase):
             with self.subTest(columns=len(headers), row_width=len(rows[0])):
                 document, _ = _prototype_document()
                 _capture(document, enabled=True)
-                with patch.object(
-                    generator,
-                    "_create_table_from_blueprint",
-                    wraps=generator._create_table_from_blueprint,
-                ) as fast_builder, patch.object(
-                    generator,
-                    "_create_table_from_prototype",
-                    wraps=generator._create_table_from_prototype,
-                ) as legacy_builder:
+                with (
+                    patch.object(
+                        generator,
+                        "_create_table_from_blueprint",
+                        wraps=generator._create_table_from_blueprint,
+                    ) as fast_builder,
+                    patch.object(
+                        generator,
+                        "_create_table_from_prototype",
+                        wraps=generator._create_table_from_prototype,
+                    ) as legacy_builder,
+                ):
                     generator._create_table(
                         document,
                         headers,
@@ -324,15 +327,18 @@ class CompactPrototypeIntegrationTests(unittest.TestCase):
             return real_set_layout(table, widths)
 
         with self.assertLogs("core.report_generator", level="WARNING") as logs:
-            with patch.object(
-                generator,
-                "_set_table_layout",
-                side_effect=fail_first_layout,
-            ), patch.object(
-                generator,
-                "_create_table_from_prototype",
-                wraps=generator._create_table_from_prototype,
-            ) as legacy_builder:
+            with (
+                patch.object(
+                    generator,
+                    "_set_table_layout",
+                    side_effect=fail_first_layout,
+                ),
+                patch.object(
+                    generator,
+                    "_create_table_from_prototype",
+                    wraps=generator._create_table_from_prototype,
+                ) as legacy_builder,
+            ):
                 generated = generator._create_table(
                     document,
                     INVENTORY_HEADERS,
@@ -383,10 +389,7 @@ class CompactPrototypeIntegrationTests(unittest.TestCase):
             self.assertIsNotNone(p_pr)
             self.assertIsNone(p_pr.find(qn("w:numPr")))
             p_style = p_pr.find(qn("w:pStyle"))
-            self.assertTrue(
-                p_style is None
-                or p_style.get(qn("w:val")) != "ListParagraph"
-            )
+            self.assertTrue(p_style is None or p_style.get(qn("w:val")) != "ListParagraph")
 
     def test_compact_and_legacy_table_snapshots_are_identical(self) -> None:
         def build(enabled: bool) -> dict:
@@ -408,15 +411,18 @@ class CompactPrototypeIntegrationTests(unittest.TestCase):
             with self.subTest(compact=enabled):
                 document, _ = _prototype_document()
                 _capture(document, enabled=enabled)
-                with patch.object(
-                    generator,
-                    "_ensure_table_borders",
-                    wraps=generator._ensure_table_borders,
-                ) as border_formatter, patch.object(
-                    generator,
-                    "_format_cell",
-                    wraps=generator._format_cell,
-                ) as cell_formatter:
+                with (
+                    patch.object(
+                        generator,
+                        "_ensure_table_borders",
+                        wraps=generator._ensure_table_borders,
+                    ) as border_formatter,
+                    patch.object(
+                        generator,
+                        "_format_cell",
+                        wraps=generator._format_cell,
+                    ) as cell_formatter,
+                ):
                     generated = generator._create_table(
                         document,
                         INVENTORY_HEADERS,
@@ -454,13 +460,16 @@ class CompactPrototypeIntegrationTests(unittest.TestCase):
                         template_path=template_path,
                         report_type=report_type,
                     )
-                with patch.dict(
-                    os.environ,
-                    {"AUTO_REPORT_COMPACT_PROTOTYPE": "1"},
-                ), patch.object(
-                    generator,
-                    "_create_table_from_blueprint",
-                    side_effect=count_fast_calls,
+                with (
+                    patch.dict(
+                        os.environ,
+                        {"AUTO_REPORT_COMPACT_PROTOTYPE": "1"},
+                    ),
+                    patch.object(
+                        generator,
+                        "_create_table_from_blueprint",
+                        side_effect=count_fast_calls,
+                    ),
                 ):
                     compact = generator.generate_report(
                         _fixture_data(),

@@ -8,9 +8,27 @@ import { useI18n } from '../../i18n';
 import './StatsBar.css';
 
 const STATS = [
-  { key: 'servers', icon: Server, labelKey: 'common.servers', color: '#60a5fa', gradient: 'linear-gradient(135deg, #3b82f6, #60a5fa)' },
-  { key: 'clients', icon: Monitor, labelKey: 'common.clients', color: '#34d399', gradient: 'linear-gradient(135deg, #059669, #34d399)' },
-  { key: 'total', icon: Layers, labelKey: 'common.total', color: '#a78bfa', gradient: 'linear-gradient(135deg, #7c5bf0, #a78bfa)' },
+  {
+    key: 'servers',
+    icon: Server,
+    labelKey: 'common.servers',
+    color: '#60a5fa',
+    gradient: 'linear-gradient(135deg, #3b82f6, #60a5fa)',
+  },
+  {
+    key: 'clients',
+    icon: Monitor,
+    labelKey: 'common.clients',
+    color: '#34d399',
+    gradient: 'linear-gradient(135deg, #059669, #34d399)',
+  },
+  {
+    key: 'total',
+    icon: Layers,
+    labelKey: 'common.total',
+    color: '#a78bfa',
+    gradient: 'linear-gradient(135deg, #7c5bf0, #a78bfa)',
+  },
 ];
 
 /* SVG donut progress */
@@ -23,13 +41,17 @@ function DonutProgress({ value, max, color, size = 44 }) {
   return (
     <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} className="stats-card__donut">
       <circle
-        cx={size / 2} cy={size / 2} r={r}
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
         fill="none"
         stroke="var(--border-subtle)"
         strokeWidth="3"
       />
       <motion.circle
-        cx={size / 2} cy={size / 2} r={r}
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
         fill="none"
         stroke={color}
         strokeWidth="3"

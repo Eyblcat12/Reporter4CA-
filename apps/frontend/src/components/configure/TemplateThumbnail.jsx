@@ -56,8 +56,14 @@ export default function TemplateThumbnail({ template }) {
   }, [visible, template?.id, template?.fileHash]);
 
   return (
-    <div ref={hostRef} className={`tpl-thumb tpl-thumb--${status}`} aria-label={`Preview ${template?.name || ''}`}>
-      {(status === 'idle' || status === 'loading') && <Loader2 size={18} className="tpl-thumb__spinner" />}
+    <div
+      ref={hostRef}
+      className={`tpl-thumb tpl-thumb--${status}`}
+      aria-label={`Preview ${template?.name || ''}`}
+    >
+      {(status === 'idle' || status === 'loading') && (
+        <Loader2 size={18} className="tpl-thumb__spinner" />
+      )}
       {status === 'error' && <FileText size={22} />}
       <div ref={renderRef} className="tpl-thumb__render" />
     </div>

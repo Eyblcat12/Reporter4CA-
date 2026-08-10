@@ -6,7 +6,6 @@ import re
 import unicodedata
 from typing import Any
 
-
 SECTIONS = ("servers", "clients")
 DEFAULT_SECTION = "clients"
 
@@ -62,11 +61,11 @@ COLUMN_ALIASES = {
         "may_tinh",
         "may_chu",
         # Alias dạng ghép tiếng Việt
-        "ten_may_chu",      # Tên máy chủ
-        "ten_may_client",   # Tên máy client
-        "ten_may_tram",     # Tên máy trạm
-        "may_client",       # Máy client
-        "may_tram",         # Máy trạm
+        "ten_may_chu",  # Tên máy chủ
+        "ten_may_client",  # Tên máy client
+        "ten_may_tram",  # Tên máy trạm
+        "may_client",  # Máy client
+        "may_tram",  # Máy trạm
     },
     "ip": {
         "ip",
@@ -120,16 +119,14 @@ COLUMN_ALIASES = {
         "status",
         "trang_thai",
         "state",
-        "hien_trang",             # Hiện trạng
-        "hien_trang_danh_gia_va", # HIỆN TRẠNG ĐÁNH GIÁ VA
+        "hien_trang",  # Hiện trạng
+        "hien_trang_danh_gia_va",  # HIỆN TRẠNG ĐÁNH GIÁ VA
         "hien_trang_ra_quet_ca",  # HIỆN TRẠNG RÀ QUÉT CA
     },
 }
 
 CANONICAL_COLUMN_MAP = {
-    alias: canonical
-    for canonical, aliases in COLUMN_ALIASES.items()
-    for alias in aliases
+    alias: canonical for canonical, aliases in COLUMN_ALIASES.items() for alias in aliases
 }
 
 
@@ -160,7 +157,9 @@ def normalize_asset_type(value: Any, *, default_section: str = DEFAULT_SECTION) 
     return SECTION_ALIASES.get(normalized, default_section)
 
 
-def canonicalize_record(record: dict[str, Any], *, default_section: str = DEFAULT_SECTION) -> tuple[str, dict[str, Any]]:
+def canonicalize_record(
+    record: dict[str, Any], *, default_section: str = DEFAULT_SECTION
+) -> tuple[str, dict[str, Any]]:
     section = default_section
     canonical_record: dict[str, Any] = {}
 
@@ -188,7 +187,9 @@ def records_to_payload(
             continue
 
         section, canonical_record = canonicalize_record(record, default_section=default_section)
-        has_data = any(str(value).strip() for value in canonical_record.values() if value is not None)
+        has_data = any(
+            str(value).strip() for value in canonical_record.values() if value is not None
+        )
         if not has_data:
             continue
 

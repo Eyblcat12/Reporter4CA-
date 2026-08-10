@@ -9,7 +9,6 @@ from unittest.mock import patch
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
-
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "apps" / "backend"
 sys.path.insert(0, str(BACKEND))
@@ -52,13 +51,15 @@ class FastCellPathTests(unittest.TestCase):
         with patch.dict(os.environ, {}, clear=True):
             self.assertTrue(fast_cell_enabled())
         for value in ("1", "true", "YES", "on"):
-            with self.subTest(value=value), patch.dict(
-                os.environ, {"AUTO_REPORT_FAST_CELL": value}
+            with (
+                self.subTest(value=value),
+                patch.dict(os.environ, {"AUTO_REPORT_FAST_CELL": value}),
             ):
                 self.assertTrue(fast_cell_enabled())
         for value in ("0", "false", "no", "off", ""):
-            with self.subTest(value=value), patch.dict(
-                os.environ, {"AUTO_REPORT_FAST_CELL": value}
+            with (
+                self.subTest(value=value),
+                patch.dict(os.environ, {"AUTO_REPORT_FAST_CELL": value}),
             ):
                 self.assertFalse(fast_cell_enabled())
 

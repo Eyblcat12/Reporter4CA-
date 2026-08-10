@@ -16,7 +16,6 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Iterable
 
-
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT_DIR = ROOT / "tests" / "fixtures" / "performance"
 GENERATOR_VERSION = "1.0"
@@ -176,26 +175,28 @@ def build_fixture_rows(profile: str, *, count: int, seed: int) -> list[dict[str,
             if asset_type == "server"
             else ("Windows 11", "Windows 10", "Ubuntu Desktop 22.04", "macOS 15")
         )
-        rows.append({
-            "Type": asset_type,
-            "Hostname": f"{'SRV' if asset_type == 'server' else 'PC'}-{profile.upper().replace('_', '-')}-{index + 1:06d}",
-            "IP": f"10.{20 + seed % 200}.{(index // 254) % 254}.{index % 254 + 1}",
-            "OS": _stable_pick(os_values, seed=seed, index=index, namespace="os"),
-            **source,
-            "Zone": _stable_pick(
-                ("Datacenter", "Office", "Management", "DMZ"),
-                seed=seed,
-                index=index,
-                namespace="zone",
-            ),
-            "Owner": _stable_pick(
-                ("Blue Team", "Infrastructure", "Endpoint", "Application"),
-                seed=seed,
-                index=index,
-                namespace="owner",
-            ),
-            "_expected": expected,
-        })
+        rows.append(
+            {
+                "Type": asset_type,
+                "Hostname": f"{'SRV' if asset_type == 'server' else 'PC'}-{profile.upper().replace('_', '-')}-{index + 1:06d}",
+                "IP": f"10.{20 + seed % 200}.{(index // 254) % 254}.{index % 254 + 1}",
+                "OS": _stable_pick(os_values, seed=seed, index=index, namespace="os"),
+                **source,
+                "Zone": _stable_pick(
+                    ("Datacenter", "Office", "Management", "DMZ"),
+                    seed=seed,
+                    index=index,
+                    namespace="zone",
+                ),
+                "Owner": _stable_pick(
+                    ("Blue Team", "Infrastructure", "Endpoint", "Application"),
+                    seed=seed,
+                    index=index,
+                    namespace="owner",
+                ),
+                "_expected": expected,
+            }
+        )
     return rows
 
 
@@ -261,22 +262,23 @@ def build_fixture_set(
         filename = f"tracking_{profile}_{count}.csv"
         payload = fixture_csv_bytes(rows)
         files[filename] = payload
-        fixtures.append({
-            "id": f"{profile}-{count}",
-            "profile": profile,
-            "file": filename,
-            "seed": fixture_seed,
-            "assetCount": count,
-            "serverCount": sum(row["Type"] == "server" for row in rows),
-            "clientCount": sum(row["Type"] == "client" for row in rows),
-            "inputBytes": len(payload),
-            "sha256": sha256_bytes(payload),
-            "validReportTypes": list(REPORT_TYPES),
-            "expectedByReportType": {
-                report_type: expected_summary(rows, report_type)
-                for report_type in REPORT_TYPES
-            },
-        })
+        fixtures.append(
+            {
+                "id": f"{profile}-{count}",
+                "profile": profile,
+                "file": filename,
+                "seed": fixture_seed,
+                "assetCount": count,
+                "serverCount": sum(row["Type"] == "server" for row in rows),
+                "clientCount": sum(row["Type"] == "client" for row in rows),
+                "inputBytes": len(payload),
+                "sha256": sha256_bytes(payload),
+                "validReportTypes": list(REPORT_TYPES),
+                "expectedByReportType": {
+                    report_type: expected_summary(rows, report_type) for report_type in REPORT_TYPES
+                },
+            }
+        )
 
     manifest = {
         "schemaVersion": 1,
@@ -349,7 +351,9 @@ def verify_fixture_set(output_dir: Path) -> list[str]:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Generate deterministic Reporter Pro performance fixtures")
+    parser = argparse.ArgumentParser(
+        description="Generate deterministic Reporter Pro performance fixtures"
+    )
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--count", type=int, default=DEFAULT_COUNT)
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)

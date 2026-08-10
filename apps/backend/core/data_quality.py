@@ -19,13 +19,15 @@ def assess_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
     def add_issue(row: int, field: str, level: str, code: str, message: str) -> None:
-        issues.append({
-            "row": row,
-            "field": field,
-            "level": level,
-            "code": code,
-            "message": message,
-        })
+        issues.append(
+            {
+                "row": row,
+                "field": field,
+                "level": level,
+                "code": code,
+                "message": message,
+            }
+        )
         (error_rows if level == "error" else warning_rows).add(row)
 
     for index, item in enumerate(rows):

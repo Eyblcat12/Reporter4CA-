@@ -19,8 +19,8 @@ sys.path.insert(0, str(BACKEND))
 
 from api.routes import router  # noqa: E402
 from core.database import Database  # noqa: E402
-from core.report_jobs import ReportJobManager  # noqa: E402
 from core.preview_artifacts import PreviewArtifactRegistry  # noqa: E402
+from core.report_jobs import ReportJobManager  # noqa: E402
 
 
 class ApiIntegrationTests(unittest.TestCase):
@@ -59,9 +59,14 @@ class ApiIntegrationTests(unittest.TestCase):
         content = base64.b64encode(
             b"type,hostname,ip,os,result\nserver,srv-01,10.0.0.1,Linux,Clean\n"
         ).decode()
-        imported = self.client.post("/api/import-file", json={
-            "filename": "assets.csv", "contentBase64": content, "defaultType": "server",
-        })
+        imported = self.client.post(
+            "/api/import-file",
+            json={
+                "filename": "assets.csv",
+                "contentBase64": content,
+                "defaultType": "server",
+            },
+        )
         self.assertEqual(imported.status_code, 200)
         self.assertEqual(imported.json()["rows"][0]["hostname"], "srv-01")
 
@@ -110,37 +115,52 @@ class ApiIntegrationTests(unittest.TestCase):
         self.assertFalse(invalid.json()["valid"])
         self.assertEqual(invalid.json()["summary"]["errors"], 3)
 
-        blocked = self.client.post("/api/preview-docx", json={
-            "rows": [{"type": "server", "hostname": "srv-ir", "result": "Clean"}],
-            "reportType": "incident_response",
-            "metadata": {},
-        })
+        blocked = self.client.post(
+            "/api/preview-docx",
+            json={
+                "rows": [{"type": "server", "hostname": "srv-ir", "result": "Clean"}],
+                "reportType": "incident_response",
+                "metadata": {},
+            },
+        )
         self.assertEqual(blocked.status_code, 422)
         self.assertIn("incidentQuality", blocked.json()["detail"])
 
-        ready = self.client.post("/api/validate-incident", json={"metadata": {
-            "incidentId": "IR-001", "detectedAt": "2026-07-21T09:00",
-            "timeline": [{"time": "09:00", "event": "Alert", "evidence": "E-1"}],
-        }})
+        ready = self.client.post(
+            "/api/validate-incident",
+            json={
+                "metadata": {
+                    "incidentId": "IR-001",
+                    "detectedAt": "2026-07-21T09:00",
+                    "timeline": [{"time": "09:00", "event": "Alert", "evidence": "E-1"}],
+                }
+            },
+        )
         self.assertEqual(ready.status_code, 200)
         self.assertTrue(ready.json()["valid"])
 
     def test_custom_rule_can_be_tested_saved_and_updated(self) -> None:
         draft = {
-            "name": "Proxy nội bộ", "severity": "medium",
-            "classification": "needs_review", "remediation": "Xác minh phê duyệt",
+            "name": "Proxy nội bộ",
+            "severity": "medium",
+            "classification": "needs_review",
+            "remediation": "Xác minh phê duyệt",
             "conditions": {
-                "fields": ["notes"], "containsAny": ["Acme Relay"],
+                "fields": ["notes"],
+                "containsAny": ["Acme Relay"],
                 "excludeContainsAny": ["đã phê duyệt"],
             },
         }
-        tested = self.client.post("/api/rules/evaluate", json={
-            "rule": draft,
-            "rows": [
-                {"hostname": "PC-01", "notes": "Có Acme Relay"},
-                {"hostname": "PC-02", "notes": "Acme Relay đã phê duyệt"},
-            ],
-        })
+        tested = self.client.post(
+            "/api/rules/evaluate",
+            json={
+                "rule": draft,
+                "rows": [
+                    {"hostname": "PC-01", "notes": "Có Acme Relay"},
+                    {"hostname": "PC-02", "notes": "Acme Relay đã phê duyệt"},
+                ],
+            },
+        )
         self.assertEqual(tested.status_code, 200)
         self.assertEqual(tested.json()["matchedRows"], 1)
         self.assertEqual(tested.json()["changedRows"], 1)
@@ -157,19 +177,20 @@ class ApiIntegrationTests(unittest.TestCase):
         updated = self.client.patch(f"/api/rules/{rule_id}", json=updated_draft)
         self.assertEqual(updated.status_code, 200)
         self.assertEqual(updated.json()["classification"], "anomaly")
-        retested = self.client.post("/api/rules/evaluate", json={
-            "rule": updated_draft,
-            "editingRuleId": rule_id,
-            "rows": [{"type": "client", "hostname": "PC-01", "notes": "Có Acme Relay"}],
-        })
+        retested = self.client.post(
+            "/api/rules/evaluate",
+            json={
+                "rule": updated_draft,
+                "editingRuleId": rule_id,
+                "rows": [{"type": "client", "hostname": "PC-01", "notes": "Có Acme Relay"}],
+            },
+        )
         self.assertEqual(retested.status_code, 200)
         self.assertEqual(retested.json()["changedRows"], 1)
         self.assertEqual(retested.json()["matches"][0]["classificationAfter"], "anomaly")
         versions = self.client.get(f"/api/rules/{rule_id}/versions")
         self.assertEqual(versions.status_code, 200)
-        self.assertEqual(
-            [item["versionNumber"] for item in versions.json()["versions"]], [2, 1]
-        )
+        self.assertEqual([item["versionNumber"] for item in versions.json()["versions"]], [2, 1])
         restored = self.client.post(f"/api/rules/{rule_id}/versions/1/rollback")
         self.assertEqual(restored.status_code, 200)
         self.assertEqual(restored.json()["classification"], "needs_review")
@@ -179,7 +200,9 @@ class ApiIntegrationTests(unittest.TestCase):
 
     def test_rule_bundle_clone_import_export_and_conflict_contracts(self) -> None:
         draft = {
-            "name": "Team proxy anomaly", "severity": "high", "classification": "anomaly",
+            "name": "Team proxy anomaly",
+            "severity": "high",
+            "classification": "anomaly",
             "conditions": {"fields": ["software"], "containsAny": ["proxifier"]},
         }
         created = self.client.post("/api/rules", json=draft)
@@ -188,10 +211,12 @@ class ApiIntegrationTests(unittest.TestCase):
 
         conflicts = self.client.get("/api/rules/conflicts")
         self.assertEqual(conflicts.status_code, 200)
-        self.assertTrue(any(
-            rule_id in item["ruleIds"] and "PROXY_TOOL_REVIEW" in item["ruleIds"]
-            for item in conflicts.json()["conflicts"]
-        ))
+        self.assertTrue(
+            any(
+                rule_id in item["ruleIds"] and "PROXY_TOOL_REVIEW" in item["ruleIds"]
+                for item in conflicts.json()["conflicts"]
+            )
+        )
 
         cloned = self.client.post(f"/api/rules/{rule_id}/clone")
         self.assertEqual(cloned.status_code, 201)
@@ -203,12 +228,16 @@ class ApiIntegrationTests(unittest.TestCase):
         self.assertGreaterEqual(len(bundle["rules"]), 2)
         self.assertNotIn("createdAt", bundle["rules"][0])
 
-        skipped = self.client.post("/api/rules/import", json={"rules": bundle["rules"], "strategy": "skip"})
+        skipped = self.client.post(
+            "/api/rules/import", json={"rules": bundle["rules"], "strategy": "skip"}
+        )
         self.assertEqual(skipped.status_code, 200)
         self.assertEqual(len(skipped.json()["imported"]), 0)
         self.assertEqual(len(skipped.json()["skipped"]), len(bundle["rules"]))
 
-        renamed = self.client.post("/api/rules/import", json={"rules": [bundle["rules"][0]], "strategy": "rename"})
+        renamed = self.client.post(
+            "/api/rules/import", json={"rules": [bundle["rules"][0]], "strategy": "rename"}
+        )
         self.assertEqual(renamed.status_code, 200)
         self.assertEqual(len(renamed.json()["imported"]), 1)
         self.assertIn("(imported)", renamed.json()["imported"][0]["name"])
@@ -222,13 +251,22 @@ class ApiIntegrationTests(unittest.TestCase):
             patch("api.routes._apply_document_plugins", side_effect=lambda document, *_: document),
             patch("api.routes._save_finalized_report", return_value=(output, field_result)),
         ):
-            response = self.client.post("/api/generate", json={
-                "rows": [{
-                    "type": "server", "hostname": "srv-01", "ip": "10.0.0.1",
-                    "os": "Linux", "result": "Clean",
-                }],
-                "title": "Integration report", "reportType": "full",
-            })
+            response = self.client.post(
+                "/api/generate",
+                json={
+                    "rows": [
+                        {
+                            "type": "server",
+                            "hostname": "srv-01",
+                            "ip": "10.0.0.1",
+                            "os": "Linux",
+                            "result": "Clean",
+                        }
+                    ],
+                    "title": "Integration report",
+                    "reportType": "full",
+                },
+            )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content, b"docx-result")
         self.assertTrue(response.headers["x-report-id"])
@@ -246,10 +284,15 @@ class ApiIntegrationTests(unittest.TestCase):
             return output, Mock(engine="deferred")
 
         request = {
-            "rows": [{
-                "type": "server", "hostname": "srv-parity", "ip": "10.0.0.7",
-                "os": "Linux", "result": "Clean",
-            }],
+            "rows": [
+                {
+                    "type": "server",
+                    "hostname": "srv-parity",
+                    "ip": "10.0.0.7",
+                    "os": "Linux",
+                    "result": "Clean",
+                }
+            ],
             "organization": "Reporter Pro",
             "reportType": "full",
         }
@@ -287,10 +330,15 @@ class ApiIntegrationTests(unittest.TestCase):
             return output, Mock(engine="deferred")
 
         request = {
-            "rows": [{
-                "type": "server", "hostname": "srv-preview", "ip": "10.0.0.9",
-                "os": "Linux", "result": "Clean",
-            }],
+            "rows": [
+                {
+                    "type": "server",
+                    "hostname": "srv-preview",
+                    "ip": "10.0.0.9",
+                    "os": "Linux",
+                    "result": "Clean",
+                }
+            ],
             "reportType": "full",
             "clientRequestId": "preview-sequence-1",
             "disablePlugins": True,
@@ -335,10 +383,15 @@ class ApiIntegrationTests(unittest.TestCase):
             return output, Mock(engine="deferred")
 
         request = {
-            "rows": [{
-                "type": "server", "hostname": "srv-promote", "ip": "10.0.0.10",
-                "os": "Linux", "result": "Clean",
-            }],
+            "rows": [
+                {
+                    "type": "server",
+                    "hostname": "srv-promote",
+                    "ip": "10.0.0.10",
+                    "os": "Linux",
+                    "result": "Clean",
+                }
+            ],
             "reportType": "full",
             "disablePlugins": True,
         }
@@ -355,9 +408,7 @@ class ApiIntegrationTests(unittest.TestCase):
                 if state.get("status") == "ready":
                     break
                 time.sleep(0.02)
-            preview_bytes = self.client.get(
-                f"/api/preview-jobs/{preview_id}/content"
-            ).content
+            preview_bytes = self.client.get(f"/api/preview-jobs/{preview_id}/content").content
 
         with patch("api.routes.preview_cache_enabled", return_value=True):
             submitted = self.client.post(
@@ -399,10 +450,13 @@ class ApiIntegrationTests(unittest.TestCase):
             patch("api.routes.tempfile.NamedTemporaryFile", side_effect=tracked_temporary_file),
             patch("api.routes._save_finalized_report", side_effect=RuntimeError("save failed")),
         ):
-            response = self.client.post("/api/generate", json={
-                "rows": [{"type": "server", "hostname": "srv-01", "result": "Clean"}],
-                "reportType": "full",
-            })
+            response = self.client.post(
+                "/api/generate",
+                json={
+                    "rows": [{"type": "server", "hostname": "srv-01", "result": "Clean"}],
+                    "reportType": "full",
+                },
+            )
 
         self.assertEqual(response.status_code, 500)
         self.assertEqual(len(created_paths), 1)
@@ -414,20 +468,30 @@ class ApiIntegrationTests(unittest.TestCase):
         document = Document()
         document.add_heading("Template", level=1)
         document.save(buffer)
-        uploaded = self.client.post("/api/templates/upload", json={
-            "filename": "team.docx",
-            "contentBase64": base64.b64encode(buffer.getvalue()).decode(),
-            "name": "Team template", "reportType": "technical",
-        })
+        uploaded = self.client.post(
+            "/api/templates/upload",
+            json={
+                "filename": "team.docx",
+                "contentBase64": base64.b64encode(buffer.getvalue()).decode(),
+                "name": "Team template",
+                "reportType": "technical",
+            },
+        )
         self.assertEqual(uploaded.status_code, 200)
         template_id = uploaded.json()["id"]
-        patched = self.client.patch(f"/api/templates/{template_id}", json={"description": "Reviewed"})
+        patched = self.client.patch(
+            f"/api/templates/{template_id}", json={"description": "Reviewed"}
+        )
         self.assertEqual(patched.status_code, 200)
 
-        preset = self.client.post("/api/presets", json={
-            "name": "Team preset", "settings": {"reportType": "technical"},
-            "templateId": template_id,
-        })
+        preset = self.client.post(
+            "/api/presets",
+            json={
+                "name": "Team preset",
+                "settings": {"reportType": "technical"},
+                "templateId": template_id,
+            },
+        )
         self.assertEqual(preset.status_code, 200)
         preset_id = preset.json()["id"]
         self.assertEqual(self.client.get(f"/api/presets/{preset_id}").json()["name"], "Team preset")
@@ -436,20 +500,23 @@ class ApiIntegrationTests(unittest.TestCase):
     def test_incompatible_template_cannot_become_default(self) -> None:
         buffer = io.BytesIO()
         Document().save(buffer)
-        uploaded = self.client.post("/api/templates/upload", json={
-            "filename": "empty.docx",
-            "contentBase64": base64.b64encode(buffer.getvalue()).decode(),
-            "name": "Empty", "reportType": "incident_response", "isDefault": True,
-        })
+        uploaded = self.client.post(
+            "/api/templates/upload",
+            json={
+                "filename": "empty.docx",
+                "contentBase64": base64.b64encode(buffer.getvalue()).decode(),
+                "name": "Empty",
+                "reportType": "incident_response",
+                "isDefault": True,
+            },
+        )
         self.assertEqual(uploaded.status_code, 200)
         payload = uploaded.json()
         self.assertEqual(payload["analysis"]["compatibility"]["status"], "incompatible")
         self.assertTrue(payload["defaultRejected"])
 
         template_id = payload["id"]
-        make_default = self.client.patch(
-            f"/api/templates/{template_id}", json={"isDefault": True}
-        )
+        make_default = self.client.patch(f"/api/templates/{template_id}", json={"isDefault": True})
         self.assertEqual(make_default.status_code, 422)
         listed = self.client.get("/api/templates").json()["templates"]
         saved = next(item for item in listed if item["id"] == template_id)
@@ -461,10 +528,15 @@ class ApiIntegrationTests(unittest.TestCase):
         document = Document()
         document.add_heading("Cover", level=1)
         document.save(original)
-        uploaded = self.client.post("/api/templates/upload", json={
-            "filename": "versioned.docx", "contentBase64": base64.b64encode(original.getvalue()).decode(),
-            "name": "Versioned", "reportType": "full",
-        })
+        uploaded = self.client.post(
+            "/api/templates/upload",
+            json={
+                "filename": "versioned.docx",
+                "contentBase64": base64.b64encode(original.getvalue()).decode(),
+                "name": "Versioned",
+                "reportType": "full",
+            },
+        )
         template_id = uploaded.json()["id"]
 
         revised = io.BytesIO()
@@ -472,9 +544,13 @@ class ApiIntegrationTests(unittest.TestCase):
         document.add_heading("Cover", level=1)
         document.add_paragraph("{{TITLE}}")
         document.save(revised)
-        created = self.client.post(f"/api/templates/{template_id}/versions", json={
-            "contentBase64": base64.b64encode(revised.getvalue()).decode(), "note": "Add title token",
-        })
+        created = self.client.post(
+            f"/api/templates/{template_id}/versions",
+            json={
+                "contentBase64": base64.b64encode(revised.getvalue()).decode(),
+                "note": "Add title token",
+            },
+        )
         self.assertEqual(created.status_code, 200)
         self.assertTrue(created.json()["activated"])
         self.assertEqual(created.json()["version"]["version"], 2)
@@ -512,10 +588,13 @@ class ApiIntegrationTests(unittest.TestCase):
             return {"outputPath": str(output), "filename": "job.docx", "reportId": "job-report"}
 
         with patch("api.routes._run_report_job", side_effect=runner):
-            created = self.client.post("/api/report-jobs", json={
-                "rows": [{"type": "server", "hostname": "srv-job", "result": "Clean"}],
-                "reportType": "full",
-            })
+            created = self.client.post(
+                "/api/report-jobs",
+                json={
+                    "rows": [{"type": "server", "hostname": "srv-job", "result": "Clean"}],
+                    "reportType": "full",
+                },
+            )
             self.assertEqual(created.status_code, 202)
             self.assertEqual(len(created.json()["job"]["requestSignature"]), 64)
             job_id = created.json()["job"]["id"]
@@ -544,9 +623,12 @@ class ApiIntegrationTests(unittest.TestCase):
                 time.sleep(0.01)
 
         with patch("api.routes._run_report_job", side_effect=runner):
-            created = self.client.post("/api/report-jobs", json={
-                "rows": [{"type": "server", "hostname": "srv-cancel"}],
-            })
+            created = self.client.post(
+                "/api/report-jobs",
+                json={
+                    "rows": [{"type": "server", "hostname": "srv-cancel"}],
+                },
+            )
             job_id = created.json()["job"]["id"]
             self.assertTrue(entered.wait(1))
             cancelled = self.client.delete(f"/api/report-jobs/{job_id}")

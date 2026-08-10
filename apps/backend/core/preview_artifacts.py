@@ -279,7 +279,8 @@ class PreviewArtifactRegistry:
                 break
             candidates = sorted(
                 (
-                    item for item in self._artifacts.values()
+                    item
+                    for item in self._artifacts.values()
                     if item.lease_count == 0 and item.state in {"ready", "stale"}
                 ),
                 key=lambda item: (item.last_access_epoch, item.created_at_epoch),

@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import tempfile
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-import tempfile
 from typing import Any, Callable
+
+from plugins.manager import combined_cache_policy, plugin_manifest
 
 from core.report_signature import canonical_sha256
 from core.report_snapshot import (
@@ -14,7 +16,6 @@ from core.report_snapshot import (
     PreparedReportSnapshot,
     thaw_json,
 )
-from plugins.manager import combined_cache_policy, plugin_manifest
 
 
 class SnapshotChangedError(RuntimeError):

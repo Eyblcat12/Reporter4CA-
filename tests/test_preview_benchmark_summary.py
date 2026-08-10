@@ -6,7 +6,6 @@ import tempfile
 import unittest
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
@@ -31,9 +30,7 @@ class PreviewBenchmarkSummaryTests(unittest.TestCase):
                     "peakRssMiB": 700 + index,
                     "integrityValid": True,
                 }
-                (root / f"trial-{index:02d}.json").write_text(
-                    json.dumps(payload), encoding="utf-8"
-                )
+                (root / f"trial-{index:02d}.json").write_text(json.dumps(payload), encoding="utf-8")
             summary = summarize(root, required_trials=10)
             self.assertEqual(summary["sampleCount"], 10)
             self.assertEqual(summary["previewMs"]["p50"], 550.0)

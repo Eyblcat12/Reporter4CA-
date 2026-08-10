@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import logging
 import re
-import uuid
 import time
+import uuid
 from typing import Any
 
 from fastapi import FastAPI, Request
@@ -14,7 +14,6 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.responses import Response
-
 
 LOGGER = logging.getLogger("reporter.api")
 _SAFE_REQUEST_ID = re.compile(r"^[A-Za-z0-9._-]{8,64}$")
@@ -42,7 +41,11 @@ class RequestIdMiddleware(BaseHTTPMiddleware):
         response.headers["X-Process-Time-Ms"] = str(duration_ms)
         LOGGER.info(
             "request_id=%s method=%s path=%s status=%s duration_ms=%s",
-            request_id, request.method, request.url.path, response.status_code, duration_ms,
+            request_id,
+            request.method,
+            request.url.path,
+            response.status_code,
+            duration_ms,
         )
         return response
 

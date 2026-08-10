@@ -19,11 +19,25 @@ from core.data_quality import assess_rows  # noqa: E402
 
 class DataQualityTests(unittest.TestCase):
     def test_quality_summary_classifies_errors_warnings_and_asset_types(self) -> None:
-        result = assess_rows([
-            {"type": "server", "hostname": "srv-01", "ip": "10.0.0.1", "os": "Linux", "result": "Clean"},
-            {"type": "client", "hostname": "SRV-01", "ip": "999.1.1.1", "os": "", "result": ""},
-            {"type": "client", "hostname": "", "ip": "2001:db8::1", "os": "Windows", "result": "Clean"},
-        ])
+        result = assess_rows(
+            [
+                {
+                    "type": "server",
+                    "hostname": "srv-01",
+                    "ip": "10.0.0.1",
+                    "os": "Linux",
+                    "result": "Clean",
+                },
+                {"type": "client", "hostname": "SRV-01", "ip": "999.1.1.1", "os": "", "result": ""},
+                {
+                    "type": "client",
+                    "hostname": "",
+                    "ip": "2001:db8::1",
+                    "os": "Windows",
+                    "result": "Clean",
+                },
+            ]
+        )
         self.assertFalse(result["valid"])
         self.assertEqual(result["summary"]["errorRows"], 1)
         self.assertEqual(result["summary"]["warningRows"], 1)
@@ -34,7 +48,9 @@ class DataQualityTests(unittest.TestCase):
         self.assertEqual((result["summary"]["servers"], result["summary"]["clients"]), (1, 2))
 
     def test_validate_endpoint_returns_filterable_issue_codes(self) -> None:
-        response = asyncio.run(validate_rows(ValidateRowsRequest(rows=[{"hostname": "", "result": ""}])))
+        response = asyncio.run(
+            validate_rows(ValidateRowsRequest(rows=[{"hostname": "", "result": ""}]))
+        )
         self.assertFalse(response["valid"])
         self.assertIn("missing_hostname", {issue["code"] for issue in response["issues"]})
         self.assertEqual(response["summary"]["totalRows"], 1)

@@ -2,3 +2,6 @@
 
 # Test-only dependency required by Starlette's TestClient.
 httpx2==2.7.0
+
+# Static analysis and deterministic Python formatting.
+ruff==0.16.2

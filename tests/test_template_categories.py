@@ -10,7 +10,6 @@ from unittest.mock import patch
 from docx import Document
 from fastapi import HTTPException
 
-
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "apps" / "backend"
 sys.path.insert(0, str(BACKEND))
@@ -68,9 +67,11 @@ class TemplateCategoryTests(unittest.TestCase):
             }
             self.assertIn("report_type", columns)
             self.assertEqual(database.schema_version, 9)
-            migrations = database._get_conn().execute(
-                "SELECT version, name FROM schema_migrations ORDER BY version"
-            ).fetchall()
+            migrations = (
+                database._get_conn()
+                .execute("SELECT version, name FROM schema_migrations ORDER BY version")
+                .fetchall()
+            )
             self.assertEqual(
                 [tuple(row) for row in migrations],
                 [
@@ -105,9 +106,7 @@ class TemplateCategoryTests(unittest.TestCase):
                     filename=current_file.name,
                     file_path=str(old_file),
                 )
-                database._execute_commit(
-                    "DELETE FROM schema_migrations WHERE version = 8"
-                )
+                database._execute_commit("DELETE FROM schema_migrations WHERE version = 8")
                 database.close()
 
                 migrated = Database(db_path)
@@ -126,7 +125,10 @@ class TemplateCategoryTests(unittest.TestCase):
                 name="Full", filename="full.docx", file_path="full.docx", report_type="full"
             )
             server_id = database.add_template(
-                name="Server", filename="server.docx", file_path="server.docx", report_type="server_only"
+                name="Server",
+                filename="server.docx",
+                file_path="server.docx",
+                report_type="server_only",
             )
             database.set_default_template(full_id)
             database.set_default_template(server_id)

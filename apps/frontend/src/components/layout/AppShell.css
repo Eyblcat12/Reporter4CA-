@@ -62,7 +62,9 @@
   border-radius: var(--radius-sm);
   cursor: pointer;
   font-family: var(--font-ui);
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
 }
 
 .app-main__crumb:hover {

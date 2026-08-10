@@ -24,7 +24,6 @@ import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 
-
 DEFAULT_FIELD_UPDATE_TIMEOUT_SECONDS = 180
 _WORD_UPDATE_LOCK = threading.Lock()
 
@@ -56,7 +55,9 @@ def refresh_docx_fields(
         raise FileNotFoundError(f"DOCX file does not exist: {path}")
 
     if platform.system() != "Windows":
-        return FieldUpdateResult(False, "deferred", "Microsoft Word automation is only available on Windows.")
+        return FieldUpdateResult(
+            False, "deferred", "Microsoft Word automation is only available on Windows."
+        )
 
     script_host = shutil.which("cscript.exe") or shutil.which("cscript")
     if not script_host:
@@ -78,7 +79,9 @@ def refresh_docx_fields(
 
         if completed.returncode != 0:
             detail = _process_error_detail(completed)
-            return FieldUpdateResult(False, "deferred", detail or "Microsoft Word could not refresh fields.")
+            return FieldUpdateResult(
+                False, "deferred", detail or "Microsoft Word could not refresh fields."
+            )
 
         # Word has already calculated and saved every field. Leaving
         # updateFields=true makes the next interactive Word session ask the
@@ -86,7 +89,9 @@ def refresh_docx_fields(
         _set_update_fields_on_open(working_copy, enabled=False)
         _clear_dirty_field_flags(working_copy)
         if not zipfile.is_zipfile(working_copy):
-            return FieldUpdateResult(False, "deferred", "Microsoft Word returned an invalid DOCX file.")
+            return FieldUpdateResult(
+                False, "deferred", "Microsoft Word returned an invalid DOCX file."
+            )
 
         os.replace(working_copy, path)
         return FieldUpdateResult(True, "microsoft-word")
@@ -133,7 +138,7 @@ def _run_word_update(
 
 def _word_update_script() -> str:
     # Native late-bound COM avoids pywin32 and .NET Office Interop conflicts.
-    return r'''Option Explicit
+    return r"""Option Explicit
 Dim wordApp, document, toc, documentPath
 Dim operationError, operationDescription
 
@@ -191,7 +196,7 @@ If operationError <> 0 Then
 End If
 
 WScript.Quit 0
-'''
+"""
 
 
 def _set_update_fields_on_open(docx_path: Path, *, enabled: bool) -> None:

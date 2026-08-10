@@ -7,7 +7,7 @@
  * ──────────────────────────────────────────────────────────────
  */
 
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Search,
@@ -103,115 +103,109 @@ function CommandPalette() {
 
   /* ─── Command Definitions ──────────────────────────────── */
 
-  const COMMAND_GROUPS = useMemo(() => [
-    {
-      label: t('commandPalette.groupNavigation', 'Navigation'),
-      commands: [
-        {
-          id: 'goto-import',
-          icon: Upload,
-          title: t('commandPalette.goToImport', 'Go to Import'),
-          description: t('commandPalette.goToImportDesc', 'Navigate to data import step'),
-          shortcut: 'Ctrl+1',
-          action: () => setStep(1),
-        },
-        {
-          id: 'goto-configure',
-          icon: Settings,
-          title: t('commandPalette.goToConfigure', 'Go to Configure'),
-          description: t('commandPalette.goToConfigureDesc', 'Navigate to configuration step'),
-          shortcut: 'Ctrl+2',
-          action: () => setStep(2),
-        },
-        {
-          id: 'goto-export',
-          icon: FileOutput,
-          title: t('commandPalette.goToExport', 'Go to Export'),
-          description: t('commandPalette.goToExportDesc', 'Navigate to export step'),
-          shortcut: 'Ctrl+3',
-          action: () => setStep(3),
-        },
-      ],
-    },
-    {
-      label: t('commandPalette.groupActions', 'Actions'),
-      commands: [
-        {
-          id: 'load-sample',
-          icon: FlaskConical,
-          title: t('commandPalette.loadSample', 'Load Sample Data'),
-          description: t('commandPalette.loadSampleDesc', 'Load demo dataset for testing'),
-          action: () => loadSample(),
-        },
-        {
-          id: 'generate',
-          icon: Zap,
-          title: t('commandPalette.generate', 'Generate Report'),
-          description: t('commandPalette.generateDesc', 'Build the final report document'),
-          shortcut: 'Ctrl+Enter',
-          action: () => generateReport(),
-        },
-        {
-          id: 'preview',
-          icon: Eye,
-          title: t('commandPalette.preview', 'Preview Report'),
-          description: t('commandPalette.previewDesc', 'Open a live preview of the report'),
-          shortcut: 'Ctrl+P',
-          action: () => previewDocx(),
-        },
-      ],
-    },
-    {
-      label: t('commandPalette.groupSettings', 'Settings'),
-      commands: [
-        {
-          id: 'toggle-theme',
-          icon: theme === 'dark' ? Sun : Moon,
-          title: t('commandPalette.toggleTheme', 'Toggle Theme'),
-          description: theme === 'dark'
-            ? t('commandPalette.switchToLight', 'Switch to light mode')
-            : t('commandPalette.switchToDark', 'Switch to dark mode'),
-          action: toggleTheme,
-        },
-        {
-          id: 'switch-lang',
-          icon: Languages,
-          title: t('commandPalette.switchLang', 'Switch Language'),
-          description: locale === 'vi'
-            ? t('commandPalette.switchToEn', 'Switch to English')
-            : t('commandPalette.switchToVi', 'Chuyển sang Tiếng Việt'),
-          action: toggleLang,
-        },
-      ],
-    },
-  ], [t, theme, locale, setStep, loadSample, generateReport, previewDocx, toggleTheme, toggleLang]);
+  const COMMAND_GROUPS = useMemo(
+    () => [
+      {
+        label: t('commandPalette.groupNavigation', 'Navigation'),
+        commands: [
+          {
+            id: 'goto-import',
+            icon: Upload,
+            title: t('commandPalette.goToImport', 'Go to Import'),
+            description: t('commandPalette.goToImportDesc', 'Navigate to data import step'),
+            shortcut: 'Ctrl+1',
+            action: () => setStep(1),
+          },
+          {
+            id: 'goto-configure',
+            icon: Settings,
+            title: t('commandPalette.goToConfigure', 'Go to Configure'),
+            description: t('commandPalette.goToConfigureDesc', 'Navigate to configuration step'),
+            shortcut: 'Ctrl+2',
+            action: () => setStep(2),
+          },
+          {
+            id: 'goto-export',
+            icon: FileOutput,
+            title: t('commandPalette.goToExport', 'Go to Export'),
+            description: t('commandPalette.goToExportDesc', 'Navigate to export step'),
+            shortcut: 'Ctrl+3',
+            action: () => setStep(3),
+          },
+        ],
+      },
+      {
+        label: t('commandPalette.groupActions', 'Actions'),
+        commands: [
+          {
+            id: 'load-sample',
+            icon: FlaskConical,
+            title: t('commandPalette.loadSample', 'Load Sample Data'),
+            description: t('commandPalette.loadSampleDesc', 'Load demo dataset for testing'),
+            action: () => loadSample(),
+          },
+          {
+            id: 'generate',
+            icon: Zap,
+            title: t('commandPalette.generate', 'Generate Report'),
+            description: t('commandPalette.generateDesc', 'Build the final report document'),
+            shortcut: 'Ctrl+Enter',
+            action: () => generateReport(),
+          },
+          {
+            id: 'preview',
+            icon: Eye,
+            title: t('commandPalette.preview', 'Preview Report'),
+            description: t('commandPalette.previewDesc', 'Open a live preview of the report'),
+            shortcut: 'Ctrl+P',
+            action: () => previewDocx(),
+          },
+        ],
+      },
+      {
+        label: t('commandPalette.groupSettings', 'Settings'),
+        commands: [
+          {
+            id: 'toggle-theme',
+            icon: theme === 'dark' ? Sun : Moon,
+            title: t('commandPalette.toggleTheme', 'Toggle Theme'),
+            description:
+              theme === 'dark'
+                ? t('commandPalette.switchToLight', 'Switch to light mode')
+                : t('commandPalette.switchToDark', 'Switch to dark mode'),
+            action: toggleTheme,
+          },
+          {
+            id: 'switch-lang',
+            icon: Languages,
+            title: t('commandPalette.switchLang', 'Switch Language'),
+            description:
+              locale === 'vi'
+                ? t('commandPalette.switchToEn', 'Switch to English')
+                : t('commandPalette.switchToVi', 'Chuyển sang Tiếng Việt'),
+            action: toggleLang,
+          },
+        ],
+      },
+    ],
+    [t, theme, locale, setStep, loadSample, generateReport, previewDocx, toggleTheme, toggleLang],
+  );
 
   /* ─── Filtered Commands (Fuzzy Search) ─────────────────── */
 
   const filteredGroups = useMemo(() => {
     if (!query.trim()) return COMMAND_GROUPS;
 
-    return COMMAND_GROUPS
-      .map((group) => ({
-        ...group,
-        commands: group.commands.filter((cmd) => fuzzyMatch(query, cmd.title)),
-      }))
-      .filter((group) => group.commands.length > 0);
+    return COMMAND_GROUPS.map((group) => ({
+      ...group,
+      commands: group.commands.filter((cmd) => fuzzyMatch(query, cmd.title)),
+    })).filter((group) => group.commands.length > 0);
   }, [query, COMMAND_GROUPS]);
 
   // Flat list of all visible commands for keyboard navigation
-  const flatCommands = useMemo(
-    () => filteredGroups.flatMap((g) => g.commands),
-    [filteredGroups],
-  );
+  const flatCommands = useMemo(() => filteredGroups.flatMap((g) => g.commands), [filteredGroups]);
 
   /* ─── Open / Close Handlers ────────────────────────────── */
-
-  const open = useCallback(() => {
-    setIsOpen(true);
-    setQuery('');
-    setSelectedIndex(0);
-  }, []);
 
   const close = useCallback(() => {
     setIsOpen(false);
@@ -281,16 +275,12 @@ function CommandPalette() {
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setSelectedIndex((prev) =>
-          prev < flatCommands.length - 1 ? prev + 1 : 0,
-        );
+        setSelectedIndex((prev) => (prev < flatCommands.length - 1 ? prev + 1 : 0));
         break;
 
       case 'ArrowUp':
         e.preventDefault();
-        setSelectedIndex((prev) =>
-          prev > 0 ? prev - 1 : flatCommands.length - 1,
-        );
+        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : flatCommands.length - 1));
         break;
 
       case 'Enter':
@@ -384,7 +374,9 @@ function CommandPalette() {
                     return (
                       <motion.button
                         key={cmd.id}
-                        ref={(el) => { itemRefs.current[idx] = el; }}
+                        ref={(el) => {
+                          itemRefs.current[idx] = el;
+                        }}
                         className={`cmd-item ${isSelected ? 'cmd-item--selected' : ''}`}
                         role="option"
                         aria-selected={isSelected}
@@ -406,9 +398,7 @@ function CommandPalette() {
                           )}
                         </span>
 
-                        {cmd.shortcut && (
-                          <kbd className="cmd-kbd">{cmd.shortcut}</kbd>
-                        )}
+                        {cmd.shortcut && <kbd className="cmd-kbd">{cmd.shortcut}</kbd>}
                       </motion.button>
                     );
                   })}
@@ -419,12 +409,18 @@ function CommandPalette() {
             {/* ─── Footer Hints ─────────────────────────── */}
             <div className="cmd-footer">
               <span className="cmd-footer__hint">
-                <kbd className="cmd-kbd cmd-kbd--tiny"><ArrowUp size={11} /></kbd>
-                <kbd className="cmd-kbd cmd-kbd--tiny"><ArrowDown size={11} /></kbd>
+                <kbd className="cmd-kbd cmd-kbd--tiny">
+                  <ArrowUp size={11} />
+                </kbd>
+                <kbd className="cmd-kbd cmd-kbd--tiny">
+                  <ArrowDown size={11} />
+                </kbd>
                 <span>{t('commandPalette.navigate', 'Navigate')}</span>
               </span>
               <span className="cmd-footer__hint">
-                <kbd className="cmd-kbd cmd-kbd--tiny"><CornerDownLeft size={11} /></kbd>
+                <kbd className="cmd-kbd cmd-kbd--tiny">
+                  <CornerDownLeft size={11} />
+                </kbd>
                 <span>{t('commandPalette.select', 'Select')}</span>
               </span>
               <span className="cmd-footer__hint">

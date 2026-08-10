@@ -33,9 +33,7 @@ def metric_summary(values: Iterable[float], *, publish_p95: bool) -> dict[str, A
 def summarize(directory: Path, *, required_trials: int) -> dict[str, Any]:
     paths = sorted(directory.glob("trial-*.json"))
     if len(paths) != required_trials:
-        raise ValueError(
-            f"Expected exactly {required_trials} trial files, found {len(paths)}"
-        )
+        raise ValueError(f"Expected exactly {required_trials} trial files, found {len(paths)}")
     trials = [json.loads(path.read_text(encoding="utf-8")) for path in paths]
     identity_fields = (
         "schemaVersion",
@@ -78,9 +76,7 @@ def summarize(directory: Path, *, required_trials: int) -> dict[str, Any]:
             publish_p95=publish_p95,
         ),
         "integrityPasses": sum(bool(trial.get("integrityValid")) for trial in trials),
-        "targetPasses": sum(
-            float(trial["previewMs"]) < target_ms for trial in trials
-        ),
+        "targetPasses": sum(float(trial["previewMs"]) < target_ms for trial in trials),
         "allIntegrityValid": all_integrity_valid,
         "allUnderTarget": all_under_target,
         "releaseGatePassed": all_integrity_valid and all_under_target and publish_p95,
@@ -96,9 +92,7 @@ def main() -> int:
     parser.add_argument("--enforce-gate", action="store_true")
     args = parser.parse_args()
     try:
-        result = summarize(
-            args.directory.resolve(), required_trials=max(1, args.required_trials)
-        )
+        result = summarize(args.directory.resolve(), required_trials=max(1, args.required_trials))
     except (OSError, ValueError, json.JSONDecodeError, KeyError, TypeError) as exc:
         parser.error(str(exc))
     rendered = json.dumps(result, ensure_ascii=False, indent=2)

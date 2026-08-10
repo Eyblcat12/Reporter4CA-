@@ -7,7 +7,6 @@ from pathlib import Path
 
 from docx import Document
 
-
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "apps" / "backend"
 SAMPLES = BACKEND / "samples"
@@ -17,8 +16,8 @@ from core.column_mapper import auto_detect_mapping  # noqa: E402
 from core.data_quality import assess_rows  # noqa: E402
 from core.gui_state import normalized_payload_to_rows  # noqa: E402
 from core.input_parser import detect_real_format, parse_with_column_mapping  # noqa: E402
-from core.report_integrity import verify_report_document  # noqa: E402
 from core.report_generator import ReportType, _asset_statistics, generate_report  # noqa: E402
+from core.report_integrity import verify_report_document  # noqa: E402
 from core.rule_engine import evaluate_payload  # noqa: E402
 
 
@@ -57,11 +56,13 @@ class TrackingImportTests(unittest.TestCase):
         evaluated = evaluate_payload(payload)
         assets = evaluated["servers"] + evaluated["clients"]
         declared = [
-            asset for asset in assets
+            asset
+            for asset in assets
             if "phát hiện mã độc" in str(asset.get("result", "")).casefold()
         ]
         detected = [
-            asset for asset in assets
+            asset
+            for asset in assets
             if any(
                 finding.get("ruleId") == "MALWARE_EVIDENCE"
                 and finding.get("classification") == "anomaly"
@@ -146,8 +147,12 @@ class TrackingImportTests(unittest.TestCase):
         self.assertEqual(
             {row["result"] for row in rows},
             {
-                "Phát hiện mã độc", "Ghi nhận dấu hiệu bất thường", "Cần xác minh",
-                "Không phát hiện", "Không phát hiện - Đã kiểm tra", "Chưa kết luận",
+                "Phát hiện mã độc",
+                "Ghi nhận dấu hiệu bất thường",
+                "Cần xác minh",
+                "Không phát hiện",
+                "Không phát hiện - Đã kiểm tra",
+                "Chưa kết luận",
             },
         )
         self.assertEqual(

@@ -6,18 +6,17 @@ files are read into an immutable byte snapshot, hashed, and never modified.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
-from dataclasses import dataclass
-from datetime import datetime, timezone
 import hashlib
 import json
 import os
-from pathlib import Path
 import shutil
 import threading
 import uuid
 import zipfile
-
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
 
 PREPARED_TEMPLATE_SCHEMA_VERSION = 1
 PREPARED_TEMPLATE_COMPILER_VERSION = 1
@@ -56,13 +55,15 @@ def prepared_template_key(
     compiler_version: int = PREPARED_TEMPLATE_COMPILER_VERSION,
     blueprint_schema_version: int = 1,
 ) -> str:
-    identity = "\n".join((
-        source_hash,
-        str(report_type),
-        str(compatibility_version),
-        str(compiler_version),
-        str(blueprint_schema_version),
-    )).encode("utf-8")
+    identity = "\n".join(
+        (
+            source_hash,
+            str(report_type),
+            str(compatibility_version),
+            str(compiler_version),
+            str(blueprint_schema_version),
+        )
+    ).encode("utf-8")
     return hashlib.sha256(identity).hexdigest()
 
 
@@ -247,7 +248,9 @@ class PreparedTemplateCache:
             temporary.unlink(missing_ok=True)
 
     def _write_json_atomic(self, target: Path, payload: Mapping[str, object]) -> None:
-        encoded = (json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
+        encoded = (json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode(
+            "utf-8"
+        )
         self._write_bytes_atomic(target, encoded)
 
     def _discard_entry(self, key: str) -> None:
@@ -311,11 +314,13 @@ class PreparedTemplateCache:
             manifest_path = path / "manifest.json"
             try:
                 manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-                entries.append((
-                    path.name,
-                    str(manifest.get("lastAccessedAt", "")),
-                    int(manifest.get("artifactBytes", 0)),
-                ))
+                entries.append(
+                    (
+                        path.name,
+                        str(manifest.get("lastAccessedAt", "")),
+                        int(manifest.get("artifactBytes", 0)),
+                    )
+                )
             except (OSError, ValueError, TypeError, json.JSONDecodeError):
                 if path.name not in protected_keys:
                     self._discard_entry(path.name)

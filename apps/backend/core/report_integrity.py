@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from collections import Counter
 import re
-from typing import Any
 import unicodedata
+from collections import Counter
+from typing import Any
 
 from core.rule_engine import assess_asset
 
@@ -91,7 +91,8 @@ def build_report_manifest(data: dict[str, Any], report_type: str) -> dict[str, A
     for section in sections:
         for index, asset in enumerate(data.get(section, [])):
             findings = [
-                item for item in asset.get("findings", [])
+                item
+                for item in asset.get("findings", [])
                 if isinstance(item, dict) and item.get("evidence")
             ]
             finding_entries = []
@@ -103,34 +104,33 @@ def build_report_manifest(data: dict[str, Any], report_type: str) -> dict[str, A
                     for item in evidence_items
                     if isinstance(item, dict)
                 )
-                finding_entries.append({
-                    "ruleId": str(finding.get("ruleId", "")).strip(),
-                    "evidenceCount": len(evidence_items),
-                    "evidenceText": evidence_text,
-                })
+                finding_entries.append(
+                    {
+                        "ruleId": str(finding.get("ruleId", "")).strip(),
+                        "evidenceCount": len(evidence_items),
+                        "evidenceText": evidence_text,
+                    }
+                )
             assessment = asset.get("assessment")
             if not isinstance(assessment, dict):
                 assessment = assess_asset(findings)
-            entries.append({
-                "assetId": str(assessment.get("assetId") or f"{section}:{index}"),
-                "assetType": "server" if section == "servers" else "client",
-                "hostname": str(asset.get("hostname", "")).strip(),
-                "assessment": str(assessment.get("classification", "clean")),
-                "assessmentLabel": str(assessment.get("label", "")),
-                "findingIds": [str(item.get("ruleId", "")).strip() for item in findings],
-                "findingCount": len(findings),
-                "evidenceCount": sum(len(item.get("evidence", [])) for item in findings),
-                "findings": finding_entries,
-            })
+            entries.append(
+                {
+                    "assetId": str(assessment.get("assetId") or f"{section}:{index}"),
+                    "assetType": "server" if section == "servers" else "client",
+                    "hostname": str(asset.get("hostname", "")).strip(),
+                    "assessment": str(assessment.get("classification", "clean")),
+                    "assessmentLabel": str(assessment.get("label", "")),
+                    "findingIds": [str(item.get("ruleId", "")).strip() for item in findings],
+                    "findingCount": len(findings),
+                    "evidenceCount": sum(len(item.get("evidence", [])) for item in findings),
+                    "findings": finding_entries,
+                }
+            )
 
     assessment_counts = Counter(item["assessment"] for item in entries)
     asset_type_counts = Counter(item["assetType"] for item in entries)
-    rule_counts = Counter(
-        rule_id
-        for item in entries
-        for rule_id in item["findingIds"]
-        if rule_id
-    )
+    rule_counts = Counter(rule_id for item in entries for rule_id in item["findingIds"] if rule_id)
     return {
         "version": "1.0",
         "reportType": report_type,
@@ -183,9 +183,7 @@ def _index_document(document: Any) -> dict[str, Any]:
         ):
             summary_asset_type = "server" if header[1] == "Máy chủ" else "client"
 
-        is_incident_asset_table = (
-            header[:4] == ("STT", "Tài sản", "Địa chỉ IP", "Kết quả")
-        )
+        is_incident_asset_table = header[:4] == ("STT", "Tài sản", "Địa chỉ IP", "Kết quả")
         evidence_column = None
         if header[:5] == ("Tài sản", "Rule", "Mức độ", "Phân loại", "Bằng chứng"):
             evidence_column = 4
@@ -198,11 +196,7 @@ def _index_document(document: Any) -> dict[str, Any]:
                 summary_rows[(summary_asset_type, values[1], values[2])] += 1
             if is_incident_asset_table and len(values) >= 2 and values[1]:
                 incident_assets[values[1]] += 1
-            if (
-                evidence_column is not None
-                and len(values) > evidence_column
-                and values[0]
-            ):
+            if evidence_column is not None and len(values) > evidence_column and values[0]:
                 finding_rows[(values[0], values[1], values[evidence_column])] += 1
 
     headings = {
@@ -235,24 +229,28 @@ def _expected_findings(manifest: dict[str, Any]) -> list[dict[str, Any]]:
             for finding in entries:
                 if not isinstance(finding, dict):
                     continue
-                findings.append({
-                    "hostname": hostname,
-                    "ruleId": _normalize_text(finding.get("ruleId", "")),
-                    "evidenceCount": int(finding.get("evidenceCount", 0)),
-                    "evidenceText": _normalize_text(finding.get("evidenceText", "")),
-                })
+                findings.append(
+                    {
+                        "hostname": hostname,
+                        "ruleId": _normalize_text(finding.get("ruleId", "")),
+                        "evidenceCount": int(finding.get("evidenceCount", 0)),
+                        "evidenceText": _normalize_text(finding.get("evidenceText", "")),
+                    }
+                )
             continue
 
         # Backward compatibility for manifests created before evidence details
         # were added. Finding/rule coverage remains available; evidence coverage
         # is marked not applicable by the verifier.
         for rule_id in asset.get("findingIds", []):
-            findings.append({
-                "hostname": hostname,
-                "ruleId": _normalize_text(rule_id),
-                "evidenceCount": 0,
-                "evidenceText": None,
-            })
+            findings.append(
+                {
+                    "hostname": hostname,
+                    "ruleId": _normalize_text(rule_id),
+                    "evidenceCount": 0,
+                    "evidenceText": None,
+                }
+            )
     return findings
 
 
@@ -275,21 +273,20 @@ def verify_report_document(document: Any, manifest: dict[str, Any]) -> dict[str,
         if _normalize_heading(section) not in index["headings"]
     ]
     if missing_sections:
-        errors.append({
-            "code": "REQUIRED_SECTION_MISSING",
-            "message": f"missing required sections: {', '.join(missing_sections[:5])}",
-            "expected": len(required_sections),
-            "actual": len(required_sections) - len(missing_sections),
-            "items": missing_sections,
-        })
+        errors.append(
+            {
+                "code": "REQUIRED_SECTION_MISSING",
+                "message": f"missing required sections: {', '.join(missing_sections[:5])}",
+                "expected": len(required_sections),
+                "actual": len(required_sections) - len(missing_sections),
+                "items": missing_sections,
+            }
+        )
 
     assets = [item for item in manifest.get("assets", []) if isinstance(item, dict)]
     expected_assets = int(manifest.get("assetCount", len(assets)))
     expected_asset_types = Counter(
-        {
-            str(key): int(value)
-            for key, value in dict(manifest.get("assetTypeCounts", {})).items()
-        }
+        {str(key): int(value) for key, value in dict(manifest.get("assetTypeCounts", {})).items()}
     )
     if not expected_asset_types:
         expected_asset_types.update(_normalize_text(asset.get("assetType", "")) for asset in assets)
@@ -323,12 +320,14 @@ def verify_report_document(document: Any, manifest: dict[str, Any]) -> dict[str,
                 available_assets[key] -= 1
                 verified_asset_types[asset_type] += 1
             else:
-                missing_assets.append({
-                    "assetId": _normalize_text(asset.get("assetId", "")),
-                    "assetType": asset_type,
-                    "hostname": hostname,
-                    "expectedAssessment": label,
-                })
+                missing_assets.append(
+                    {
+                        "assetId": _normalize_text(asset.get("assetId", "")),
+                        "assetType": asset_type,
+                        "hostname": hostname,
+                        "expectedAssessment": label,
+                    }
+                )
     else:
         available_hosts = Counter(index["incidentAssets"])
         actual_assets = sum(available_hosts.values())
@@ -340,41 +339,46 @@ def verify_report_document(document: Any, manifest: dict[str, Any]) -> dict[str,
                 available_hosts[hostname] -= 1
                 verified_asset_types[asset_type] += 1
             else:
-                missing_assets.append({
-                    "assetId": _normalize_text(asset.get("assetId", "")),
-                    "assetType": asset_type,
-                    "hostname": hostname,
-                    "expectedAssessment": _normalize_text(asset.get("assessmentLabel", "")),
-                })
+                missing_assets.append(
+                    {
+                        "assetId": _normalize_text(asset.get("assetId", "")),
+                        "assetType": asset_type,
+                        "hostname": hostname,
+                        "expectedAssessment": _normalize_text(asset.get("assessmentLabel", "")),
+                    }
+                )
 
     verified_assets = expected_assets - len(missing_assets)
     if actual_assets != expected_assets:
-        errors.append({
-            "code": "ASSET_COUNT_MISMATCH",
-            "message": f"asset count mismatch: expected {expected_assets}, found {actual_assets}",
-            "expected": expected_assets,
-            "actual": actual_assets,
-        })
-    if (
-        asset_type_verification_applicable
-        and Counter(actual_asset_types) != expected_asset_types
-    ):
-        errors.append({
-            "code": "ASSET_TYPE_COUNT_MISMATCH",
-            "message": "server/client asset counters do not match the manifest",
-            "expected": _counter_dict(expected_asset_types),
-            "actual": _counter_dict(Counter(actual_asset_types)),
-        })
+        errors.append(
+            {
+                "code": "ASSET_COUNT_MISMATCH",
+                "message": f"asset count mismatch: expected {expected_assets}, found {actual_assets}",
+                "expected": expected_assets,
+                "actual": actual_assets,
+            }
+        )
+    if asset_type_verification_applicable and Counter(actual_asset_types) != expected_asset_types:
+        errors.append(
+            {
+                "code": "ASSET_TYPE_COUNT_MISMATCH",
+                "message": "server/client asset counters do not match the manifest",
+                "expected": _counter_dict(expected_asset_types),
+                "actual": _counter_dict(Counter(actual_asset_types)),
+            }
+        )
     if missing_assets:
         missing_hosts = ", ".join(
             item["hostname"] or item["assetId"] for item in missing_assets[:5]
         )
-        errors.append({
-            "code": "ASSET_CONCLUSION_MISSING",
-            "message": f"missing assets/conclusions: {missing_hosts}",
-            "count": len(missing_assets),
-            "items": missing_assets,
-        })
+        errors.append(
+            {
+                "code": "ASSET_CONCLUSION_MISSING",
+                "message": f"missing assets/conclusions: {missing_hosts}",
+                "count": len(missing_assets),
+                "items": missing_assets,
+            }
+        )
 
     finding_verification_applicable = report_type in _FINDING_REPORT_TYPES
     evidence_verification_applicable = finding_verification_applicable and all(
@@ -383,10 +387,7 @@ def verify_report_document(document: Any, manifest: dict[str, Any]) -> dict[str,
     expected_findings = int(manifest.get("findingCount", 0))
     expected_evidence = int(manifest.get("evidenceCount", 0))
     expected_rules = Counter(
-        {
-            str(key): int(value)
-            for key, value in dict(manifest.get("ruleCounts", {})).items()
-        }
+        {str(key): int(value) for key, value in dict(manifest.get("ruleCounts", {})).items()}
     )
     verified_findings: int | None = None
     actual_findings: int | None = None
@@ -430,43 +431,51 @@ def verify_report_document(document: Any, manifest: dict[str, Any]) -> dict[str,
                     available_exact_rows[exact_key] -= 1
                     verified_evidence += int(finding["evidenceCount"])
                 else:
-                    missing_evidence.append({
-                        "hostname": hostname,
-                        "ruleId": rule_id,
-                        "expectedEvidenceCount": int(finding["evidenceCount"]),
-                    })
+                    missing_evidence.append(
+                        {
+                            "hostname": hostname,
+                            "ruleId": rule_id,
+                            "expectedEvidenceCount": int(finding["evidenceCount"]),
+                        }
+                    )
 
         actual_findings = sum(actual_rows.values())
         if actual_findings != expected_findings or verified_findings != expected_findings:
-            errors.append({
-                "code": "FINDING_COUNT_MISMATCH",
-                "message": (
-                    f"finding count mismatch: expected {expected_findings}, "
-                    f"found {actual_findings}, verified {verified_findings}"
-                ),
-                "expected": expected_findings,
-                "actual": actual_findings,
-                "verified": verified_findings,
-            })
+            errors.append(
+                {
+                    "code": "FINDING_COUNT_MISMATCH",
+                    "message": (
+                        f"finding count mismatch: expected {expected_findings}, "
+                        f"found {actual_findings}, verified {verified_findings}"
+                    ),
+                    "expected": expected_findings,
+                    "actual": actual_findings,
+                    "verified": verified_findings,
+                }
+            )
         if actual_rules != expected_rules or verified_rules != expected_rules:
-            errors.append({
-                "code": "RULE_COUNT_MISMATCH",
-                "message": "rule counters do not match the manifest",
-                "expected": _counter_dict(expected_rules),
-                "actual": _counter_dict(actual_rules),
-                "verified": _counter_dict(verified_rules),
-            })
+            errors.append(
+                {
+                    "code": "RULE_COUNT_MISMATCH",
+                    "message": "rule counters do not match the manifest",
+                    "expected": _counter_dict(expected_rules),
+                    "actual": _counter_dict(actual_rules),
+                    "verified": _counter_dict(verified_rules),
+                }
+            )
         if evidence_verification_applicable and verified_evidence != expected_evidence:
-            errors.append({
-                "code": "EVIDENCE_COUNT_MISMATCH",
-                "message": (
-                    f"evidence count mismatch: expected {expected_evidence}, "
-                    f"verified {verified_evidence}"
-                ),
-                "expected": expected_evidence,
-                "verified": verified_evidence,
-                "items": missing_evidence,
-            })
+            errors.append(
+                {
+                    "code": "EVIDENCE_COUNT_MISMATCH",
+                    "message": (
+                        f"evidence count mismatch: expected {expected_evidence}, "
+                        f"verified {verified_evidence}"
+                    ),
+                    "expected": expected_evidence,
+                    "verified": verified_evidence,
+                    "items": missing_evidence,
+                }
+            )
 
     result = {
         "valid": not errors,
@@ -476,9 +485,7 @@ def verify_report_document(document: Any, manifest: dict[str, Any]) -> dict[str,
         "assetTypeVerificationApplicable": asset_type_verification_applicable,
         "expectedAssetTypes": _counter_dict(expected_asset_types),
         "actualAssetTypes": (
-            _counter_dict(Counter(actual_asset_types))
-            if actual_asset_types is not None
-            else None
+            _counter_dict(Counter(actual_asset_types)) if actual_asset_types is not None else None
         ),
         "verifiedAssetTypes": _counter_dict(verified_asset_types),
         "expectedFindings": expected_findings,

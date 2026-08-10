@@ -4,24 +4,21 @@ from __future__ import annotations
 
 import argparse
 import base64
-from io import BytesIO
 import json
 import os
-from pathlib import Path
 import sys
 import tempfile
 import time
 import zipfile
+from io import BytesIO
+from pathlib import Path
 from unittest.mock import patch
-
 
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "apps" / "backend"
 sys.path.insert(0, str(BACKEND))
 os.environ["AUTO_REPORT_PERF_METRICS"] = "1"
 
-from fastapi import FastAPI  # noqa: E402
-from fastapi.testclient import TestClient  # noqa: E402
 from api import routes  # noqa: E402
 from core import report_generator  # noqa: E402
 from core.database import Database  # noqa: E402
@@ -30,6 +27,8 @@ from core.performance_metrics import current_rss_mib, peak_rss_mib  # noqa: E402
 from core.preview_artifacts import PreviewArtifactRegistry  # noqa: E402
 from core.report_generator import ReportType  # noqa: E402
 from core.report_jobs import ReportJobManager  # noqa: E402
+from fastapi import FastAPI  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
 
 
 def _wait_for_preview(
@@ -92,29 +91,38 @@ def run_benchmark(*, cache_state: str, timeout_seconds: float, target_ms: float)
             rss_baseline = current_rss_mib()
             with TestClient(app) as client:
                 encoded = base64.b64encode(sample.read_bytes()).decode("ascii")
-                column_preview = client.post("/api/column-preview", json={
-                    "filename": sample.name,
-                    "contentBase64": encoded,
-                })
+                column_preview = client.post(
+                    "/api/column-preview",
+                    json={
+                        "filename": sample.name,
+                        "contentBase64": encoded,
+                    },
+                )
                 column_preview.raise_for_status()
-                imported = client.post("/api/import-file", json={
-                    "filename": sample.name,
-                    "contentBase64": encoded,
-                    "defaultType": "client",
-                    "columnMapping": column_preview.json()["suggestedMapping"],
-                })
+                imported = client.post(
+                    "/api/import-file",
+                    json={
+                        "filename": sample.name,
+                        "contentBase64": encoded,
+                        "defaultType": "client",
+                        "columnMapping": column_preview.json()["suggestedMapping"],
+                    },
+                )
                 imported.raise_for_status()
                 rows = imported.json()["rows"]
                 if len(rows) != 50:
                     raise AssertionError(f"Expected 50 imported rows, received {len(rows)}")
 
                 started = time.perf_counter()
-                submitted = client.post("/api/preview-jobs", json={
-                    "rows": rows,
-                    "reportType": "full",
-                    "disablePlugins": True,
-                    "clientRequestId": f"benchmark-{cache_state}-preview-50",
-                })
+                submitted = client.post(
+                    "/api/preview-jobs",
+                    json={
+                        "rows": rows,
+                        "reportType": "full",
+                        "disablePlugins": True,
+                        "clientRequestId": f"benchmark-{cache_state}-preview-50",
+                    },
+                )
                 submitted.raise_for_status()
                 accepted = submitted.json()
                 preview_id = accepted["previewId"]

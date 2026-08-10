@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import importlib.util
 import hashlib
+import importlib.util
 import sys
 from abc import ABC
 from pathlib import Path
@@ -126,21 +126,21 @@ def plugin_manifest(
         )
         identity_method = getattr(type(plugin), "cache_identity", None)
         identity = (
-            plugin.cache_identity(configs.get(plugin_id, {}))
-            if callable(identity_method)
-            else {}
+            plugin.cache_identity(configs.get(plugin_id, {})) if callable(identity_method) else {}
         )
         declared_version = getattr(plugin, "version", "0")
         version = declared_version if isinstance(declared_version, (str, int, float)) else "0"
         declared_source_hash = getattr(plugin, "_reporter_source_hash", "")
         source_hash = declared_source_hash if isinstance(declared_source_hash, str) else ""
-        manifest.append({
-            "pluginId": plugin_id,
-            "version": str(version),
-            "cachePolicy": policy,
-            "sourceHash": source_hash,
-            "cacheIdentity": identity,
-        })
+        manifest.append(
+            {
+                "pluginId": plugin_id,
+                "version": str(version),
+                "cachePolicy": policy,
+                "sourceHash": source_hash,
+                "cacheIdentity": identity,
+            }
+        )
     return manifest
 
 

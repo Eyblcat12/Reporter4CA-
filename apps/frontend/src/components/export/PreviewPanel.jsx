@@ -4,7 +4,16 @@
    ═══════════════════════════════════════════════════════════ */
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Code, Terminal, Copy, Check, AlertCircle, CheckCircle, Info } from 'lucide-react';
+import {
+  FileText,
+  Code,
+  Terminal,
+  Copy,
+  Check,
+  AlertCircle,
+  CheckCircle,
+  Info,
+} from 'lucide-react';
 import { useReporterContext } from '../../hooks/useReporter';
 import { useI18n } from '../../i18n';
 import './PreviewPanel.css';
@@ -19,7 +28,7 @@ function LogEntry({ entry, index }) {
   const isString = typeof entry === 'string';
   const time = isString ? null : entry.time;
   const message = isString ? entry : entry.message;
-  const level = isString ? 'info' : (entry.level || 'info');
+  const level = isString ? 'info' : entry.level || 'info';
 
   const levelIcons = {
     error: <AlertCircle size={12} />,
@@ -74,10 +83,16 @@ export default function PreviewPanel() {
 
   const getCopyText = () => {
     switch (activeTab) {
-      case 'preview': return previewText || '';
-      case 'json': return payload ? JSON.stringify(payload, null, 2) : '{}';
-      case 'log': return (logs || []).map((l) => (typeof l === 'string' ? l : `[${l.time}] ${l.message}`)).join('\n');
-      default: return '';
+      case 'preview':
+        return previewText || '';
+      case 'json':
+        return payload ? JSON.stringify(payload, null, 2) : '{}';
+      case 'log':
+        return (logs || [])
+          .map((l) => (typeof l === 'string' ? l : `[${l.time}] ${l.message}`))
+          .join('\n');
+      default:
+        return '';
     }
   };
 
@@ -102,7 +117,9 @@ export default function PreviewPanel() {
             return (
               <button
                 key={tab.id}
-                ref={(el) => { tabsRef.current[tab.id] = el; }}
+                ref={(el) => {
+                  tabsRef.current[tab.id] = el;
+                }}
                 type="button"
                 className={`pp__tab ${isActive ? 'pp__tab--active' : ''}`}
                 onClick={() => setActiveTab(tab.id)}
@@ -175,9 +192,7 @@ export default function PreviewPanel() {
                     <span>{t('export.noLogs')}</span>
                   </div>
                 ) : (
-                  (logs || []).map((entry, idx) => (
-                    <LogEntry key={idx} entry={entry} index={idx} />
-                  ))
+                  (logs || []).map((entry, idx) => <LogEntry key={idx} entry={entry} index={idx} />)
                 )}
               </div>
             ) : (

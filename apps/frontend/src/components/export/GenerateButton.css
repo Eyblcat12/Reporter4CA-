@@ -24,7 +24,9 @@
   cursor: pointer;
   position: relative;
   overflow: hidden;
-  transition: box-shadow 0.3s ease, opacity 0.2s ease;
+  transition:
+    box-shadow 0.3s ease,
+    opacity 0.2s ease;
   letter-spacing: -0.01em;
 }
 

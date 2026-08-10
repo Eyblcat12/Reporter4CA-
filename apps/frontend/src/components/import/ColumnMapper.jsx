@@ -22,20 +22,15 @@ const TARGET_FIELDS = [
 ];
 
 export default function ColumnMapper() {
-  const {
-    columnPreview,
-    columnMapping,
-    setColumnMapping,
-    applyColumnMapping,
-    loading,
-  } = useReporterContext();
+  const { columnPreview, columnMapping, setColumnMapping, applyColumnMapping, loading } =
+    useReporterContext();
   const { t } = useI18n();
 
   const columns = columnPreview?.columns || [];
   const sampleRows = columnPreview?.sampleRows || [];
   const suggested = columnPreview?.suggestedMapping || {};
 
-  const currentMapping = columnMapping || {};
+  const currentMapping = useMemo(() => columnMapping || {}, [columnMapping]);
 
   const handleAutoDetect = () => {
     setColumnMapping({ ...suggested });
@@ -54,17 +49,22 @@ export default function ColumnMapper() {
 
   const usedTargets = useMemo(() => {
     const used = new Set();
-    Object.values(currentMapping).forEach(v => { if (v) used.add(v); });
+    Object.values(currentMapping).forEach((v) => {
+      if (v) used.add(v);
+    });
     return used;
   }, [currentMapping]);
 
-  const hasHostname = usedTargets.has('hostname') || usedTargets.has('hostname_server') || usedTargets.has('hostname_client');
+  const hasHostname =
+    usedTargets.has('hostname') ||
+    usedTargets.has('hostname_server') ||
+    usedTargets.has('hostname_client');
 
   const getSampleValues = (col) => {
     if (!sampleRows.length) return [];
     return sampleRows
       .slice(0, 3)
-      .map(row => {
+      .map((row) => {
         const val = row?.[col];
         return val ? String(val).substring(0, 24) : '';
       })
@@ -77,8 +77,16 @@ export default function ColumnMapper() {
     // Đã được dùng bởi cột khác
     if (usedTargets.has(fieldValue) && colCurrentMapping !== fieldValue) return true;
     // hostname <-> hostname_server/hostname_client là xung đột
-    if (fieldValue === 'hostname' && (usedTargets.has('hostname_server') || usedTargets.has('hostname_client'))) return true;
-    if ((fieldValue === 'hostname_server' || fieldValue === 'hostname_client') && usedTargets.has('hostname')) return true;
+    if (
+      fieldValue === 'hostname' &&
+      (usedTargets.has('hostname_server') || usedTargets.has('hostname_client'))
+    )
+      return true;
+    if (
+      (fieldValue === 'hostname_server' || fieldValue === 'hostname_client') &&
+      usedTargets.has('hostname')
+    )
+      return true;
     return false;
   };
 
@@ -129,7 +137,9 @@ export default function ColumnMapper() {
                 <span className="column-mapper__col-name">{col}</span>
                 <div className="column-mapper__samples">
                   {samples.map((s, i) => (
-                    <span key={i} className="column-mapper__sample">{s}</span>
+                    <span key={i} className="column-mapper__sample">
+                      {s}
+                    </span>
                   ))}
                 </div>
               </div>
@@ -138,11 +148,8 @@ export default function ColumnMapper() {
 
               <div className="column-mapper__target">
                 <div className="select-wrapper">
-                  <select
-                    value={mapped}
-                    onChange={(e) => handleChange(col, e.target.value)}
-                  >
-                    {TARGET_FIELDS.map(f => (
+                  <select value={mapped} onChange={(e) => handleChange(col, e.target.value)}>
+                    {TARGET_FIELDS.map((f) => (
                       <option
                         key={f.value}
                         value={f.value}

@@ -9,8 +9,18 @@ import './ReportTypeSelector.css';
 
 const TYPES = [
   { id: 'full', icon: FileStack, titleKey: 'export.full', descKey: 'export.full.desc' },
-  { id: 'server_only', icon: Server, titleKey: 'export.serverOnly', descKey: 'export.serverOnly.desc' },
-  { id: 'client_only', icon: Monitor, titleKey: 'export.clientOnly', descKey: 'export.clientOnly.desc' },
+  {
+    id: 'server_only',
+    icon: Server,
+    titleKey: 'export.serverOnly',
+    descKey: 'export.serverOnly.desc',
+  },
+  {
+    id: 'client_only',
+    icon: Monitor,
+    titleKey: 'export.clientOnly',
+    descKey: 'export.clientOnly.desc',
+  },
   { id: 'summary', icon: BarChart3, titleKey: 'export.summary', descKey: 'export.summary.desc' },
   { id: 'technical', icon: Code, titleKey: 'export.technical', descKey: 'export.technical.desc' },
   { id: 'incident_response', icon: ShieldAlert, titleKey: 'export.ir', descKey: 'export.ir.desc' },
@@ -22,13 +32,15 @@ export default function ReportTypeSelector() {
   const selected = reportSettings.reportType || 'full';
 
   const handleSelect = (id) => {
-    const currentTemplate = (templates || []).find((tpl) => tpl.path === reportSettings.templatePath);
+    const currentTemplate = (templates || []).find(
+      (tpl) => tpl.path === reportSettings.templatePath,
+    );
     const keepCurrentTemplate = currentTemplate?.reportType === id;
     const categoryDefault = (templates || []).find((tpl) => tpl.reportType === id && tpl.isDefault);
     setReportSettings({
       ...reportSettings,
       reportType: id,
-      templatePath: keepCurrentTemplate ? reportSettings.templatePath : (categoryDefault?.path || ''),
+      templatePath: keepCurrentTemplate ? reportSettings.templatePath : categoryDefault?.path || '',
     });
   };
 

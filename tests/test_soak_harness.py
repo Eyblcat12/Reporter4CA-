@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import sys
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -11,7 +11,14 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 from unittest.mock import patch
 
-from soak_report_jobs import atomic_write_json, current_rss_mb, evaluate_thresholds, percentile, reconcile_stale_statuses, run_soak
+from soak_report_jobs import (
+    atomic_write_json,
+    current_rss_mb,
+    evaluate_thresholds,
+    percentile,
+    reconcile_stale_statuses,
+    run_soak,
+)
 
 
 class SoakHarnessTests(unittest.TestCase):
@@ -19,17 +26,32 @@ class SoakHarnessTests(unittest.TestCase):
         self.assertEqual(percentile([1, 2, 3, 4], 0.5), 2.5)
 
     def test_thresholds_report_timeout_failure_and_memory_growth(self) -> None:
-        failures = evaluate_thresholds({
-            "completed": 1, "timeouts": 1, "unexpectedFailures": 2,
-            "dedupMismatches": 1, "heapGrowthMb": 200.0,
-        }, 128.0)
+        failures = evaluate_thresholds(
+            {
+                "completed": 1,
+                "timeouts": 1,
+                "unexpectedFailures": 2,
+                "dedupMismatches": 1,
+                "heapGrowthMb": 200.0,
+            },
+            128.0,
+        )
         self.assertEqual(len(failures), 4)
 
     def test_healthy_metrics_pass(self) -> None:
-        self.assertEqual(evaluate_thresholds({
-            "completed": 3, "timeouts": 0, "unexpectedFailures": 0,
-            "dedupMismatches": 0, "heapGrowthMb": 12.0,
-        }, 128.0), [])
+        self.assertEqual(
+            evaluate_thresholds(
+                {
+                    "completed": 3,
+                    "timeouts": 0,
+                    "unexpectedFailures": 0,
+                    "dedupMismatches": 0,
+                    "heapGrowthMb": 12.0,
+                },
+                128.0,
+            ),
+            [],
+        )
 
     def test_atomic_json_write_never_leaves_partial_payload(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -58,8 +80,12 @@ class SoakHarnessTests(unittest.TestCase):
                 output.write(b"PK" + b"x" * 1200)
 
         config = {
-            "profile": "test", "duration_minutes": 1, "rows": 1,
-            "max_jobs": 11, "job_timeout": 5, "memory_growth_mb": 128,
+            "profile": "test",
+            "duration_minutes": 1,
+            "rows": 1,
+            "max_jobs": 11,
+            "job_timeout": 5,
+            "memory_growth_mb": 128,
         }
         with patch("soak_report_jobs.generate_report", return_value=FakeDocument()):
             metrics = run_soak(config)

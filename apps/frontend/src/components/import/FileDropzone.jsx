@@ -3,14 +3,7 @@
    ═══════════════════════════════════════════════════════════ */
 import { useCallback, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  UploadCloud,
-  FileSpreadsheet,
-  FileCode,
-  FileText,
-  X,
-  FlaskConical,
-} from 'lucide-react';
+import { UploadCloud, FileSpreadsheet, FileCode, FileText, X, FlaskConical } from 'lucide-react';
 import { useReporterContext } from '../../hooks/useReporter';
 import { useI18n } from '../../i18n';
 import './FileDropzone.css';
@@ -53,7 +46,7 @@ export default function FileDropzone() {
       };
       reader.readAsDataURL(file);
     },
-    [importFile]
+    [importFile],
   );
 
   const onDrop = useCallback(
@@ -63,7 +56,7 @@ export default function FileDropzone() {
       const file = e.dataTransfer?.files?.[0];
       handleFile(file);
     },
-    [handleFile]
+    [handleFile],
   );
 
   const onDragOver = (e) => {
@@ -112,9 +105,7 @@ export default function FileDropzone() {
               </div>
               <div className="dropzone__file-meta">
                 <span className="dropzone__filename">{importedFile.name}</span>
-                <span className="dropzone__filesize">
-                  {formatSize(importedFile.size)}
-                </span>
+                <span className="dropzone__filesize">{formatSize(importedFile.size)}</span>
               </div>
               <span className="dropzone__format-badge">{getFileExt(importedFile.name)}</span>
               <button
@@ -160,11 +151,7 @@ export default function FileDropzone() {
           >
             <motion.div
               className="dropzone__icon-ring"
-              animate={
-                dragOver
-                  ? { scale: 1.12, rotate: 4 }
-                  : { scale: 1, rotate: 0 }
-              }
+              animate={dragOver ? { scale: 1.12, rotate: 4 } : { scale: 1, rotate: 0 }}
               transition={{ type: 'spring', stiffness: 300, damping: 20 }}
             >
               <UploadCloud size={36} strokeWidth={1.5} />

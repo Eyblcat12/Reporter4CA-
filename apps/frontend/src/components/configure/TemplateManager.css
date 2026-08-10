@@ -31,7 +31,9 @@
   cursor: pointer;
   padding: var(--space-1);
   border-radius: var(--radius-sm);
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
 }
 .tpl-mgr__close:hover {
   color: var(--text-primary);
@@ -85,7 +87,10 @@
   border-radius: var(--radius-lg);
   background: var(--surface);
   cursor: pointer;
-  transition: border-color 0.2s, background 0.2s, transform 0.2s;
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    transform 0.2s;
 }
 .tpl-mgr__dropzone:hover {
   border-color: var(--accent);
@@ -156,14 +161,18 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   overflow: hidden;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 .tpl-mgr__item:hover {
   border-color: var(--border-subtle);
 }
 .tpl-mgr__item--selected {
   border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent), var(--shadow-glow);
+  box-shadow:
+    0 0 0 1px var(--accent),
+    var(--shadow-glow);
 }
 
 .tpl-mgr__item-main {
@@ -215,9 +224,15 @@
   box-shadow: none !important;
 }
 
-.tpl-thumb--ready .tpl-thumb__spinner { display: none; }
+.tpl-thumb--ready .tpl-thumb__spinner {
+  display: none;
+}
 
-@keyframes tpl-thumb-spin { to { transform: rotate(360deg); } }
+@keyframes tpl-thumb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 .tpl-mgr__item-main:hover {
   background: var(--surface-hover);
 }
@@ -291,7 +306,10 @@
   padding: var(--space-1);
   display: flex;
   align-items: center;
-  transition: color 0.15s, background 0.15s, border-color 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s,
+    border-color 0.15s;
 }
 .tpl-mgr__action-btn:hover {
   color: var(--text-primary);
@@ -334,10 +352,22 @@
   font-family: var(--font-mono);
   font-size: 0.6rem;
 }
-.tpl-badge--compatible{background:var(--success-muted);color:var(--success)}
-.tpl-badge--compatible_with_warnings{background:var(--warning-muted);color:var(--warning)}
-.tpl-badge--incompatible{background:var(--error-muted);color:var(--error)}
-.tpl-mgr__item-main[aria-disabled="true"]{cursor:not-allowed;opacity:.72}
+.tpl-badge--compatible {
+  background: var(--success-muted);
+  color: var(--success);
+}
+.tpl-badge--compatible_with_warnings {
+  background: var(--warning-muted);
+  color: var(--warning);
+}
+.tpl-badge--incompatible {
+  background: var(--error-muted);
+  color: var(--error);
+}
+.tpl-mgr__item-main[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
 
 /* ─── Analysis Panel ─── */
 .tpl-mgr__analysis {
@@ -386,12 +416,83 @@
   font-size: 0.65rem;
   font-family: var(--font-mono);
 }
-.tpl-analysis__compat{display:grid;gap:6px;margin-top:12px;padding:10px;border:1px solid var(--border-subtle);border-radius:10px}
-.tpl-analysis__compat strong{font-size:12px}.tpl-analysis__compat>span,.tpl-analysis__compat small{color:var(--text-tertiary);font-size:10px}
-.tpl-analysis__compat p{margin:0;color:var(--text-secondary);font-size:11px}.tpl-analysis__compat p code{color:var(--text-primary)}
-.tpl-analysis__compat--incompatible{border-color:color-mix(in srgb,var(--error) 45%,var(--border-subtle))}
-.tpl-analysis__compat--compatible_with_warnings{border-color:color-mix(in srgb,var(--warning) 45%,var(--border-subtle))}
-.tpl-version{display:grid;gap:7px;padding:12px 16px;border-top:1px solid var(--border-subtle);background:var(--surface-elevated)}.tpl-version__head,.tpl-version__row{display:flex;justify-content:space-between;align-items:center;gap:10px}.tpl-version__head>span{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700}.tpl-version button{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--border-color);border-radius:7px;background:transparent;color:var(--text-secondary);padding:5px 8px;font-size:10px;cursor:pointer}.tpl-version__row{padding:7px 0;border-top:1px solid var(--border-subtle);font-size:11px}.tpl-version__row>span{display:grid;gap:2px}.tpl-version__row small{color:var(--text-tertiary);font-size:9px;text-transform:uppercase}
+.tpl-analysis__compat {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+}
+.tpl-analysis__compat strong {
+  font-size: 12px;
+}
+.tpl-analysis__compat > span,
+.tpl-analysis__compat small {
+  color: var(--text-tertiary);
+  font-size: 10px;
+}
+.tpl-analysis__compat p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+.tpl-analysis__compat p code {
+  color: var(--text-primary);
+}
+.tpl-analysis__compat--incompatible {
+  border-color: color-mix(in srgb, var(--error) 45%, var(--border-subtle));
+}
+.tpl-analysis__compat--compatible_with_warnings {
+  border-color: color-mix(in srgb, var(--warning) 45%, var(--border-subtle));
+}
+.tpl-version {
+  display: grid;
+  gap: 7px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--surface-elevated);
+}
+.tpl-version__head,
+.tpl-version__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.tpl-version__head > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.tpl-version button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-secondary);
+  padding: 5px 8px;
+  font-size: 10px;
+  cursor: pointer;
+}
+.tpl-version__row {
+  padding: 7px 0;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 11px;
+}
+.tpl-version__row > span {
+  display: grid;
+  gap: 2px;
+}
+.tpl-version__row small {
+  color: var(--text-tertiary);
+  font-size: 9px;
+  text-transform: uppercase;
+}
 
 .tpl-analysis__headings ul {
   margin: var(--space-1) 0 0;
@@ -452,7 +553,9 @@
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: background 0.15s, box-shadow 0.15s;
+  transition:
+    background 0.15s,
+    box-shadow 0.15s;
   border: 1px solid transparent;
 }
 

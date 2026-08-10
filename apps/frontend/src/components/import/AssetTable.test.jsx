@@ -4,14 +4,16 @@ import AssetTable from './AssetTable';
 
 const startRuleFromRow = vi.fn();
 const context = {
-  rows: [{
-    type: 'client',
-    hostname: 'PC-NOTE-01',
-    ip: '10.0.0.10',
-    os: 'Windows 11',
-    result: 'Cần xác minh',
-    notes: 'Acme Relay detected',
-  }],
+  rows: [
+    {
+      type: 'client',
+      hostname: 'PC-NOTE-01',
+      ip: '10.0.0.10',
+      os: 'Windows 11',
+      result: 'Cần xác minh',
+      notes: 'Acme Relay detected',
+    },
+  ],
   addRow: vi.fn(),
   removeRow: vi.fn(),
   updateRow: vi.fn(),
@@ -21,9 +23,18 @@ const context = {
     valid: true,
     issues: [],
     summary: {
-      totalRows: 1, validRows: 1, errorRows: 0, warningRows: 0,
-      errors: 0, warnings: 0, servers: 0, clients: 1,
-      duplicateHostnames: 0, invalidIps: 0, missingOs: 0, missingResult: 0,
+      totalRows: 1,
+      validRows: 1,
+      errorRows: 0,
+      warningRows: 0,
+      errors: 0,
+      warnings: 0,
+      servers: 0,
+      clients: 1,
+      duplicateHostnames: 0,
+      invalidIps: 0,
+      missingOs: 0,
+      missingResult: 0,
     },
   },
 };

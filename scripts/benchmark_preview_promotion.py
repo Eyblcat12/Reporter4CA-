@@ -12,22 +12,21 @@ import time
 from pathlib import Path
 from unittest.mock import patch
 
-
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "apps" / "backend"
 sys.path.insert(0, str(BACKEND))
 os.environ["AUTO_REPORT_PREVIEW_JOBS"] = "1"
 os.environ["AUTO_REPORT_PREVIEW_CACHE"] = "1"
 
-from fastapi import FastAPI  # noqa: E402
-from fastapi.testclient import TestClient  # noqa: E402
 from api import routes  # noqa: E402
-from docx import Document  # noqa: E402
 from api.models import PreviewDocxRequest  # noqa: E402
 from core.database import Database  # noqa: E402
 from core.docx_field_updater import FieldUpdateResult  # noqa: E402
 from core.preview_artifacts import PreviewArtifactRegistry  # noqa: E402
 from core.report_jobs import ReportJobManager  # noqa: E402
+from docx import Document  # noqa: E402
+from fastapi import FastAPI  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
 
 
 def wait_for(client: TestClient, url: str, terminal: set[str], timeout: float) -> dict:
@@ -71,17 +70,23 @@ def main() -> int:
                 active.start()
             with TestClient(app) as client:
                 encoded = base64.b64encode(sample.read_bytes()).decode("ascii")
-                column_preview = client.post("/api/column-preview", json={
-                    "filename": sample.name,
-                    "contentBase64": encoded,
-                })
+                column_preview = client.post(
+                    "/api/column-preview",
+                    json={
+                        "filename": sample.name,
+                        "contentBase64": encoded,
+                    },
+                )
                 column_preview.raise_for_status()
-                imported = client.post("/api/import-file", json={
-                    "filename": sample.name,
-                    "contentBase64": encoded,
-                    "defaultType": "client",
-                    "columnMapping": column_preview.json()["suggestedMapping"],
-                })
+                imported = client.post(
+                    "/api/import-file",
+                    json={
+                        "filename": sample.name,
+                        "contentBase64": encoded,
+                        "defaultType": "client",
+                        "columnMapping": column_preview.json()["suggestedMapping"],
+                    },
+                )
                 imported.raise_for_status()
                 rows = imported.json()["rows"]
                 if len(rows) != 50:
@@ -123,12 +128,15 @@ def main() -> int:
                 preview_bytes = managed.path.read_bytes()
 
                 promotion_started = time.perf_counter()
-                submitted = client.post("/api/report-jobs", json={
-                    **request,
-                    "previewId": preview_id,
-                    "clientRequestId": "benchmark-report-50",
-                    "outputName": "phase5-promotion-50.docx",
-                })
+                submitted = client.post(
+                    "/api/report-jobs",
+                    json={
+                        **request,
+                        "previewId": preview_id,
+                        "clientRequestId": "benchmark-report-50",
+                        "outputName": "phase5-promotion-50.docx",
+                    },
+                )
                 submitted.raise_for_status()
                 job_id = submitted.json()["job"]["id"]
                 report = wait_for(

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import sys
 import threading
 import time
-import sys
 import unittest
 from pathlib import Path
 
@@ -10,10 +10,11 @@ ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "apps" / "backend"
 sys.path.insert(0, str(BACKEND))
 
-from core.report_jobs import JobCancelled, ReportJobManager
-from core.config import unified_report_scheduler_enabled
-from unittest.mock import patch
 import os
+from unittest.mock import patch
+
+from core.config import unified_report_scheduler_enabled
+from core.report_jobs import ReportJobManager
 
 
 def wait_for(predicate, timeout: float = 2.0) -> None:

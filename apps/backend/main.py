@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import os
 import signal
-import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -15,16 +14,16 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 REPOSITORY_ROOT = PROJECT_ROOT.parents[1]
 load_dotenv(REPOSITORY_ROOT / ".env")
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-
-from api.routes import router as api_router, shutdown_report_scheduler
 from api.errors import install_error_handling
+from api.routes import router as api_router
+from api.routes import shutdown_report_scheduler
 from core.config import APP_NAME, APP_VERSION, cors_origins
 from core.database import close_db
 from core.logging_config import configure_logging
 from core.runtime_lifecycle import runtime_lifecycle
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 FRONTEND_DIST = PROJECT_ROOT.parent / "frontend" / "dist"
 configure_logging(PROJECT_ROOT / "data")
@@ -39,6 +38,7 @@ async def lifespan(app: FastAPI):
     print("  Docs: http://127.0.0.1:8000/docs")
     print("=" * 50)
     print("", flush=True)
+
     async def monitor_launcher() -> None:
         while True:
             await asyncio.sleep(2)
@@ -100,6 +100,7 @@ if FRONTEND_DIST.exists() and FRONTEND_DIST.is_dir():
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(
         "main:app",
         host="127.0.0.1",

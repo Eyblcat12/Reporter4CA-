@@ -41,10 +41,14 @@ export default function AppShell() {
   const renderStep = () => {
     if (showWelcome) return <DashboardHome onOpenImport={openImport} />;
     switch (currentStep) {
-      case 1: return <ImportStep initialTab={importEntryTab} />;
-      case 2: return <ConfigureStep />;
-      case 3: return <ExportStep />;
-      default: return <ImportStep />;
+      case 1:
+        return <ImportStep initialTab={importEntryTab} />;
+      case 2:
+        return <ConfigureStep />;
+      case 3:
+        return <ExportStep />;
+      default:
+        return <ImportStep />;
     }
   };
 
@@ -60,22 +64,23 @@ export default function AppShell() {
         <div className="app-main__header">
           <div className="app-main__breadcrumb">
             {/* Step breadcrumb trail */}
-            {!showWelcome && STEP_KEYS.map((key, idx) => {
-              const stepNum = idx + 1;
-              const isActive = currentStep === stepNum;
-              const isPast = currentStep > stepNum;
-              return (
-                <span key={key} className="app-main__crumb-group">
-                  {idx > 0 && <span className="app-main__crumb-sep">/</span>}
-                  <button
-                    className={`app-main__crumb ${isActive ? 'app-main__crumb--active' : ''} ${isPast ? 'app-main__crumb--past' : ''}`}
-                    onClick={() => setStep(stepNum)}
-                  >
-                    {t(`step.${key}`)}
-                  </button>
-                </span>
-              );
-            })}
+            {!showWelcome &&
+              STEP_KEYS.map((key, idx) => {
+                const stepNum = idx + 1;
+                const isActive = currentStep === stepNum;
+                const isPast = currentStep > stepNum;
+                return (
+                  <span key={key} className="app-main__crumb-group">
+                    {idx > 0 && <span className="app-main__crumb-sep">/</span>}
+                    <button
+                      className={`app-main__crumb ${isActive ? 'app-main__crumb--active' : ''} ${isPast ? 'app-main__crumb--past' : ''}`}
+                      onClick={() => setStep(stepNum)}
+                    >
+                      {t(`step.${key}`)}
+                    </button>
+                  </span>
+                );
+              })}
             {showWelcome && (
               <span className="app-main__crumb app-main__crumb--active">
                 <Zap size={14} />

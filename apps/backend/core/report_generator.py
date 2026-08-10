@@ -1,16 +1,16 @@
 from __future__ import annotations
 
+import gc
+import logging
+import time
 from contextlib import nullcontext
 from contextvars import ContextVar
 from copy import deepcopy
 from datetime import date, datetime
 from enum import Enum
 from functools import lru_cache
-import gc
 from io import BytesIO
-import logging
 from pathlib import Path
-import time
 from typing import Any
 
 from core.config import (
@@ -20,10 +20,13 @@ from core.config import (
     prepared_template_cache_entries,
     prepared_template_enabled,
 )
+from core.performance_metrics import PerformanceMetrics
 from core.prepared_template import (
     PreparedTemplateCache,
     PreparedTemplateError,
 )
+from core.report_integrity import build_report_manifest, verify_report_document
+from core.rule_engine import assessment_text, evaluate_payload
 from core.template_blueprint import (
     BLUEPRINT_SCHEMA_VERSION,
     TableBlueprint,
@@ -31,13 +34,11 @@ from core.template_blueprint import (
     compile_table_blueprint,
 )
 from core.threat_intelligence import normalize_iocs, normalize_mitre
-from core.rule_engine import assessment_text, evaluate_payload
-from core.report_integrity import build_report_manifest, verify_report_document
-from core.performance_metrics import PerformanceMetrics
-
 
 DEFAULT_TEXT_VALUE = "N/A"
-DEFAULT_TEMPLATE_PATH = Path(__file__).resolve().parent.parent / "templates" / "report_template.docx"
+DEFAULT_TEMPLATE_PATH = (
+    Path(__file__).resolve().parent.parent / "templates" / "report_template.docx"
+)
 DEFAULT_PREPARED_TEMPLATE_CACHE_ROOT = (
     Path(__file__).resolve().parent.parent / "data" / "cache" / "prepared-templates"
 )
@@ -106,23 +107,52 @@ class _BuildWorkTracker:
             )
         self._last_checkpoint_ns = finished_ns
 
+
 # Từ khóa nhận diện máy có bất thường (cụm từ, không phải từ đơn lẻ)
 _ANOMALY_KEYWORDS = {
-    "phát hiện mã độc", "mã độc", "bất thường", "malware", "trojan",
-    "virus", "backdoor", "webshell", "c2", "beacon", "cobalt",
-    "emotet", "ransomware", "exploit", "suspicious", "infected",
-    "compromised", "lateral", "persistence", "dropper",
-    "keylogger", "reverse shell", "plugx", "shadowpad", "mimikatz",
+    "phát hiện mã độc",
+    "mã độc",
+    "bất thường",
+    "malware",
+    "trojan",
+    "virus",
+    "backdoor",
+    "webshell",
+    "c2",
+    "beacon",
+    "cobalt",
+    "emotet",
+    "ransomware",
+    "exploit",
+    "suspicious",
+    "infected",
+    "compromised",
+    "lateral",
+    "persistence",
+    "dropper",
+    "keylogger",
+    "reverse shell",
+    "plugx",
+    "shadowpad",
+    "mimikatz",
 }
 
 # Từ khóa phủ định — nếu chứa keyword này → KHÔNG phải bất thường
 _CLEAN_KEYWORDS = {
-    "không phát hiện", "không ghi nhận", "clean", "not found",
-    "no malware", "no threat", "bình thường",
+    "không phát hiện",
+    "không ghi nhận",
+    "clean",
+    "not found",
+    "no malware",
+    "no threat",
+    "bình thường",
 }
 
 METHOD_CHECKLIST_ITEMS = [
-    ("Tiến hành thu thập và phân tích các dữ liệu, các log liên quan đến quá trình điều tra. Trường hợp log source đã được thu thập trên SIEM, thực hiện đánh giá trên SIEM.", 0),
+    (
+        "Tiến hành thu thập và phân tích các dữ liệu, các log liên quan đến quá trình điều tra. Trường hợp log source đã được thu thập trên SIEM, thực hiện đánh giá trên SIEM.",
+        0,
+    ),
     ("Kiểm tra rootkit.", 0),
     ("Xác định các Autorun Entry bất thường.", 0),
     ("Xác định các Service, process bất thường.", 0),
@@ -137,7 +167,10 @@ METHOD_CHECKLIST_ITEMS = [
     ("Kiểm tra webshell.", 1),
     ("Kiểm tra các access log, web application log nhằm xác định các request bất thường.", 1),
     ("Kiểm tra phiên bản phần mềm và các gói cài đặt trên server.", 0),
-    ("Trường hợp cần thiết, thực hiện trích xuất memory và điều tra, phân tích trên memory này.", 0),
+    (
+        "Trường hợp cần thiết, thực hiện trích xuất memory và điều tra, phân tích trên memory này.",
+        0,
+    ),
 ]
 
 TOOLS_USED = [
@@ -186,6 +219,7 @@ DEFAULT_RECOMMENDATIONS = [
 # Report type enum
 # ---------------------------------------------------------------------------
 
+
 class ReportType(str, Enum):
     FULL = "full"
     SERVER_ONLY = "server_only"
@@ -198,6 +232,7 @@ class ReportType(str, Enum):
 # ---------------------------------------------------------------------------
 # ReportBuilder class — điểm trung tâm tạo báo cáo
 # ---------------------------------------------------------------------------
+
 
 class ReportBuilder:
     """Wraps report generation with configurable report_type support."""
@@ -310,7 +345,8 @@ class ReportBuilder:
             include_clients=include_clients,
         )
         _add_results_section(
-            document, data,
+            document,
+            data,
             include_servers=include_servers,
             include_clients=include_clients,
         )
@@ -320,7 +356,8 @@ class ReportBuilder:
             include_clients=include_clients,
         )
         _add_remediation_section(
-            document, data,
+            document,
+            data,
             include_servers=include_servers,
             include_clients=include_clients,
         )
@@ -370,22 +407,38 @@ class ReportBuilder:
             ["Mã sự cố", str(metadata.get("incident_id", metadata.get("incidentId", "N/A")))],
             ["Mức độ", str(metadata.get("severity", "Chưa xác định"))],
             ["Trạng thái", str(metadata.get("status", "Đang xử lý"))],
-            ["Thời điểm phát hiện", str(metadata.get("detected_at", metadata.get("detectedAt", "N/A")))],
+            [
+                "Thời điểm phát hiện",
+                str(metadata.get("detected_at", metadata.get("detectedAt", "N/A"))),
+            ],
         ]
-        table = _create_table(document, ["Thuộc tính", "Giá trị"], incident_rows, column_widths_mm=[52, 108])
+        table = _create_table(
+            document, ["Thuộc tính", "Giá trị"], incident_rows, column_widths_mm=[52, 108]
+        )
         _style_table(table, left_align_columns={0, 1})
 
         _add_heading(document, "Tóm tắt điều hành", level=1)
         supplied_summary = metadata.get("executive_summary", metadata.get("executiveSummary", ""))
         verified_findings = sum(len(asset.get("findings", [])) for asset in assets)
-        _add_body_paragraph(document, str(supplied_summary or (
-            f"Phạm vi ghi nhận {len(assets)} tài sản và {verified_findings} finding có evidence từ dữ liệu đầu vào. "
-            "Các kết luận chưa có bằng chứng liên kết không được tự động đưa vào tóm tắt."
-        )))
+        _add_body_paragraph(
+            document,
+            str(
+                supplied_summary
+                or (
+                    f"Phạm vi ghi nhận {len(assets)} tài sản và {verified_findings} finding có evidence từ dữ liệu đầu vào. "
+                    "Các kết luận chưa có bằng chứng liên kết không được tự động đưa vào tóm tắt."
+                )
+            ),
+        )
 
         _add_heading(document, "Tài sản bị ảnh hưởng", level=1)
         asset_rows = [
-            [str(index), str(asset.get("hostname", "N/A")), str(asset.get("ip", "N/A")), str(asset.get("result", "N/A"))]
+            [
+                str(index),
+                str(asset.get("hostname", "N/A")),
+                str(asset.get("ip", "N/A")),
+                str(asset.get("result", "N/A")),
+            ]
             for index, asset in enumerate(assets, start=1)
         ] or [["", "", "", ""]]
         table = _create_table(
@@ -402,15 +455,19 @@ class ReportBuilder:
         if isinstance(timeline, list):
             for item in timeline:
                 if isinstance(item, dict):
-                    timeline_rows.append([
-                        str(item.get("time", item.get("timestamp", "N/A"))),
-                        str(item.get("event", item.get("description", ""))),
-                        str(item.get("evidence", item.get("evidenceId", ""))),
-                        str(item.get("relatedIocs", item.get("iocs", ""))),
-                    ])
+                    timeline_rows.append(
+                        [
+                            str(item.get("time", item.get("timestamp", "N/A"))),
+                            str(item.get("event", item.get("description", ""))),
+                            str(item.get("evidence", item.get("evidenceId", ""))),
+                            str(item.get("relatedIocs", item.get("iocs", ""))),
+                        ]
+                    )
         table = _create_table(
-            document, ["Thời gian", "Sự kiện", "Bằng chứng", "IoC liên quan"],
-            timeline_rows or [["", "", "", ""]], column_widths_mm=[30, 60, 35, 35],
+            document,
+            ["Thời gian", "Sự kiện", "Bằng chứng", "IoC liên quan"],
+            timeline_rows or [["", "", "", ""]],
+            column_widths_mm=[30, 60, 35, 35],
         )
         _style_table(table, left_align_columns={0, 1, 2, 3})
 
@@ -419,14 +476,17 @@ class ReportBuilder:
         for asset in assets:
             for finding in asset.get("findings", []):
                 evidence = "; ".join(
-                    f"{item.get('field')}: {item.get('value')}" for item in finding.get("evidence", [])
+                    f"{item.get('field')}: {item.get('value')}"
+                    for item in finding.get("evidence", [])
                 )
-                finding_rows.append([
-                    str(asset.get("hostname", "N/A")),
-                    str(finding.get("ruleId", "N/A")),
-                    str(finding.get("severity", "N/A")),
-                    evidence,
-                ])
+                finding_rows.append(
+                    [
+                        str(asset.get("hostname", "N/A")),
+                        str(finding.get("ruleId", "N/A")),
+                        str(finding.get("severity", "N/A")),
+                        evidence,
+                    ]
+                )
         table = _create_table(
             document,
             ["Tài sản", "Rule", "Mức độ", "Bằng chứng"],
@@ -438,11 +498,18 @@ class ReportBuilder:
         _add_heading(document, "Indicators of compromise (IoCs)", level=1)
         iocs = normalize_iocs(metadata.get("iocs", []), default_source="incident metadata")
         ioc_rows = [
-            [str(index), item["type"], item["value"], "Valid" if item["valid"] else "Invalid", ", ".join(item["sources"])]
+            [
+                str(index),
+                item["type"],
+                item["value"],
+                "Valid" if item["valid"] else "Invalid",
+                ", ".join(item["sources"]),
+            ]
             for index, item in enumerate(iocs, start=1)
         ]
         table = _create_table(
-            document, ["STT", "Loại", "Giá trị", "Kiểm tra", "Nguồn"],
+            document,
+            ["STT", "Loại", "Giá trị", "Kiểm tra", "Nguồn"],
             ioc_rows or [["", "", "", "", ""]],
         )
         _style_table(table, left_align_columns={1, 2, 3, 4})
@@ -450,11 +517,18 @@ class ReportBuilder:
         _add_heading(document, "MITRE ATT&CK", level=1)
         mappings = normalize_mitre(metadata.get("mitre", metadata.get("mitreMappings", [])))
         mitre_rows = [
-            [item["technique"], item["tactic"], item["name"], item["evidence"], "Valid" if item["valid"] else "Needs evidence"]
+            [
+                item["technique"],
+                item["tactic"],
+                item["name"],
+                item["evidence"],
+                "Valid" if item["valid"] else "Needs evidence",
+            ]
             for item in mappings
         ]
         table = _create_table(
-            document, ["Technique", "Tactic", "Tên", "Bằng chứng", "Trạng thái"],
+            document,
+            ["Technique", "Tactic", "Tên", "Bằng chứng", "Trạng thái"],
             mitre_rows or [["", "", "", "", "Chưa có mapping"]],
         )
         _style_table(table, left_align_columns={0, 1, 2, 3, 4})
@@ -471,16 +545,19 @@ class ReportBuilder:
             values = value if isinstance(value, list) else [value] if value else []
             for action in values:
                 if isinstance(action, dict):
-                    action_rows.append([
-                        str(action.get("action", action.get("description", ""))),
-                        str(action.get("status", "Planned")),
-                        str(action.get("owner", "Unassigned")),
-                        str(action.get("evidence", "")),
-                    ])
+                    action_rows.append(
+                        [
+                            str(action.get("action", action.get("description", ""))),
+                            str(action.get("status", "Planned")),
+                            str(action.get("owner", "Unassigned")),
+                            str(action.get("evidence", "")),
+                        ]
+                    )
                 elif str(action).strip():
                     action_rows.append([str(action), "Planned", "Unassigned", ""])
             table = _create_table(
-                document, ["Hành động", "Trạng thái", "Phụ trách", "Bằng chứng"],
+                document,
+                ["Hành động", "Trạng thái", "Phụ trách", "Bằng chứng"],
                 action_rows or [[fallback, "Not started", "Unassigned", ""]],
             )
             _style_table(table, left_align_columns={0, 1, 2, 3})
@@ -488,7 +565,9 @@ class ReportBuilder:
         _add_heading(document, "Bài học kinh nghiệm", level=1)
         _add_body_paragraph(
             document,
-            _metadata_text(metadata.get("lessons_learned", metadata.get("lessonsLearned")), "Chưa có nội dung."),
+            _metadata_text(
+                metadata.get("lessons_learned", metadata.get("lessonsLearned")), "Chưa có nội dung."
+            ),
         )
         _add_recommendations_section(document)
 
@@ -496,6 +575,7 @@ class ReportBuilder:
 # ---------------------------------------------------------------------------
 # Backward-compatible top-level function
 # ---------------------------------------------------------------------------
+
 
 def generate_report(
     data: dict[str, Any],
@@ -580,6 +660,7 @@ def render_preview_text(data: dict[str, Any]) -> str:
 # Document creation helpers
 # ---------------------------------------------------------------------------
 
+
 def _create_base_document(
     template_path: str | Path | None,
     *,
@@ -624,9 +705,7 @@ def _create_base_document(
                     with _performance_phase(metrics, "prototypeCapture"):
                         prototype_source = Document(BytesIO(prepared.source_bytes))
                         _capture_template_prototypes(prototype_source)
-                        captured_prototypes = _extract_template_prototypes(
-                            prototype_source
-                        )
+                        captured_prototypes = _extract_template_prototypes(prototype_source)
                         del prototype_source
                         # Avoid overlapping the large source package with the
                         # prepared document in peak working-set measurements.
@@ -635,13 +714,15 @@ def _create_base_document(
                     document = Document(str(prepared.path))
                 _apply_template_prototypes(captured_prototypes, document)
                 if metrics is not None:
-                    metrics.update_metadata({
-                        "cacheState": (
-                            "cache-warm/prepared-hit"
-                            if prepared.cache_hit
-                            else "process-cold/cache-miss"
-                        )
-                    })
+                    metrics.update_metadata(
+                        {
+                            "cacheState": (
+                                "cache-warm/prepared-hit"
+                                if prepared.cache_hit
+                                else "process-cold/cache-miss"
+                            )
+                        }
+                    )
             except Exception as exc:
                 # Cache failures are never allowed to break a report that the
                 # legacy engine can still generate. Do not log paths or content.
@@ -650,10 +731,12 @@ def _create_base_document(
                     type(exc).__name__,
                 )
                 if metrics is not None:
-                    metrics.update_metadata({
-                        "cacheState": "prepared-fallback",
-                        "preparedFallback": _prepared_fallback_reason(exc),
-                    })
+                    metrics.update_metadata(
+                        {
+                            "cacheState": "prepared-fallback",
+                            "preparedFallback": _prepared_fallback_reason(exc),
+                        }
+                    )
                 document = None
 
         if document is None:
@@ -773,11 +856,15 @@ def bundled_template_sources(
     sources: list[tuple[ReportType, Path]] = []
     for report_type in ReportType:
         category = root / report_type.value
-        candidates = sorted(
-            path
-            for path in category.glob("*.docx")
-            if path.is_file() and not path.name.startswith("~")
-        ) if category.is_dir() else []
+        candidates = (
+            sorted(
+                path
+                for path in category.glob("*.docx")
+                if path.is_file() and not path.name.startswith("~")
+            )
+            if category.is_dir()
+            else []
+        )
         source = candidates[0] if candidates else fallback
         if source.is_file():
             sources.append((report_type, source))
@@ -801,15 +888,17 @@ def warm_bundled_templates(
         except (OSError, PreparedTemplateError, RuntimeError, ValueError) as exc:
             outcome = "deferred"
             error_code = type(exc).__name__
-        results.append({
-            "reportType": report_type.value,
-            "outcome": outcome,
-            "errorCode": error_code,
-            "durationMs": round(
-                (time.perf_counter_ns() - started_ns) / 1_000_000,
-                3,
-            ),
-        })
+        results.append(
+            {
+                "reportType": report_type.value,
+                "outcome": outcome,
+                "errorCode": error_code,
+                "durationMs": round(
+                    (time.perf_counter_ns() - started_ns) / 1_000_000,
+                    3,
+                ),
+            }
+        )
     return results
 
 
@@ -821,11 +910,7 @@ def _performance_phase(
 ) -> Any:
     """Return a no-op context unless performance collection was requested."""
 
-    return (
-        metrics.phase(name, attributes=attributes)
-        if metrics is not None
-        else nullcontext()
-    )
+    return metrics.phase(name, attributes=attributes) if metrics is not None else nullcontext()
 
 
 @lru_cache(maxsize=1)
@@ -919,9 +1004,7 @@ def _clear_cached_toc_result(document: Any) -> bool:
     body = document._element.body
     start_paragraph = None
     for child in body.iter(qn("w:p")):
-        instructions = " ".join(
-            (node.text or "") for node in child.iter(qn("w:instrText"))
-        )
+        instructions = " ".join((node.text or "") for node in child.iter(qn("w:instrText")))
         if "TOC " in instructions.upper():
             start_paragraph = child
             break
@@ -945,7 +1028,9 @@ def _clear_cached_toc_result(document: Any) -> bool:
             if field_type == "begin":
                 depth += 1
                 outer_started = True
-            elif field_type == "separate" and outer_started and depth == 1 and separator_run is None:
+            elif (
+                field_type == "separate" and outer_started and depth == 1 and separator_run is None
+            ):
                 separator_run = field_char.getparent()
             elif field_type == "end" and outer_started:
                 if depth == 1 and separator_run is not None:
@@ -964,7 +1049,7 @@ def _clear_cached_toc_result(document: Any) -> bool:
     except ValueError:
         return False
 
-    for child in paragraph_children[separator_index + 1:]:
+    for child in paragraph_children[separator_index + 1 :]:
         start_paragraph.remove(child)
 
     end_run = OxmlElement("w:r")
@@ -1261,6 +1346,7 @@ def _configure_document(document: Any, *, using_template: bool = False) -> None:
 # Report sections
 # ---------------------------------------------------------------------------
 
+
 def _report_assets(data: dict[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     servers = data.get("servers", [])
     clients = data.get("clients", [])
@@ -1339,7 +1425,9 @@ def _add_summary_analysis_section(document: Any, data: dict[str, Any]) -> None:
         )
         _style_table(table, left_align_columns={1, 2, 3})
     else:
-        _add_body_paragraph(document, "Chưa ghi nhận phát hiện bất thường nổi bật trong dữ liệu được cung cấp.")
+        _add_body_paragraph(
+            document, "Chưa ghi nhận phát hiện bất thường nổi bật trong dữ liệu được cung cấp."
+        )
 
     total, anomalous, clean = _asset_statistics(data)
     _add_heading(document, "Đánh giá ảnh hưởng chung", level=2)
@@ -1403,7 +1491,10 @@ def _add_technical_overview_section(
     _add_heading(document, "Công cụ và nguồn dữ liệu", level=2)
     for tool in TOOLS_USED:
         _add_list_paragraph(document, tool, num_id=26)
-    _add_body_paragraph(document, "Nguồn dữ liệu phân tích gồm kết quả rà soát và ghi chú kỹ thuật được nhập vào hệ thống.")
+    _add_body_paragraph(
+        document,
+        "Nguồn dữ liệu phân tích gồm kết quả rà soát và ghi chú kỹ thuật được nhập vào hệ thống.",
+    )
 
 
 _TECHNICAL_CATEGORY_LABELS = {
@@ -1441,13 +1532,15 @@ def _add_technical_analysis_section(document: Any, data: dict[str, Any]) -> None
             evidence = "; ".join(
                 f"{item.get('field')}: {item.get('value')}" for item in finding.get("evidence", [])
             )
-            rule_rows.append([
-                str(asset.get("hostname", DEFAULT_TEXT_VALUE)),
-                str(finding.get("ruleId", "N/A")),
-                str(finding.get("severity", "N/A")),
-                str(finding.get("classification", "N/A")),
-                evidence,
-            ])
+            rule_rows.append(
+                [
+                    str(asset.get("hostname", DEFAULT_TEXT_VALUE)),
+                    str(finding.get("ruleId", "N/A")),
+                    str(finding.get("severity", "N/A")),
+                    str(finding.get("classification", "N/A")),
+                    evidence,
+                ]
+            )
     table = _create_table(
         document,
         ["Tài sản", "Rule", "Mức độ", "Phân loại", "Bằng chứng"],
@@ -1477,11 +1570,17 @@ def _add_technical_analysis_section(document: Any, data: dict[str, Any]) -> None
         for category in _finding_categories(asset):
             categorized.setdefault(category, []).append(asset)
     if not categorized:
-        _add_body_paragraph(document, "Chưa có bằng chứng đủ để tạo các nhóm phân tích điều tra chuyên sâu.")
+        _add_body_paragraph(
+            document, "Chưa có bằng chứng đủ để tạo các nhóm phân tích điều tra chuyên sâu."
+        )
     for category, category_assets in sorted(
         categorized.items(), key=lambda item: _TECHNICAL_CATEGORY_LABELS.get(item[0], item[0])
     ):
-        _add_heading(document, _TECHNICAL_CATEGORY_LABELS.get(category, category.replace("_", " ").title()), level=3)
+        _add_heading(
+            document,
+            _TECHNICAL_CATEGORY_LABELS.get(category, category.replace("_", " ").title()),
+            level=3,
+        )
         for asset in category_assets:
             evidence = str(asset.get("notes") or asset.get("result") or ANOMALY_RESULT_TEXT)
             _add_list_paragraph(
@@ -1503,7 +1602,11 @@ def _add_technical_analysis_section(document: Any, data: dict[str, Any]) -> None
             raw_iocs.append(raw)
     normalized = normalize_iocs(raw_iocs, default_source="asset")
     ioc_rows = [
-        [str(index), item["value"], f"{item['type']} · {'valid' if item['valid'] else 'invalid'} · {', '.join(item['sources'])}"]
+        [
+            str(index),
+            item["value"],
+            f"{item['type']} · {'valid' if item['valid'] else 'invalid'} · {', '.join(item['sources'])}",
+        ]
         for index, item in enumerate(normalized, start=1)
     ]
     table = _create_table(
@@ -1527,14 +1630,23 @@ def _add_technical_remediation_scope(
 ) -> None:
     _add_heading(document, asset_label, level=3)
     if not assets:
-        _add_body_paragraph(document, f"Chưa có {asset_label.lower()} trong phạm vi để ghi nhận hành động xử lý.")
+        _add_body_paragraph(
+            document, f"Chưa có {asset_label.lower()} trong phạm vi để ghi nhận hành động xử lý."
+        )
         return
     rows = []
     for index, asset in enumerate(assets, start=1):
         extras = asset.get("extras") if isinstance(asset.get("extras"), dict) else {}
         remediation = extras.get("remediation") or asset.get("remediation")
         status = str(remediation or "Chưa ghi nhận hành động xử lý bổ sung.")
-        rows.append([str(index), str(asset.get("hostname", DEFAULT_TEXT_VALUE)), str(asset.get("ip", DEFAULT_TEXT_VALUE)), status])
+        rows.append(
+            [
+                str(index),
+                str(asset.get("hostname", DEFAULT_TEXT_VALUE)),
+                str(asset.get("ip", DEFAULT_TEXT_VALUE)),
+                status,
+            ]
+        )
     table = _create_table(
         document,
         ["STT", asset_label, "Địa chỉ IP", "Hành động/Trạng thái"],
@@ -1574,6 +1686,7 @@ def _add_technical_conclusion_section(document: Any, data: dict[str, Any]) -> No
         "Các phát hiện đáng chú ý cần được đối chiếu với nhật ký gốc và xác nhận bởi chủ sở hữu hệ thống.",
     )
 
+
 def _add_overview_section(
     document: Any,
     data: dict[str, Any],
@@ -1587,13 +1700,19 @@ def _add_overview_section(
 
     _add_heading(document, "Tổng quan", level=1)
     _add_heading(document, "Phạm vi và mục đích thực hiện", level=2)
-    _add_body_paragraph(document, f"Thời gian thực hiện đánh giá: {_format_assessment_period(assessment_date)}.")
+    _add_body_paragraph(
+        document, f"Thời gian thực hiện đánh giá: {_format_assessment_period(assessment_date)}."
+    )
     if include_servers:
-        _add_body_paragraph(document, f"Thực hiện đánh giá các máy chủ do phía {org_label} cung cấp:")
+        _add_body_paragraph(
+            document, f"Thực hiện đánh giá các máy chủ do phía {org_label} cung cấp:"
+        )
         _add_inventory_table(document, data.get("servers", []), "Máy chủ")
         _add_blank_paragraph(document)
     if include_clients:
-        _add_body_paragraph(document, f"Thực hiện đánh giá các máy trạm do phía {org_label} cung cấp:")
+        _add_body_paragraph(
+            document, f"Thực hiện đánh giá các máy trạm do phía {org_label} cung cấp:"
+        )
         _add_inventory_table(document, data.get("clients", []), "Máy trạm")
         _add_blank_paragraph(document)
 
@@ -1638,7 +1757,11 @@ def _add_results_section(
         if not servers:
             _add_body_paragraph(document, "Chưa có dữ liệu máy chủ để trình bày chi tiết.")
         for asset in servers:
-            _add_heading(document, f"Kết quả thực hiện CA trên máy chủ {asset.get('hostname', DEFAULT_TEXT_VALUE)}", level=3)
+            _add_heading(
+                document,
+                f"Kết quả thực hiện CA trên máy chủ {asset.get('hostname', DEFAULT_TEXT_VALUE)}",
+                level=3,
+            )
             _add_detail_table(document, asset=asset)
 
     if include_clients:
@@ -1646,7 +1769,11 @@ def _add_results_section(
         if not clients:
             _add_body_paragraph(document, "Chưa có dữ liệu máy trạm để trình bày chi tiết.")
         for asset in clients:
-            _add_heading(document, f"Kết quả thực hiện CA trên máy trạm {asset.get('hostname', DEFAULT_TEXT_VALUE)}", level=3)
+            _add_heading(
+                document,
+                f"Kết quả thực hiện CA trên máy trạm {asset.get('hostname', DEFAULT_TEXT_VALUE)}",
+                level=3,
+            )
             _add_detail_table(document, asset=asset)
 
 
@@ -1659,10 +1786,14 @@ def _add_investigation_section(
     _add_heading(document, "Phân tích điều tra", level=1)
     if include_servers:
         _add_heading(document, "Phân tích điều tra máy chủ", level=2)
-        _add_body_paragraph(document, "Chưa ghi nhận nội dung cần bổ sung cho mục phân tích điều tra máy chủ.")
+        _add_body_paragraph(
+            document, "Chưa ghi nhận nội dung cần bổ sung cho mục phân tích điều tra máy chủ."
+        )
     if include_clients:
         _add_heading(document, "Phân tích điều tra máy trạm", level=2)
-        _add_body_paragraph(document, "Chưa ghi nhận nội dung cần bổ sung cho mục phân tích điều tra máy trạm.")
+        _add_body_paragraph(
+            document, "Chưa ghi nhận nội dung cần bổ sung cho mục phân tích điều tra máy trạm."
+        )
 
 
 def _add_remediation_section(
@@ -1675,13 +1806,19 @@ def _add_remediation_section(
     _add_heading(document, "Gỡ bỏ mã độc", level=1)
     if include_servers:
         _add_heading(document, "Gỡ bỏ mã độc trên máy chủ", level=2)
-        _add_body_paragraph(document, "Chưa có thao tác gỡ bỏ mã độc bổ sung cần ghi nhận cho các máy chủ trong phạm vi.")
+        _add_body_paragraph(
+            document,
+            "Chưa có thao tác gỡ bỏ mã độc bổ sung cần ghi nhận cho các máy chủ trong phạm vi.",
+        )
     if not include_clients:
         return
     _add_heading(document, "Gỡ bỏ mã độc trên máy trạm", level=2)
     clients = data.get("clients", [])
     if not clients:
-        _add_body_paragraph(document, "Chưa có thao tác gỡ bỏ mã độc bổ sung cần ghi nhận cho các máy trạm trong phạm vi.")
+        _add_body_paragraph(
+            document,
+            "Chưa có thao tác gỡ bỏ mã độc bổ sung cần ghi nhận cho các máy trạm trong phạm vi.",
+        )
         return
 
     rows = []
@@ -1736,6 +1873,7 @@ def _add_recommendations_section(
 # ---------------------------------------------------------------------------
 # Table helpers
 # ---------------------------------------------------------------------------
+
 
 def _add_inventory_table(document: Any, assets: list[dict[str, Any]], asset_label: str) -> None:
     rows = []
@@ -1814,7 +1952,8 @@ def _is_anomalous_asset(asset: dict[str, Any] | None) -> bool:
         return any(
             finding.get("classification") in {"anomaly", "needs_review"}
             and bool(finding.get("evidence"))
-            for finding in asset["findings"] if isinstance(finding, dict)
+            for finding in asset["findings"]
+            if isinstance(finding, dict)
         )
     result = str(asset.get("result", "")).lower()
     notes = str(asset.get("notes", "")).lower()
@@ -1863,22 +2002,50 @@ _FINDING_CATEGORY_RULES: dict[str, tuple[str, ...]] = {
     "rootkit": ("rootkit",),
     "autorun": ("autorun", "run key", "startup"),
     "service_process": (
-        "process", "service", "dll sideload", "sideloading", "svchost",
-        "lsass", "mimikatz", "injection", "cobalt", "beacon",
+        "process",
+        "service",
+        "dll sideload",
+        "sideloading",
+        "svchost",
+        "lsass",
+        "mimikatz",
+        "injection",
+        "cobalt",
+        "beacon",
     ),
     "scheduled_task": ("scheduled task", "schedule task", "crontab", "cron", "persistence"),
     "suspicious_file": (
-        "malware", "mã độc", "trojan", "virus", "ransomware", "dropper",
-        "plugx", "shadowpad", "emotet", "payload", "backdoor", "keylogger",
+        "malware",
+        "mã độc",
+        "trojan",
+        "virus",
+        "ransomware",
+        "dropper",
+        "plugx",
+        "shadowpad",
+        "emotet",
+        "payload",
+        "backdoor",
+        "keylogger",
     ),
     "network": ("c2", "callback", "reverse shell", "beacon", "smtp", "kết nối"),
     "account": ("credential", "mimikatz", "account", "tài khoản", "lsass"),
     "shared_file": ("shared folder", "file share", "thư mục chia sẻ"),
-    "tunnel": ("tunnel", "proxy",),
+    "tunnel": (
+        "tunnel",
+        "proxy",
+    ),
     "named_pipe": ("named pipe",),
     "prefetch": ("prefetch",),
-    "webshell": ("webshell", "aspxspy",),
-    "web_log": ("access log", "web log", "http request",),
+    "webshell": (
+        "webshell",
+        "aspxspy",
+    ),
+    "web_log": (
+        "access log",
+        "web log",
+        "http request",
+    ),
 }
 
 _CHECKLIST_CATEGORY_RULES: tuple[tuple[str, str], ...] = (
@@ -1983,11 +2150,7 @@ def _create_table(
 ) -> Any:
     metrics = _CURRENT_PERFORMANCE_METRICS.get()
     metric_started_ns = time.perf_counter_ns() if metrics is not None else 0
-    metric_category = (
-        _table_metric_category(headers, prototype_key)
-        if metrics is not None
-        else ""
-    )
+    metric_category = _table_metric_category(headers, prototype_key) if metrics is not None else ""
     prototype = _get_table_prototype(document, prototype_key)
     blueprint = _get_table_blueprint(document, prototype_key)
     table = None
@@ -2058,10 +2221,7 @@ def _get_table_blueprint(
     document: Any,
     prototype_key: str | None,
 ) -> TableBlueprint | None:
-    if (
-        not prototype_key
-        or not getattr(document, "_reporter_compact_prototype_enabled", False)
-    ):
+    if not prototype_key or not getattr(document, "_reporter_compact_prototype_enabled", False):
         return None
     blueprints = getattr(document, "_reporter_table_blueprints", {})
     return blueprints.get(prototype_key)
@@ -2112,10 +2272,7 @@ def _create_table_from_blueprint(
     table = Table(tbl, document._body)
     if len(table.rows) != 2:
         raise ValueError("Compact blueprint must contain one header and one data row.")
-    if (
-        len(table.rows[0].cells) != len(headers)
-        or len(table.rows[1].cells) != len(headers)
-    ):
+    if len(table.rows[0].cells) != len(headers) or len(table.rows[1].cells) != len(headers):
         raise ValueError("Compact blueprint column count does not match output.")
 
     data_row_prototype = deepcopy(table.rows[1]._tr)
@@ -2257,7 +2414,9 @@ def _ensure_table_borders(table: Any) -> None:
         edge_element.set(qn("w:color"), "auto")
 
 
-def _style_table(table: Any, *, center_all: bool = False, left_align_columns: set[int] | None = None) -> None:
+def _style_table(
+    table: Any, *, center_all: bool = False, left_align_columns: set[int] | None = None
+) -> None:
     metrics = _CURRENT_PERFORMANCE_METRICS.get()
     metric_started_ns = time.perf_counter_ns() if metrics is not None else 0
     left_align_columns = left_align_columns or set()
@@ -2333,8 +2492,7 @@ def _replace_simple_cell_text(cell: Any, paragraph: Any, text: str) -> bool:
     qn = modules["qn"]
     tc_pr = cell._tc.tcPr
     if tc_pr is not None and (
-        tc_pr.find(qn("w:gridSpan")) is not None
-        or tc_pr.find(qn("w:vMerge")) is not None
+        tc_pr.find(qn("w:gridSpan")) is not None or tc_pr.find(qn("w:vMerge")) is not None
     ):
         return False
     children = list(paragraph._p)
@@ -2377,7 +2535,8 @@ def _has_canonical_data_run_properties(run_element: Any) -> bool:
         return False
     fonts, bold, color, size = children
     return (
-        dict(fonts.attrib) == {
+        dict(fonts.attrib)
+        == {
             qn("w:ascii"): "Times New Roman",
             qn("w:hAnsi"): "Times New Roman",
         }
@@ -2397,8 +2556,7 @@ def _normalize_simple_data_row_prototype(row_element: Any) -> int:
     for cell_element in row_element.iter(qn("w:tc")):
         tc_pr = cell_element.find(qn("w:tcPr"))
         if tc_pr is not None and (
-            tc_pr.find(qn("w:gridSpan")) is not None
-            or tc_pr.find(qn("w:vMerge")) is not None
+            tc_pr.find(qn("w:gridSpan")) is not None or tc_pr.find(qn("w:vMerge")) is not None
         ):
             continue
         paragraphs = cell_element.findall(qn("w:p"))
@@ -2451,6 +2609,7 @@ def _format_cell(cell: Any, *, bold: bool, centered: bool) -> None:
 # ---------------------------------------------------------------------------
 # Heading / paragraph helpers
 # ---------------------------------------------------------------------------
+
 
 def _add_heading(document: Any, text: str, *, level: int) -> Any:
     paragraph = document.add_heading(text, level=level)
@@ -2683,7 +2842,9 @@ def _format_paragraph_runs(
         _format_run(run, bold=bold, preserve_color=preserve_color)
 
 
-def _format_run(run: Any, *, bold: bool | None, preserve_color: bool, font_size: Any = None) -> None:
+def _format_run(
+    run: Any, *, bold: bool | None, preserve_color: bool, font_size: Any = None
+) -> None:
     modules = _docx_modules()
     Pt = modules["Pt"]
     RGBColor = modules["RGBColor"]

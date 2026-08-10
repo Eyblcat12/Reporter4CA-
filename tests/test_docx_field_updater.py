@@ -12,7 +12,6 @@ from docx import Document
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 
-
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "apps" / "backend"
 sys.path.insert(0, str(BACKEND))
@@ -71,7 +70,9 @@ class DocxFieldUpdaterTests(unittest.TestCase):
             document.save(path)
             original = path.read_bytes()
 
-            failed = subprocess.CompletedProcess([], returncode=1, stdout="", stderr="Word unavailable")
+            failed = subprocess.CompletedProcess(
+                [], returncode=1, stdout="", stderr="Word unavailable"
+            )
             with (
                 patch("core.docx_field_updater.platform.system", return_value="Windows"),
                 patch("core.docx_field_updater.shutil.which", return_value="powershell.exe"),
@@ -129,7 +130,9 @@ class DocxFieldUpdaterTests(unittest.TestCase):
             _enable_field_updates(document)
             document.save(path)
 
-            failed = subprocess.CompletedProcess([], returncode=1, stdout="", stderr="Word unavailable")
+            failed = subprocess.CompletedProcess(
+                [], returncode=1, stdout="", stderr="Word unavailable"
+            )
             with (
                 patch("core.docx_field_updater.platform.system", return_value="Windows"),
                 patch("core.docx_field_updater.shutil.which", return_value="cscript.exe"),

@@ -1,0 +1,21 @@
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = [
+  ".git",
+  ".verification",
+  "**/.venv",
+  "artifacts",
+  "apps/backend/data/cache",
+]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+
+[tool.ruff.lint.per-file-ignores]
+"apps/backend/main.py" = ["E402"]
+"scripts/*.py" = ["E402"]
+"tests/*.py" = ["E402"]
+
+[tool.ruff.format]
+line-ending = "lf"

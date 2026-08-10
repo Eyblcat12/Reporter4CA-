@@ -56,7 +56,6 @@ def parse_input(path: str | Path, *, default_section: str = "servers") -> dict[s
     return parse_table_file(input_path, default_section=default_section)
 
 
-
 def parse_json(path: str | Path, *, default_section: str = "servers") -> dict[str, Any]:
     json_path = Path(path)
     payload = json.loads(json_path.read_text(encoding="utf-8"))
@@ -67,7 +66,9 @@ def parse_json(path: str | Path, *, default_section: str = "servers") -> dict[st
     return normalize_payload(payload, source=json_path.name)
 
 
-def parse_raw_text_file(path: str | Path, *, default_section: str = DEFAULT_SECTION) -> dict[str, Any]:
+def parse_raw_text_file(
+    path: str | Path, *, default_section: str = DEFAULT_SECTION
+) -> dict[str, Any]:
     text_path = Path(path)
     raw_text = text_path.read_text(encoding="utf-8-sig")
     payload = parse_delimited_text(raw_text, default_section=default_section)
@@ -88,10 +89,14 @@ def parse_table_file(path: str | Path, *, default_section: str = "servers") -> d
 
     if suffix == ".csv":
         frame = pd.read_csv(table_path)
-        return normalize_payload(_parse_table_frame(frame, default_section=default_section), source=table_path.name)
+        return normalize_payload(
+            _parse_table_frame(frame, default_section=default_section), source=table_path.name
+        )
 
     workbook = pd.read_excel(table_path, sheet_name=None)
-    normalized_workbook = {str(sheet_name).strip().lower(): frame for sheet_name, frame in workbook.items()}
+    normalized_workbook = {
+        str(sheet_name).strip().lower(): frame for sheet_name, frame in workbook.items()
+    }
 
     if any(sheet_name in normalized_workbook for sheet_name in SECTIONS):
         payload: dict[str, Any] = {"servers": [], "clients": []}
@@ -102,7 +107,9 @@ def parse_table_file(path: str | Path, *, default_section: str = "servers") -> d
 
     if len(normalized_workbook) == 1:
         frame = next(iter(normalized_workbook.values()))
-        return normalize_payload(_parse_table_frame(frame, default_section=default_section), source=table_path.name)
+        return normalize_payload(
+            _parse_table_frame(frame, default_section=default_section), source=table_path.name
+        )
 
     payload = {"servers": [], "clients": []}
     for sheet_name, frame in normalized_workbook.items():
@@ -131,9 +138,7 @@ def parse_with_column_mapping(
     try:
         import pandas as pd
     except ModuleNotFoundError as exc:
-        raise RuntimeError(
-            "Can cai dat pandas va openpyxl de doc file CSV/Excel."
-        ) from exc
+        raise RuntimeError("Can cai dat pandas va openpyxl de doc file CSV/Excel.") from exc
 
     table_path = Path(path)
     suffix = detect_real_format(table_path)
@@ -149,6 +154,7 @@ def parse_with_column_mapping(
     elif suffix in {".txt", ".tsv"}:
         raw_text = table_path.read_text(encoding="utf-8-sig")
         from core.input_preprocessor import detect_delimiter
+
         delimiter = detect_delimiter(raw_text)
         frame = pd.read_csv(table_path, delimiter=delimiter, header=header_row)
     elif suffix == ".json":
@@ -179,6 +185,7 @@ def parse_with_column_mapping(
     has_dual = any(tgt in ("hostname_server", "hostname_client") for tgt in mapping.values())
     if has_dual:
         from core.column_mapper import split_dual_hostname_rows
+
         records = frame.fillna("").to_dict(orient="records")
         split_records = split_dual_hostname_rows(records)
         payload: dict[str, Any] = {"servers": [], "clients": [], "metadata": {}}

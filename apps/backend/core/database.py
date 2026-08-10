@@ -9,8 +9,8 @@ Security:
 
 from __future__ import annotations
 
-import hashlib
 import atexit
+import hashlib
 import json
 import sqlite3
 import uuid
@@ -141,6 +141,7 @@ CREATE TABLE IF NOT EXISTS detection_rule_versions (
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -165,17 +166,13 @@ def _migration_template_report_type(conn: sqlite3.Connection) -> None:
 
 
 def _migration_query_indexes(conn: sqlite3.Connection) -> None:
-    template_columns = {
-        row[1] for row in conn.execute("PRAGMA table_info(templates)").fetchall()
-    }
+    template_columns = {row[1] for row in conn.execute("PRAGMA table_info(templates)").fetchall()}
     if {"report_type", "is_default"}.issubset(template_columns):
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_templates_type_default "
             "ON templates(report_type, is_default)"
         )
-    conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_presets_updated_at ON presets(updated_at DESC)"
-    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_presets_updated_at ON presets(updated_at DESC)")
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_report_history_created_at "
         "ON report_history(created_at DESC)"
@@ -183,9 +180,7 @@ def _migration_query_indexes(conn: sqlite3.Connection) -> None:
 
 
 def _migration_report_execution_metrics(conn: sqlite3.Connection) -> None:
-    columns = {
-        row[1] for row in conn.execute("PRAGMA table_info(report_history)").fetchall()
-    }
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(report_history)").fetchall()}
     additions = (
         ("status", "TEXT NOT NULL DEFAULT 'success'"),
         ("duration_ms", "INTEGER NOT NULL DEFAULT 0"),
@@ -193,9 +188,7 @@ def _migration_report_execution_metrics(conn: sqlite3.Connection) -> None:
     )
     for name, declaration in additions:
         if name not in columns:
-            conn.execute(
-                f"ALTER TABLE report_history ADD COLUMN {name} {declaration}"
-            )
+            conn.execute(f"ALTER TABLE report_history ADD COLUMN {name} {declaration}")
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_report_history_status_created_at "
         "ON report_history(status, created_at DESC)"
@@ -262,16 +255,26 @@ def _migration_detection_rule_versions(conn: sqlite3.Connection) -> None:
     rows = conn.execute("SELECT * FROM detection_rules").fetchall()
     for row in rows:
         definition = json.loads(row[3] or "{}")
-        definition.update({
-            "id": row[0], "name": row[1], "description": row[2],
-            "enabled": bool(row[4]),
-        })
+        definition.update(
+            {
+                "id": row[0],
+                "name": row[1],
+                "description": row[2],
+                "enabled": bool(row[4]),
+            }
+        )
         conn.execute(
             """INSERT OR IGNORE INTO detection_rule_versions
                (id, rule_id, version_number, definition_json, note, created_at)
                VALUES(?,?,?,?,?,?)""",
-            (_new_id(), row[0], 1, json.dumps(definition, ensure_ascii=False),
-             "Baseline migrated to version history", row[6]),
+            (
+                _new_id(),
+                row[0],
+                1,
+                json.dumps(definition, ensure_ascii=False),
+                "Baseline migrated to version history",
+                row[6],
+            ),
         )
 
 
@@ -281,14 +284,18 @@ def _relocated_template_path(file_path: str) -> Path | None:
     parts = list(source.parts)
     lowered = [part.casefold() for part in parts]
     for index in range(len(parts) - 1):
-        if lowered[index:index + 2] != ["reporter-backend", "templates"]:
+        if lowered[index : index + 2] != ["reporter-backend", "templates"]:
             continue
-        relative_parts = parts[index + 2:]
+        relative_parts = parts[index + 2 :]
         if not relative_parts:
             return None
         root = _TEMPLATE_DIR.resolve()
         candidate = root.joinpath(*relative_parts).resolve()
-        if candidate.is_relative_to(root) and candidate.exists() and candidate.suffix.lower() == ".docx":
+        if (
+            candidate.is_relative_to(root)
+            and candidate.exists()
+            and candidate.suffix.lower() == ".docx"
+        ):
             return candidate
     return None
 
@@ -296,9 +303,7 @@ def _relocated_template_path(file_path: str) -> Path | None:
 def _migration_relocated_template_paths(conn: sqlite3.Connection) -> None:
     """Repair persisted template paths after the repository directory migration."""
     now = _now_iso()
-    template_columns = {
-        row[1] for row in conn.execute("PRAGMA table_info(templates)").fetchall()
-    }
+    template_columns = {row[1] for row in conn.execute("PRAGMA table_info(templates)").fetchall()}
     if {"id", "file_path", "updated_at"}.issubset(template_columns):
         for template_id, file_path in conn.execute(
             "SELECT id, file_path FROM templates"
@@ -373,6 +378,7 @@ _MIGRATIONS = (
 # Database class
 # ---------------------------------------------------------------------------
 
+
 class Database:
     """Thin wrapper around sqlite3 with parameterized queries."""
 
@@ -400,8 +406,7 @@ class Database:
         conn = self._get_conn()
         conn.executescript(_SCHEMA_SQL)
         applied = {
-            int(row[0])
-            for row in conn.execute("SELECT version FROM schema_migrations").fetchall()
+            int(row[0]) for row in conn.execute("SELECT version FROM schema_migrations").fetchall()
         }
         for version, name, migrate in _MIGRATIONS:
             if version in applied:
@@ -421,9 +426,11 @@ class Database:
 
     @property
     def schema_version(self) -> int:
-        row = self._get_conn().execute(
-            "SELECT COALESCE(MAX(version), 0) FROM schema_migrations"
-        ).fetchone()
+        row = (
+            self._get_conn()
+            .execute("SELECT COALESCE(MAX(version), 0) FROM schema_migrations")
+            .fetchone()
+        )
         return int(row[0]) if row else 0
 
     def close(self) -> None:
@@ -469,15 +476,13 @@ class Database:
     def relocate_template_paths(self, paths_by_filename: dict[str, Path]) -> None:
         """Point restored template metadata at files in this installation."""
         normalized = {
-            filename.casefold(): str(path.resolve())
-            for filename, path in paths_by_filename.items()
+            filename.casefold(): str(path.resolve()) for filename, path in paths_by_filename.items()
         }
         connection = self._get_conn()
         with connection:
             for filename, path in normalized.items():
                 connection.execute(
-                    "UPDATE templates SET file_path = ?, updated_at = ? "
-                    "WHERE lower(filename) = ?",
+                    "UPDATE templates SET file_path = ?, updated_at = ? WHERE lower(filename) = ?",
                     (path, _now_iso(), filename),
                 )
             version_rows = connection.execute(
@@ -493,15 +498,11 @@ class Database:
 
     # ── Low-level query helpers ─────────────────────────────
 
-    def _execute(
-        self, sql: str, params: tuple = ()
-    ) -> sqlite3.Cursor:
+    def _execute(self, sql: str, params: tuple = ()) -> sqlite3.Cursor:
         conn = self._get_conn()
         return conn.execute(sql, params)
 
-    def _execute_commit(
-        self, sql: str, params: tuple = ()
-    ) -> sqlite3.Cursor:
+    def _execute_commit(self, sql: str, params: tuple = ()) -> sqlite3.Cursor:
         cursor = self._execute(sql, params)
         self._get_conn().commit()
         return cursor
@@ -525,9 +526,7 @@ class Database:
                    ORDER BY is_default DESC, created_at DESC""",
                 (report_type,),
             )
-        return self._fetch_all(
-            "SELECT * FROM templates ORDER BY is_default DESC, created_at DESC"
-        )
+        return self._fetch_all("SELECT * FROM templates ORDER BY is_default DESC, created_at DESC")
 
     def get_default_template(self, report_type: str) -> dict | None:
         return self._fetch_one(
@@ -538,19 +537,13 @@ class Database:
         )
 
     def get_template(self, template_id: str) -> dict | None:
-        return self._fetch_one(
-            "SELECT * FROM templates WHERE id = ?", (template_id,)
-        )
+        return self._fetch_one("SELECT * FROM templates WHERE id = ?", (template_id,))
 
     def get_template_by_filename(self, filename: str) -> dict | None:
-        return self._fetch_one(
-            "SELECT * FROM templates WHERE filename = ?", (filename,)
-        )
+        return self._fetch_one("SELECT * FROM templates WHERE filename = ?", (filename,))
 
     def get_template_by_path(self, file_path: str) -> dict | None:
-        return self._fetch_one(
-            "SELECT * FROM templates WHERE file_path = ?", (file_path,)
-        )
+        return self._fetch_one("SELECT * FROM templates WHERE file_path = ?", (file_path,))
 
     def add_template(
         self,
@@ -582,11 +575,25 @@ class Database:
                 compatibility_version, compatibility_json, created_at, updated_at)
                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
-                tid, name, filename, file_path, file_size, file_hash,
-                int(is_default), int(is_generated), int(has_tokens),
-                template_mode, report_type, table_count, heading_count, description,
-                compatibility_status, compatibility_version, compatibility_json,
-                now, now,
+                tid,
+                name,
+                filename,
+                file_path,
+                file_size,
+                file_hash,
+                int(is_default),
+                int(is_generated),
+                int(has_tokens),
+                template_mode,
+                report_type,
+                table_count,
+                heading_count,
+                description,
+                compatibility_status,
+                compatibility_version,
+                compatibility_json,
+                now,
+                now,
             ),
         )
         return tid
@@ -595,10 +602,21 @@ class Database:
         if not kwargs:
             return
         allowed = {
-            "name", "description", "has_tokens", "template_mode",
-            "report_type", "table_count", "heading_count", "file_hash", "file_size",
-            "compatibility_status", "compatibility_version", "compatibility_json",
-            "file_path", "file_hash", "file_size",
+            "name",
+            "description",
+            "has_tokens",
+            "template_mode",
+            "report_type",
+            "table_count",
+            "heading_count",
+            "file_hash",
+            "file_size",
+            "compatibility_status",
+            "compatibility_version",
+            "compatibility_json",
+            "file_path",
+            "file_hash",
+            "file_size",
         }
         fields = {k: v for k, v in kwargs.items() if k in allowed}
         if not fields:
@@ -606,13 +624,17 @@ class Database:
         fields["updated_at"] = _now_iso()
         set_clause = ", ".join(f"{k} = ?" for k in fields)
         values = tuple(fields.values()) + (template_id,)
-        self._execute_commit(
-            f"UPDATE templates SET {set_clause} WHERE id = ?", values
-        )
+        self._execute_commit(f"UPDATE templates SET {set_clause} WHERE id = ?", values)
 
     def add_template_version(
-        self, template_id: str, *, file_path: str, file_size: int, file_hash: str,
-        analysis: dict[str, Any], note: str = "",
+        self,
+        template_id: str,
+        *,
+        file_path: str,
+        file_size: int,
+        file_hash: str,
+        analysis: dict[str, Any],
+        note: str = "",
     ) -> dict[str, Any]:
         row = self._fetch_one(
             "SELECT COALESCE(MAX(version_number), 0) AS number FROM template_versions WHERE template_id = ?",
@@ -624,8 +646,17 @@ class Database:
             """INSERT INTO template_versions
                (id, template_id, version_number, file_path, file_size, file_hash, analysis_json, note, created_at)
                VALUES (?,?,?,?,?,?,?,?,?)""",
-            (version_id, template_id, version_number, file_path, file_size, file_hash,
-             json.dumps(analysis, ensure_ascii=False), note, _now_iso()),
+            (
+                version_id,
+                template_id,
+                version_number,
+                file_path,
+                file_size,
+                file_hash,
+                json.dumps(analysis, ensure_ascii=False),
+                note,
+                _now_iso(),
+            ),
         )
         return self.get_template_version(template_id, version_number) or {}
 
@@ -694,9 +725,7 @@ class Database:
     # ══════════════════════════════════════════════════════════
 
     def list_presets(self) -> list[dict]:
-        rows = self._fetch_all(
-            "SELECT * FROM presets ORDER BY updated_at DESC"
-        )
+        rows = self._fetch_all("SELECT * FROM presets ORDER BY updated_at DESC")
         for r in rows:
             r["settings"] = json.loads(r.pop("settings_json", "{}"))
             raw_mapping = r.pop("column_mapping_json", None)
@@ -733,8 +762,7 @@ class Database:
                        SET name=?, description=?, settings_json=?,
                            column_mapping_json=?, template_id=?, updated_at=?
                        WHERE id=?""",
-                    (name, description, settings_json, mapping_json,
-                     template_id, now, preset_id),
+                    (name, description, settings_json, mapping_json, template_id, now, preset_id),
                 )
                 return preset_id
 
@@ -744,15 +772,12 @@ class Database:
                (id, name, description, settings_json, column_mapping_json,
                 template_id, created_at, updated_at)
                VALUES (?,?,?,?,?,?,?,?)""",
-            (pid, name, description, settings_json, mapping_json,
-             template_id, now, now),
+            (pid, name, description, settings_json, mapping_json, template_id, now, now),
         )
         return pid
 
     def delete_preset(self, preset_id: str) -> bool:
-        cursor = self._execute_commit(
-            "DELETE FROM presets WHERE id = ?", (preset_id,)
-        )
+        cursor = self._execute_commit("DELETE FROM presets WHERE id = ?", (preset_id,))
         return cursor.rowcount > 0
 
     # ══════════════════════════════════════════════════════════
@@ -761,22 +786,22 @@ class Database:
 
     def list_detection_rules(self, *, include_archived: bool = False) -> list[dict]:
         where = "" if include_archived else "WHERE archived = 0"
-        rows = self._fetch_all(
-            f"SELECT * FROM detection_rules {where} ORDER BY updated_at DESC"
-        )
+        rows = self._fetch_all(f"SELECT * FROM detection_rules {where} ORDER BY updated_at DESC")
         for row in rows:
             definition = json.loads(row.pop("definition_json", "{}"))
-            definition.update({
-                "id": row["id"],
-                "name": row["name"],
-                "description": row["description"],
-                "enabled": bool(row["enabled"]),
-                "archived": bool(row["archived"]),
-                "createdAt": row["created_at"],
-                "updatedAt": row["updated_at"],
-                "source": "custom",
-                "editable": True,
-            })
+            definition.update(
+                {
+                    "id": row["id"],
+                    "name": row["name"],
+                    "description": row["description"],
+                    "enabled": bool(row["enabled"]),
+                    "archived": bool(row["archived"]),
+                    "createdAt": row["created_at"],
+                    "updatedAt": row["updated_at"],
+                    "source": "custom",
+                    "editable": True,
+                }
+            )
             row.clear()
             row.update(definition)
         return rows
@@ -786,12 +811,19 @@ class Database:
         if not row:
             return None
         definition = json.loads(row["definition_json"])
-        definition.update({
-            "id": row["id"], "name": row["name"],
-            "description": row["description"], "enabled": bool(row["enabled"]),
-            "archived": bool(row["archived"]), "createdAt": row["created_at"],
-            "updatedAt": row["updated_at"], "source": "custom", "editable": True,
-        })
+        definition.update(
+            {
+                "id": row["id"],
+                "name": row["name"],
+                "description": row["description"],
+                "enabled": bool(row["enabled"]),
+                "archived": bool(row["archived"]),
+                "createdAt": row["created_at"],
+                "updatedAt": row["updated_at"],
+                "source": "custom",
+                "editable": True,
+            }
+        )
         return definition
 
     def save_detection_rule(self, definition: dict[str, Any]) -> dict:
@@ -807,14 +839,35 @@ class Database:
                 """INSERT INTO detection_rules
                    (id, name, description, definition_json, enabled, archived, created_at, updated_at)
                    VALUES(?,?,?,?,?,0,?,?)""",
-                (rule_id, name, description, json.dumps(stored, ensure_ascii=False), int(enabled), now, now),
+                (
+                    rule_id,
+                    name,
+                    description,
+                    json.dumps(stored, ensure_ascii=False),
+                    int(enabled),
+                    now,
+                    now,
+                ),
             )
-            snapshot = {**stored, "id": rule_id, "name": name, "description": description, "enabled": enabled}
+            snapshot = {
+                **stored,
+                "id": rule_id,
+                "name": name,
+                "description": description,
+                "enabled": enabled,
+            }
             self._execute(
                 """INSERT INTO detection_rule_versions
                    (id, rule_id, version_number, definition_json, note, created_at)
                    VALUES(?,?,?,?,?,?)""",
-                (_new_id(), rule_id, 1, json.dumps(snapshot, ensure_ascii=False), "Initial version", now),
+                (
+                    _new_id(),
+                    rule_id,
+                    1,
+                    json.dumps(snapshot, ensure_ascii=False),
+                    "Initial version",
+                    now,
+                ),
             )
         return self.get_detection_rule(rule_id) or {}
 
@@ -832,23 +885,55 @@ class Database:
         ) or {"version": 0}
         next_version = int(latest["version"]) + 1
         stored = {
-            key: value for key, value in merged.items()
-            if key not in {"id", "name", "description", "enabled", "archived", "createdAt", "updatedAt", "source", "editable"}
+            key: value
+            for key, value in merged.items()
+            if key
+            not in {
+                "id",
+                "name",
+                "description",
+                "enabled",
+                "archived",
+                "createdAt",
+                "updatedAt",
+                "source",
+                "editable",
+            }
         }
         stored["version"] = str(next_version)
         now = _now_iso()
-        snapshot = {**stored, "id": rule_id, "name": name, "description": description, "enabled": enabled}
+        snapshot = {
+            **stored,
+            "id": rule_id,
+            "name": name,
+            "description": description,
+            "enabled": enabled,
+        }
         with self._get_conn():
             self._execute(
                 """UPDATE detection_rules SET name = ?, description = ?, definition_json = ?,
                    enabled = ?, updated_at = ? WHERE id = ?""",
-                (name, description, json.dumps(stored, ensure_ascii=False), int(enabled), now, rule_id),
+                (
+                    name,
+                    description,
+                    json.dumps(stored, ensure_ascii=False),
+                    int(enabled),
+                    now,
+                    rule_id,
+                ),
             )
             self._execute(
                 """INSERT INTO detection_rule_versions
                    (id, rule_id, version_number, definition_json, note, created_at)
                    VALUES(?,?,?,?,?,?)""",
-                (_new_id(), rule_id, next_version, json.dumps(snapshot, ensure_ascii=False), "Rule updated", now),
+                (
+                    _new_id(),
+                    rule_id,
+                    next_version,
+                    json.dumps(snapshot, ensure_ascii=False),
+                    "Rule updated",
+                    now,
+                ),
             )
         return self.get_detection_rule(rule_id)
 
@@ -915,12 +1000,28 @@ class Database:
                 source_artifact_id, cache_status, updated_at, created_at)
                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
-                rid, preset_id, template_id, title, organization,
-                report_type, row_count, server_count, client_count,
-                output_filename, output_path, file_size, status,
-                max(0, int(duration_ms)), error_code, job_id,
-                client_request_id, request_signature, source_artifact_id,
-                cache_status, now, now,
+                rid,
+                preset_id,
+                template_id,
+                title,
+                organization,
+                report_type,
+                row_count,
+                server_count,
+                client_count,
+                output_filename,
+                output_path,
+                file_size,
+                status,
+                max(0, int(duration_ms)),
+                error_code,
+                job_id,
+                client_request_id,
+                request_signature,
+                source_artifact_id,
+                cache_status,
+                now,
+                now,
             ),
         )
         return rid
@@ -946,7 +1047,11 @@ class Database:
             if status == existing.get("status"):
                 return
             raise RuntimeError("Report history is already terminal.")
-        source = existing.get("source_artifact_id", "") if source_artifact_id is None else source_artifact_id
+        source = (
+            existing.get("source_artifact_id", "")
+            if source_artifact_id is None
+            else source_artifact_id
+        )
         cache = existing.get("cache_status", "") if cache_status is None else cache_status
         self._execute_commit(
             """UPDATE report_history
@@ -955,9 +1060,16 @@ class Database:
                    cache_status = ?, updated_at = ?
                WHERE id = ?""",
             (
-                status, output_filename, output_path, max(0, int(file_size)),
-                max(0, int(duration_ms)), error_code, source, cache,
-                _now_iso(), report_id,
+                status,
+                output_filename,
+                output_path,
+                max(0, int(file_size)),
+                max(0, int(duration_ms)),
+                error_code,
+                source,
+                cache,
+                _now_iso(),
+                report_id,
             ),
         )
 
@@ -973,9 +1085,7 @@ class Database:
         return self._fetch_all(f"{query} LIMIT ?", (max(1, int(limit)),))
 
     def get_report(self, report_id: str) -> dict | None:
-        return self._fetch_one(
-            "SELECT * FROM report_history WHERE id = ?", (report_id,)
-        )
+        return self._fetch_one("SELECT * FROM report_history WHERE id = ?", (report_id,))
 
     def dashboard_summary(
         self,
@@ -997,8 +1107,9 @@ class Database:
         previous_start_iso = previous_start.isoformat()
         now_iso = now.isoformat()
 
-        metrics = self._fetch_one(
-            """SELECT
+        metrics = (
+            self._fetch_one(
+                """SELECT
                    COUNT(*) AS attempts,
                    SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) AS reports,
                    SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) AS failed,
@@ -1009,8 +1120,10 @@ class Database:
                FROM report_history
                WHERE status IN ('success', 'failed', 'cancelled')
                  AND created_at >= ? AND created_at <= ?""",
-            (start_iso, now_iso),
-        ) or {}
+                (start_iso, now_iso),
+            )
+            or {}
+        )
         previous = self._fetch_one(
             """SELECT COUNT(*) AS reports FROM report_history
                WHERE status = 'success' AND created_at >= ? AND created_at < ?""",

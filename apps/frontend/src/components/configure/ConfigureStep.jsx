@@ -9,7 +9,6 @@ import PresetManager from './PresetManager';
 import TemplateManager from './TemplateManager';
 import WorkspaceBackup from './WorkspaceBackup';
 import RuleManager from './RuleManager';
-import { useReporterContext } from '../../hooks/useReporter';
 import { useI18n } from '../../i18n';
 import './ConfigureStep.css';
 
@@ -66,15 +65,23 @@ export default function ConfigureStep() {
       )}
 
       {/* Preset Manager Section */}
-      <motion.section className="configure-section" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+      <motion.section
+        className="configure-section"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
         <div className="configure-section__header">
-          <div className="configure-section__icon"><ShieldCheck size={18} /></div>
+          <div className="configure-section__icon">
+            <ShieldCheck size={18} />
+          </div>
           <div className="configure-section__text">
             <h2>Detection rules</h2>
             <p>Bật hoặc tắt các quy tắc tạo finding trước khi xuất báo cáo.</p>
           </div>
         </div>
-        <div className="configure-section__body"><RuleManager /></div>
+        <div className="configure-section__body">
+          <RuleManager />
+        </div>
       </motion.section>
 
       {/* Preset Manager Section */}

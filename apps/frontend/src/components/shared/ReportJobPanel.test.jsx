@@ -25,7 +25,11 @@ describe('ReportJobPanel', () => {
 
   it('shows progress, supports cancel, and collapses without stopping the job', () => {
     context.activeReportJob = {
-      id: 'job-1', status: 'running', phase: 'generating', progress: 45, message: 'Generating',
+      id: 'job-1',
+      status: 'running',
+      phase: 'generating',
+      progress: 45,
+      message: 'Generating',
     };
     render(<ReportJobPanel />);
 
@@ -40,7 +44,10 @@ describe('ReportJobPanel', () => {
 
   it('offers the completed artifact for download again', () => {
     context.activeReportJob = {
-      id: 'job-2', status: 'completed', phase: 'completed', progress: 100,
+      id: 'job-2',
+      status: 'completed',
+      phase: 'completed',
+      progress: 100,
       filename: 'assessment.docx',
     };
     render(<ReportJobPanel />);

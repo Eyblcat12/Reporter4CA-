@@ -5,10 +5,9 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import unicodedata
 from collections.abc import Mapping, Sequence
 from typing import Any
-import unicodedata
-
 
 SIGNATURE_SCHEMA_VERSION = "1.0"
 
@@ -79,4 +78,3 @@ def iter_canonical_chunks(value: Any):
         yield b"]"
         return
     raise CanonicalValueError(f"Unsupported canonical report value: {type(value).__name__}")
-

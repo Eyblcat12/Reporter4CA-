@@ -11,22 +11,35 @@ it('filters issues, opens a row and exposes safe bulk fixes', async () => {
   const onIssue = vi.fn();
   const onTrimValues = vi.fn();
   const onFillResult = vi.fn();
-  const issue = { row: 2, field: 'hostname', level: 'error', code: 'missing_hostname', message: 'Missing host' };
-  render(<DataQualityPanel
-    quality={{
-      valid: false,
-      issues: [issue],
-      summary: {
-        validRows: 1, errorRows: 1, warningRows: 1, duplicateHostnames: 0,
-        invalidIps: 0, missingOs: 1, missingResult: 1,
-      },
-    }}
-    activeFilter="all"
-    onFilter={onFilter}
-    onIssue={onIssue}
-    onTrimValues={onTrimValues}
-    onFillResult={onFillResult}
-  />);
+  const issue = {
+    row: 2,
+    field: 'hostname',
+    level: 'error',
+    code: 'missing_hostname',
+    message: 'Missing host',
+  };
+  render(
+    <DataQualityPanel
+      quality={{
+        valid: false,
+        issues: [issue],
+        summary: {
+          validRows: 1,
+          errorRows: 1,
+          warningRows: 1,
+          duplicateHostnames: 0,
+          invalidIps: 0,
+          missingOs: 1,
+          missingResult: 1,
+        },
+      }}
+      activeFilter="all"
+      onFilter={onFilter}
+      onIssue={onIssue}
+      onTrimValues={onTrimValues}
+      onFillResult={onFillResult}
+    />,
+  );
 
   await user.click(screen.getByText('quality.errors'));
   expect(onFilter).toHaveBeenCalledWith('errors');

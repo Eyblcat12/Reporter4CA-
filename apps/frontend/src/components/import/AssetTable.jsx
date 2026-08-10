@@ -10,9 +10,8 @@ import DataQualityPanel from './DataQualityPanel';
 import './AssetTable.css';
 
 export default function AssetTable() {
-  const {
-    rows, addRow, removeRow, updateRow, dataQuality, validateRows, startRuleFromRow,
-  } = useReporterContext();
+  const { rows, addRow, removeRow, updateRow, dataQuality, validateRows, startRuleFromRow } =
+    useReporterContext();
   const { t } = useI18n();
   const [editingCell, setEditingCell] = useState(null);
   const [search, setSearch] = useState('');
@@ -24,28 +23,34 @@ export default function AssetTable() {
   }, [rows, validateRows]);
 
   const counts = useMemo(() => {
-    const s = rows.filter(r => r.type === 'server').length;
-    const c = rows.filter(r => r.type === 'client').length;
+    const s = rows.filter((r) => r.type === 'server').length;
+    const c = rows.filter((r) => r.type === 'client').length;
     return { servers: s, clients: c, total: s + c };
   }, [rows]);
 
   const filteredRows = useMemo(() => {
-    const issueRows = new Set((dataQuality?.issues || [])
-      .filter((issue) => {
-        if (qualityFilter === 'all') return true;
-        if (qualityFilter === 'errors') return issue.level === 'error';
-        if (qualityFilter === 'warnings') return issue.level === 'warning';
-        return issue.code === qualityFilter;
-      })
-      .map((issue) => issue.row - 1));
+    const issueRows = new Set(
+      (dataQuality?.issues || [])
+        .filter((issue) => {
+          if (qualityFilter === 'all') return true;
+          if (qualityFilter === 'errors') return issue.level === 'error';
+          if (qualityFilter === 'warnings') return issue.level === 'warning';
+          return issue.code === qualityFilter;
+        })
+        .map((issue) => issue.row - 1),
+    );
     const q = search.toLowerCase();
     return rows
       .map((row, idx) => ({ row, idx }))
       .filter(({ idx }) => qualityFilter === 'all' || issueRows.has(idx))
-      .filter(({ row }) =>
-        !search.trim() || Object.values(row).some(v =>
-          String(v || '').toLowerCase().includes(q)
-        )
+      .filter(
+        ({ row }) =>
+          !search.trim() ||
+          Object.values(row).some((v) =>
+            String(v || '')
+              .toLowerCase()
+              .includes(q),
+          ),
       );
   }, [rows, search, dataQuality, qualityFilter]);
 
@@ -64,7 +69,9 @@ export default function AssetTable() {
   const revealIssue = (issue) => {
     setQualityFilter(issue.level === 'error' ? 'errors' : issue.code);
     window.setTimeout(() => {
-      document.querySelector(`[data-row-index="${issue.row - 1}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document
+        .querySelector(`[data-row-index="${issue.row - 1}"]`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       setEditingCell(`${issue.row - 1}-${issue.field}`);
     }, 0);
   };
@@ -72,24 +79,30 @@ export default function AssetTable() {
   const applyQualityFilter = (filter) => {
     setQualityFilter(filter);
     if (filter === 'all') return;
-    const issue = (dataQuality?.issues || []).find((item) => (
-      filter === 'errors' ? item.level === 'error'
-        : filter === 'warnings' ? item.level === 'warning'
-          : item.code === filter
-    ));
+    const issue = (dataQuality?.issues || []).find((item) =>
+      filter === 'errors'
+        ? item.level === 'error'
+        : filter === 'warnings'
+          ? item.level === 'warning'
+          : item.code === filter,
+    );
     if (issue) {
       window.setTimeout(() => {
-        document.querySelector(`[data-row-index="${issue.row - 1}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        document
+          .querySelector(`[data-row-index="${issue.row - 1}"]`)
+          ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 0);
     }
   };
 
   const trimValues = () => {
     rows.forEach((row, idx) => {
-      const normalized = Object.fromEntries(Object.entries(row).map(([key, value]) => [
-        key,
-        typeof value === 'string' ? value.trim() : value,
-      ]));
+      const normalized = Object.fromEntries(
+        Object.entries(row).map(([key, value]) => [
+          key,
+          typeof value === 'string' ? value.trim() : value,
+        ]),
+      );
       updateRow(idx, normalized);
     });
   };
@@ -191,7 +204,9 @@ export default function AssetTable() {
                   <td>
                     <button
                       className={`type-badge type-badge--${row.type}`}
-                      onClick={() => handleCellChange(idx, 'type', row.type === 'server' ? 'client' : 'server')}
+                      onClick={() =>
+                        handleCellChange(idx, 'type', row.type === 'server' ? 'client' : 'server')
+                      }
                       title="Click to toggle"
                     >
                       {row.type === 'server' ? <Server size={12} /> : <Monitor size={12} />}
@@ -208,7 +223,12 @@ export default function AssetTable() {
                       {(String(row.notes || '').trim() || String(row.result || '').trim()) && (
                         <button
                           className="asset-table__rule"
-                          onClick={() => startRuleFromRow(idx, String(row.notes || '').trim() ? 'notes' : 'result')}
+                          onClick={() =>
+                            startRuleFromRow(
+                              idx,
+                              String(row.notes || '').trim() ? 'notes' : 'result',
+                            )
+                          }
                           title="Tạo rule từ nội dung dòng này"
                           aria-label={`Tạo rule từ ${row.hostname || `dòng ${idx + 1}`}`}
                         >

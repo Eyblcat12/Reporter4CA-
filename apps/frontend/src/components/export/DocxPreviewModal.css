@@ -98,7 +98,9 @@
   padding: var(--space-1);
   border-radius: var(--radius-sm);
   margin-left: var(--space-3);
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
 }
 .docx-modal__close:hover {
   color: var(--error);
@@ -116,7 +118,7 @@
 }
 
 /* Dark mode body bg */
-[data-theme="dark"] .docx-modal__body {
+[data-theme='dark'] .docx-modal__body {
   background: #1a1a2e;
 }
 
@@ -155,26 +157,82 @@
   gap: var(--space-3);
 }
 
-.docx-modal__status-heading strong { display: block; font-size: var(--text-sm); }
-.docx-modal__status-heading p { margin: 3px 0 0; color: var(--text-tertiary); font-size: var(--text-xs); }
+.docx-modal__status-heading strong {
+  display: block;
+  font-size: var(--text-sm);
+}
+.docx-modal__status-heading p {
+  margin: 3px 0 0;
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+}
 .docx-modal__status-icon {
-  width: 34px; height: 34px; border-radius: var(--radius-md);
-  display: grid; place-items: center; color: var(--accent); background: var(--accent-muted);
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+  background: var(--accent-muted);
   flex: 0 0 auto;
 }
-.docx-modal__status--current .docx-modal__status-icon { color: var(--success); background: var(--success-muted); }
+.docx-modal__status--current .docx-modal__status-icon {
+  color: var(--success);
+  background: var(--success-muted);
+}
 .docx-modal__status--stale .docx-modal__status-icon,
-.docx-modal__status--expired .docx-modal__status-icon { color: var(--warning); background: var(--warning-muted); }
-.docx-modal__status--failed .docx-modal__status-icon { color: var(--error); background: var(--error-muted); }
-.docx-modal__status--generating .docx-modal__status-icon svg { animation: spin 1s linear infinite; }
-.docx-modal__progress { height: 6px; margin: var(--space-5) 0; border-radius: 999px; background: var(--surface-elevated); overflow: hidden; }
-.docx-modal__progress span { display: block; height: 100%; border-radius: inherit; background: var(--accent); transition: width .25s ease; }
-.docx-modal__status-meta { display: grid; gap: var(--space-3); margin: 0 0 var(--space-5); }
-.docx-modal__status-meta div { display: flex; justify-content: space-between; gap: var(--space-3); }
-.docx-modal__status-meta dt { color: var(--text-tertiary); font-size: var(--text-xs); }
-.docx-modal__status-meta dd { margin: 0; font-size: var(--text-xs); text-align: right; overflow-wrap: anywhere; }
-.docx-modal__status-meta code { color: var(--accent); }
-.docx-modal__status > .btn { width: 100%; justify-content: center; }
+.docx-modal__status--expired .docx-modal__status-icon {
+  color: var(--warning);
+  background: var(--warning-muted);
+}
+.docx-modal__status--failed .docx-modal__status-icon {
+  color: var(--error);
+  background: var(--error-muted);
+}
+.docx-modal__status--generating .docx-modal__status-icon svg {
+  animation: spin 1s linear infinite;
+}
+.docx-modal__progress {
+  height: 6px;
+  margin: var(--space-5) 0;
+  border-radius: 999px;
+  background: var(--surface-elevated);
+  overflow: hidden;
+}
+.docx-modal__progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 0.25s ease;
+}
+.docx-modal__status-meta {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-5);
+}
+.docx-modal__status-meta div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.docx-modal__status-meta dt {
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+}
+.docx-modal__status-meta dd {
+  margin: 0;
+  font-size: var(--text-xs);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.docx-modal__status-meta code {
+  color: var(--accent);
+}
+.docx-modal__status > .btn {
+  width: 100%;
+  justify-content: center;
+}
 
 .docx-modal__spinner {
   animation: spin 1s linear infinite;
@@ -182,8 +240,12 @@
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .docx-modal__container {
@@ -206,8 +268,9 @@
 
 .docx-modal__container .docx-wrapper > section.docx {
   background: white;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15),
-              0 0 0 1px rgba(0, 0, 0, 0.05);
+  box-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
   border-radius: 2px;
   margin: 0;
 }
@@ -265,7 +328,16 @@
 }
 
 @media (max-width: 860px) {
-  .docx-modal__body { grid-template-columns: 1fr; overflow: auto; }
-  .docx-modal__document-pane { min-height: 55vh; overflow: visible; }
-  .docx-modal__status { border-left: 0; border-top: 1px solid var(--border); }
+  .docx-modal__body {
+    grid-template-columns: 1fr;
+    overflow: auto;
+  }
+  .docx-modal__document-pane {
+    min-height: 55vh;
+    overflow: visible;
+  }
+  .docx-modal__status {
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
 }

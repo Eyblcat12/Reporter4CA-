@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-import hashlib
 from types import MappingProxyType
 from typing import Any, Mapping
 
 from core.report_signature import SIGNATURE_SCHEMA_VERSION, canonical_sha256, normalize_string
-
 
 ENGINE_CONTENT_SCHEMA_VERSION = "1.0"
 DEFAULT_REPORT_TITLE = "BÁO CÁO ĐÁNH GIÁ AN TOÀN THÔNG TIN"
@@ -155,18 +154,20 @@ class PreparedReportSnapshot:
             plugin_manifest if plugin_manifest is not None else accepted.plugin_manifest
         )
         effective_generated_at = normalize_string(generated_at or _utc_now())
-        content_signature = canonical_sha256({
-            "schema": SIGNATURE_SCHEMA_VERSION,
-            "engine": accepted.engine_schema_version,
-            "payload": frozen_payload,
-            "quality": frozen_quality,
-            "title": accepted.title,
-            "organization": accepted.organization,
-            "assessmentDate": accepted.assessment_date,
-            "reportType": accepted.report_type,
-            "templateHash": accepted.template_hash,
-            "plugins": frozen_plugins,
-        })
+        content_signature = canonical_sha256(
+            {
+                "schema": SIGNATURE_SCHEMA_VERSION,
+                "engine": accepted.engine_schema_version,
+                "payload": frozen_payload,
+                "quality": frozen_quality,
+                "title": accepted.title,
+                "organization": accepted.organization,
+                "assessmentDate": accepted.assessment_date,
+                "reportType": accepted.report_type,
+                "templateHash": accepted.template_hash,
+                "plugins": frozen_plugins,
+            }
+        )
         return cls(
             accepted=accepted,
             payload=frozen_payload,

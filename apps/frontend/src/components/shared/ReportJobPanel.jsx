@@ -29,7 +29,11 @@ export default function ReportJobPanel() {
   if (dismissed) {
     return (
       <button className="report-job-fab" type="button" onClick={() => setDismissed(false)}>
-        {RUNNING.has(job.status) ? <Loader2 className="report-job-spin" size={17} /> : <FileClock size={17} />}
+        {RUNNING.has(job.status) ? (
+          <Loader2 className="report-job-spin" size={17} />
+        ) : (
+          <FileClock size={17} />
+        )}
         <span>{job.progress || 0}%</span>
       </button>
     );
@@ -41,28 +45,50 @@ export default function ReportJobPanel() {
     <aside className="report-job-panel" aria-label={t('jobs.title')}>
       <div className="report-job-panel__head">
         <div className={`report-job-panel__icon report-job-panel__icon--${job.status}`}>
-          {completed ? <CheckCircle2 size={18} /> : failed ? <XCircle size={18} /> : <Loader2 className="report-job-spin" size={18} />}
+          {completed ? (
+            <CheckCircle2 size={18} />
+          ) : failed ? (
+            <XCircle size={18} />
+          ) : (
+            <Loader2 className="report-job-spin" size={18} />
+          )}
         </div>
         <div>
           <strong>{job.filename || t('jobs.generating')}</strong>
           <span>{job.message || t('jobs.queued')}</span>
         </div>
-        <button type="button" onClick={() => setDismissed(true)} aria-label={t('common.close')}><X size={15} /></button>
+        <button type="button" onClick={() => setDismissed(true)} aria-label={t('common.close')}>
+          <X size={15} />
+        </button>
       </div>
       <div className="report-job-panel__progress-row">
-        <span>{t(`jobs.phase.${job.phase}`)}</span><b>{job.progress || 0}%</b>
+        <span>{t(`jobs.phase.${job.phase}`)}</span>
+        <b>{job.progress || 0}%</b>
       </div>
-      <div className="report-job-panel__track"><i style={{ width: `${job.progress || 0}%` }} /></div>
+      <div className="report-job-panel__track">
+        <i style={{ width: `${job.progress || 0}%` }} />
+      </div>
       <div className="report-job-panel__actions">
-        <small>{RUNNING.has(job.status) ? t('jobs.backgroundHint') : t(`jobs.status.${job.status}`)}</small>
+        <small>
+          {RUNNING.has(job.status) ? t('jobs.backgroundHint') : t(`jobs.status.${job.status}`)}
+        </small>
         {RUNNING.has(job.status) && (
-          <button className="btn btn--ghost btn--sm report-job-panel__cancel" type="button" onClick={() => cancelReportJob(job.id)}>
+          <button
+            className="btn btn--ghost btn--sm report-job-panel__cancel"
+            type="button"
+            onClick={() => cancelReportJob(job.id)}
+          >
             {t('jobs.cancel')}
           </button>
         )}
         {completed && (
-          <button className="btn btn--primary btn--sm" type="button" onClick={() => downloadReportJob(job)}>
-            <Download size={13} />{t('jobs.downloadAgain')}
+          <button
+            className="btn btn--primary btn--sm"
+            type="button"
+            onClick={() => downloadReportJob(job)}
+          >
+            <Download size={13} />
+            {t('jobs.downloadAgain')}
           </button>
         )}
       </div>

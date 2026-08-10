@@ -9,7 +9,6 @@ from docx import Document
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 
-
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "apps" / "backend"
 sys.path.insert(0, str(BACKEND))
@@ -25,9 +24,7 @@ def normalize_template(template_path: Path, backup_root: Path) -> Path:
         shutil.copy2(template_path, backup_path)
 
     document = Document(template_path)
-    num_id = _create_reporter_heading_numbering(
-        document.part.numbering_part.element
-    )
+    num_id = _create_reporter_heading_numbering(document.part.numbering_part.element)
     if num_id is None:
         raise RuntimeError("Unable to create Reporter heading numbering")
 

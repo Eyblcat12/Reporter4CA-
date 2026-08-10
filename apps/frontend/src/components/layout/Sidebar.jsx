@@ -2,14 +2,19 @@
    Sidebar — Premium vertical navigation with progress & stats
    Linear/Vercel inspired design
    ═══════════════════════════════════════════════════════════ */
-import { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Zap, Upload, Settings, FileOutput,
-  ChevronLeft, ChevronRight,
-  Server, Monitor, Layers,
-  Search, Plus, BookOpen,
-  CheckCircle2
+  Zap,
+  Upload,
+  Settings,
+  FileOutput,
+  ChevronLeft,
+  ChevronRight,
+  Server,
+  Monitor,
+  Layers,
+  Search,
+  CheckCircle2,
 } from 'lucide-react';
 import { useReporterContext } from '../../hooks/useReporter';
 import { useI18n } from '../../i18n';
@@ -27,19 +32,16 @@ const STEPS = [
 /* SVG progress circle */
 function StepProgress({ step, total, isActive, isCompleted }) {
   const circumference = 2 * Math.PI * 10;
-  const progress = isCompleted ? 1 : isActive ? ((step - 1) / total) + 0.33 : 0;
+  const progress = isCompleted ? 1 : isActive ? (step - 1) / total + 0.33 : 0;
   const offset = circumference * (1 - progress);
 
   return (
     <svg className="sidebar__progress-ring" viewBox="0 0 28 28" width="28" height="28">
-      <circle
-        cx="14" cy="14" r="10"
-        fill="none"
-        stroke="var(--border)"
-        strokeWidth="2"
-      />
+      <circle cx="14" cy="14" r="10" fill="none" stroke="var(--border)" strokeWidth="2" />
       <motion.circle
-        cx="14" cy="14" r="10"
+        cx="14"
+        cy="14"
+        r="10"
         fill="none"
         stroke={isCompleted ? 'var(--success)' : 'var(--accent)'}
         strokeWidth="2"
@@ -50,7 +52,8 @@ function StepProgress({ step, total, isActive, isCompleted }) {
         style={{ transformOrigin: 'center', transform: 'rotate(-90deg)' }}
       />
       <text
-        x="14" y="14"
+        x="14"
+        y="14"
         textAnchor="middle"
         dominantBaseline="central"
         className="sidebar__progress-text"
@@ -82,7 +85,7 @@ function MiniBar({ value, max, color }) {
 }
 
 export default function Sidebar({ collapsed, onToggle }) {
-  const { currentStep, setStep, counts, rows } = useReporterContext();
+  const { currentStep, setStep, counts } = useReporterContext();
   const { t } = useI18n();
 
   const totalAssets = counts.total || 0;
@@ -151,11 +154,7 @@ export default function Sidebar({ collapsed, onToggle }) {
               )}
 
               <div className="sidebar__nav-icon">
-                {isCompleted ? (
-                  <CheckCircle2 size={18} />
-                ) : (
-                  <Icon size={18} />
-                )}
+                {isCompleted ? <CheckCircle2 size={18} /> : <Icon size={18} />}
               </div>
 
               <AnimatePresence>
@@ -208,7 +207,12 @@ export default function Sidebar({ collapsed, onToggle }) {
           <Server size={14} />
           <AnimatePresence>
             {!collapsed && (
-              <motion.div className="sidebar__stat-info" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <motion.div
+                className="sidebar__stat-info"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
                 <span className="sidebar__stat-label">{t('common.servers')}</span>
                 <MiniBar value={counts.servers} max={totalAssets} color="#60a5fa" />
               </motion.div>
@@ -230,7 +234,12 @@ export default function Sidebar({ collapsed, onToggle }) {
           <Monitor size={14} />
           <AnimatePresence>
             {!collapsed && (
-              <motion.div className="sidebar__stat-info" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <motion.div
+                className="sidebar__stat-info"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
                 <span className="sidebar__stat-label">{t('common.clients')}</span>
                 <MiniBar value={counts.clients} max={totalAssets} color="#34d399" />
               </motion.div>
@@ -252,7 +261,12 @@ export default function Sidebar({ collapsed, onToggle }) {
           <Layers size={14} />
           <AnimatePresence>
             {!collapsed && (
-              <motion.div className="sidebar__stat-info" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <motion.div
+                className="sidebar__stat-info"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
                 <span className="sidebar__stat-label">{t('common.total')}</span>
                 <MiniBar value={totalAssets} max={totalAssets} color="#a78bfa" />
               </motion.div>

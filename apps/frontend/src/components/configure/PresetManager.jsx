@@ -9,9 +9,8 @@ import { useI18n } from '../../i18n';
 import './PresetManager.css';
 
 export default function PresetManager() {
-  const {
-    presets, fetchPresets, savePreset, loadPreset, deletePreset, loading,
-  } = useReporterContext();
+  const { presets, fetchPresets, savePreset, loadPreset, deletePreset, loading } =
+    useReporterContext();
   const { t } = useI18n();
   const [name, setName] = useState('');
   const [showSave, setShowSave] = useState(false);
@@ -44,10 +43,7 @@ export default function PresetManager() {
           <BookOpen size={16} />
           {t('preset.title')}
         </h3>
-        <button
-          className="btn btn--ghost btn--sm"
-          onClick={() => setShowSave(!showSave)}
-        >
+        <button className="btn btn--ghost btn--sm" onClick={() => setShowSave(!showSave)}>
           <Plus size={14} />
           {t('preset.save')}
         </button>
@@ -97,9 +93,7 @@ export default function PresetManager() {
               <div className="preset-mgr__item-info">
                 <span className="preset-mgr__item-name">{preset.name}</span>
                 <span className="preset-mgr__item-date">
-                  {preset.updated_at
-                    ? new Date(preset.updated_at).toLocaleDateString()
-                    : ''}
+                  {preset.updated_at ? new Date(preset.updated_at).toLocaleDateString() : ''}
                 </span>
               </div>
               <div className="preset-mgr__item-actions">
@@ -123,9 +117,7 @@ export default function PresetManager() {
         </AnimatePresence>
 
         {(!presets || presets.length === 0) && (
-          <div className="preset-mgr__empty">
-            {t('preset.empty')}
-          </div>
+          <div className="preset-mgr__empty">{t('preset.empty')}</div>
         )}
       </div>
     </div>

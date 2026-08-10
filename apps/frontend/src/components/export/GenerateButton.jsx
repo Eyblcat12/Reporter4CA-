@@ -10,8 +10,14 @@ import './GenerateButton.css';
 
 export default function GenerateButton() {
   const {
-    generateReport, previewDocx, saveReportAsTemplate,
-    rows, loading, lastReportId, dataQuality, activeReportJob,
+    generateReport,
+    previewDocx,
+    saveReportAsTemplate,
+    rows,
+    loading,
+    lastReportId,
+    dataQuality,
+    activeReportJob,
   } = useReporterContext();
   const { t } = useI18n();
   const [showSaveForm, setShowSaveForm] = useState(false);
@@ -60,9 +66,7 @@ export default function GenerateButton() {
         <span className="gen-btn__icon">
           <Eye size={18} />
         </span>
-        <span className="gen-btn__label">
-          {t('preview.title') || 'Xem trước'}
-        </span>
+        <span className="gen-btn__label">{t('preview.title') || 'Xem trước'}</span>
       </motion.button>
 
       {/* Generate Button */}
@@ -76,11 +80,7 @@ export default function GenerateButton() {
         title={hasBlockingErrors ? t('quality.generateBlocked') : undefined}
       >
         <span className="gen-btn__icon">
-          {loading ? (
-            <Loader2 size={20} className="gen-btn__spinner" />
-          ) : (
-            <Zap size={20} />
-          )}
+          {loading ? <Loader2 size={20} className="gen-btn__spinner" /> : <Zap size={20} />}
         </span>
         <span className="gen-btn__label">
           {loading || jobRunning ? t('jobs.inProgress') : t('export.generate')}
@@ -97,7 +97,9 @@ export default function GenerateButton() {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
           >
-            <span className="gen-btn__icon"><Save size={16} /></span>
+            <span className="gen-btn__icon">
+              <Save size={16} />
+            </span>
             <span className="gen-btn__label">
               {t('preview.saveAsTemplate') || 'Lưu làm template'}
             </span>
@@ -123,7 +125,11 @@ export default function GenerateButton() {
               onKeyDown={(e) => e.key === 'Enter' && handleSaveAsTemplate()}
               autoFocus
             />
-            <button className="btn btn--primary btn--sm" onClick={handleSaveAsTemplate} disabled={!templateName.trim()}>
+            <button
+              className="btn btn--primary btn--sm"
+              onClick={handleSaveAsTemplate}
+              disabled={!templateName.trim()}
+            >
               <Save size={14} />
             </button>
             <button className="btn btn--ghost btn--sm" onClick={() => setShowSaveForm(false)}>

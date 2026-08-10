@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-import base64
 import asyncio
+import base64
 import json
 import os
 import re
 import shutil
+import sys
 import tempfile
 import time
 import uuid
@@ -16,9 +17,72 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, Request, UploadFile
+from core.column_mapper import auto_detect_mapping
+from core.config import (
+    APP_NAME,
+    APP_VERSION,
+    allow_custom_runtime_paths,
+    max_import_bytes,
+    max_report_rows,
+    performance_metrics_enabled,
+    preview_artifact_cache_bytes,
+    preview_artifact_cache_entries,
+    preview_artifact_ttl_seconds,
+    preview_cache_enabled,
+    preview_jobs_enabled,
+    unified_report_scheduler_enabled,
+)
+from core.data_quality import assess_rows
+from core.database import file_sha256, get_db
+from core.docx_field_updater import FieldUpdateResult, refresh_docx_fields
+from core.gui_state import build_payload_from_rows, normalized_payload_to_rows, summarize_rows
+from core.incident_validation import assess_incident_metadata
+from core.input_parser import normalize_payload, parse_input
+from core.input_preprocessor import DEFAULT_SECTION, parse_delimited_text
+from core.performance_metrics import PerformanceMetrics, emit_performance_metrics
+from core.preview_artifacts import (
+    ArtifactCorrupt,
+    ArtifactExpired,
+    ArtifactStale,
+    PreviewArtifactError,
+    PreviewArtifactRegistry,
+)
+from core.report_generator import (
+    generate_report,
+    render_preview_text,
+    save_report,
+    warm_prepared_template_safely,
+)
+from core.report_integrity import verify_report_document
+from core.report_jobs import JobCancelled, ReportJob, ReportJobManager
+from core.report_orchestrator import ReportOrchestrator
+from core.report_snapshot import AcceptedReportSnapshot
+from core.rule_engine import (
+    assess_asset,
+    evaluate_asset,
+    evaluate_payload,
+    find_rule_conflicts,
+    load_rule_pack,
+    validate_rule,
+)
+from core.runtime_lifecycle import runtime_lifecycle
+from core.template_analyzer import (
+    MAX_TEMPLATE_SIZE,
+    analyze_template,
+    sanitize_filename,
+    validate_docx_bytes,
+)
+from core.template_schema import compare_template_analysis
+from core.workspace_backup import (
+    MAX_BACKUP_BYTES,
+    WorkspaceBackupError,
+    create_workspace_backup,
+    inspect_workspace_backup,
+    restore_workspace_backup,
+)
+from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
-from fastapi.responses import FileResponse, JSONResponse
 from starlette.background import BackgroundTask
 
 from api.models import (
@@ -37,80 +101,14 @@ from api.models import (
     SaveAsTemplateRequest,
     SavePresetRequest,
     SheetSelectRequest,
+    TemplateVersionRequest,
     UpdateTemplateRequest,
     UploadTemplateRequest,
-    TemplateVersionRequest,
     ValidateIncidentRequest,
     ValidateRowsRequest,
     ValidateRowsResponse,
     ValidationIssue,
 )
-from core.column_mapper import auto_detect_mapping, apply_mapping
-from core.config import (
-    APP_NAME,
-    APP_VERSION,
-    allow_custom_runtime_paths,
-    max_import_bytes,
-    max_report_rows,
-    performance_metrics_enabled,
-    preview_artifact_cache_bytes,
-    preview_artifact_cache_entries,
-    preview_artifact_ttl_seconds,
-    preview_jobs_enabled,
-    preview_cache_enabled,
-    unified_report_scheduler_enabled,
-)
-from core.database import get_db, file_sha256
-from core.data_quality import assess_rows
-from core.docx_field_updater import FieldUpdateResult, refresh_docx_fields
-from core.gui_state import build_payload_from_rows, normalized_payload_to_rows, summarize_rows
-from core.input_parser import normalize_payload, parse_input
-from core.input_preprocessor import DEFAULT_SECTION, parse_delimited_text
-from core.incident_validation import assess_incident_metadata
-from core.report_integrity import verify_report_document
-from core.report_orchestrator import ReportOrchestrator
-from core.report_snapshot import AcceptedReportSnapshot, thaw_json
-from core.report_generator import (
-    generate_report,
-    render_preview_text,
-    save_report,
-    warm_prepared_template_safely,
-)
-from core.report_jobs import JobCancelled, ReportJob, ReportJobManager
-from core.preview_artifacts import (
-    ArtifactCorrupt,
-    ArtifactExpired,
-    ArtifactNotReady,
-    ArtifactStale,
-    PreviewArtifactError,
-    PreviewArtifactRegistry,
-)
-from core.performance_metrics import PerformanceMetrics, emit_performance_metrics
-from core.runtime_lifecycle import runtime_lifecycle
-from core.rule_engine import (
-    assess_asset,
-    evaluate_asset,
-    evaluate_payload,
-    find_rule_conflicts,
-    load_rule_pack,
-    validate_rule,
-)
-from core.template_analyzer import (
-    MAX_TEMPLATE_SIZE,
-    analyze_template,
-    sanitize_filename,
-    validate_docx_bytes,
-)
-from core.template_schema import compare_template_analysis
-from core.workspace_backup import (
-    MAX_BACKUP_BYTES,
-    WorkspaceBackupError,
-    create_workspace_backup,
-    inspect_workspace_backup,
-    restore_workspace_backup,
-)
-
-import sys
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 BUNDLE_ROOT = Path(getattr(sys, "_MEIPASS", PROJECT_ROOT))
@@ -169,6 +167,7 @@ class BrowserSessionRequest(BaseModel):
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _new_runtime_metrics(
     req: GenerateRequest | PreviewDocxRequest,
     *,
@@ -177,29 +176,32 @@ def _new_runtime_metrics(
     if not performance_metrics_enabled():
         return None
     rows = req.rows
-    return PerformanceMetrics(metadata={
-        "operation": operation,
-        "reportType": req.report_type.value,
-        "assetCount": len(rows),
-        "serverCount": sum(1 for row in rows if row.get("type") == "server"),
-        "clientCount": sum(1 for row in rows if row.get("type") == "client"),
-        "cacheState": "runtime/no-prepared-cache",
-        "auditMode": "runtime",
-        "wordFieldUpdater": "requested",
-        "featureFlags": {
-            name: os.getenv(
-                name,
-                "1"
-                if name in {
-                    "AUTO_REPORT_PREPARED_TEMPLATE",
-                    "AUTO_REPORT_FAST_CELL",
-                    "AUTO_REPORT_UNIFIED_SCHEDULER",
-                }
-                else "0",
-            )
-            for name in _PERFORMANCE_FEATURE_FLAGS
-        },
-    })
+    return PerformanceMetrics(
+        metadata={
+            "operation": operation,
+            "reportType": req.report_type.value,
+            "assetCount": len(rows),
+            "serverCount": sum(1 for row in rows if row.get("type") == "server"),
+            "clientCount": sum(1 for row in rows if row.get("type") == "client"),
+            "cacheState": "runtime/no-prepared-cache",
+            "auditMode": "runtime",
+            "wordFieldUpdater": "requested",
+            "featureFlags": {
+                name: os.getenv(
+                    name,
+                    "1"
+                    if name
+                    in {
+                        "AUTO_REPORT_PREPARED_TEMPLATE",
+                        "AUTO_REPORT_FAST_CELL",
+                        "AUTO_REPORT_UNIFIED_SCHEDULER",
+                    }
+                    else "0",
+                )
+                for name in _PERFORMANCE_FEATURE_FLAGS
+            },
+        }
+    )
 
 
 def _metric_phase(
@@ -208,11 +210,7 @@ def _metric_phase(
     *,
     attributes: dict[str, Any] | None = None,
 ) -> Any:
-    return (
-        metrics.phase(name, attributes=attributes)
-        if metrics is not None
-        else nullcontext()
-    )
+    return metrics.phase(name, attributes=attributes) if metrics is not None else nullcontext()
 
 
 def _record_queue_wait(
@@ -239,6 +237,7 @@ def _emit_runtime_metrics(
         emit_performance_metrics(metrics, outcome=outcome)
     except Exception:
         pass
+
 
 def _template_report_type(file_path: Path) -> str:
     try:
@@ -274,7 +273,9 @@ def _managed_template_path(value: str | Path) -> Path:
 
 
 def _default_template_path(report_type: ReportType | str) -> str | None:
-    report_type_value = report_type.value if isinstance(report_type, ReportType) else str(report_type)
+    report_type_value = (
+        report_type.value if isinstance(report_type, ReportType) else str(report_type)
+    )
     db = get_db()
     registered = db.get_default_template(report_type_value)
     if registered:
@@ -296,11 +297,13 @@ def _default_template_path(report_type: ReportType | str) -> str | None:
     fallback = TEMPLATES_DIR / "report_template.docx"
     return str(fallback) if fallback.exists() else None
 
+
 def _load_plugins(plugins_dir: str | Path = "", disable: bool = False) -> list[Any]:
     if disable:
         return []
     try:
         from plugins.manager import load_plugins
+
         target = Path(str(plugins_dir or "")).expanduser()
         if str(target) in {"", "."}:
             target = DEFAULT_PLUGINS_DIR
@@ -314,6 +317,7 @@ def _load_plugins(plugins_dir: str | Path = "", disable: bool = False) -> list[A
 def _apply_input_plugins(data: dict, plugins: list) -> dict:
     try:
         from plugins.manager import apply_input_plugins
+
         return apply_input_plugins(data, plugins)
     except Exception:
         return data
@@ -322,6 +326,7 @@ def _apply_input_plugins(data: dict, plugins: list) -> dict:
 def _apply_document_plugins(document: Any, data: dict, plugins: list) -> Any:
     try:
         from plugins.manager import apply_document_plugins
+
         return apply_document_plugins(document, data, plugins)
     except Exception:
         return document
@@ -399,14 +404,14 @@ def _accept_report_snapshot(
             else b""
         )
         template_record = (
-            get_db().get_template_by_path(str(Path(template_path)))
-            if template_path
-            else None
+            get_db().get_template_by_path(str(Path(template_path))) if template_path else None
         )
         template_key = (
             f"template:{template_record.get('id', '')}:{template_record.get('file_hash', '')}"
             if template_record
-            else str(Path(template_path).resolve()) if template_path else ""
+            else str(Path(template_path).resolve())
+            if template_path
+            else ""
         )
     snapshot = AcceptedReportSnapshot.create(
         rows=req.rows,
@@ -423,10 +428,12 @@ def _accept_report_snapshot(
         disable_plugins=req.disable_plugins,
     )
     if metrics is not None:
-        metrics.update_metadata({
-            "pluginCount": len(plugins),
-            "templateHash": snapshot.template_hash,
-        })
+        metrics.update_metadata(
+            {
+                "pluginCount": len(plugins),
+                "templateHash": snapshot.template_hash,
+            }
+        )
     return snapshot, plugins
 
 
@@ -437,22 +444,27 @@ def _validate_and_normalize_snapshot(
 ) -> tuple[dict[str, Any], dict[str, Any], list[Any]]:
     quality = assess_rows(rows)
     if not quality["valid"]:
-        raise HTTPException(422, {
-            "message": "Dữ liệu còn lỗi nghiêm trọng. Hãy sửa trước khi tạo báo cáo.",
-            "quality": quality,
-        })
+        raise HTTPException(
+            422,
+            {
+                "message": "Dữ liệu còn lỗi nghiêm trọng. Hãy sửa trước khi tạo báo cáo.",
+                "quality": quality,
+            },
+        )
     effective_metadata = {**metadata, "dataQuality": quality["summary"]}
     if report_type == ReportType.INCIDENT_RESPONSE.value:
         incident_quality = assess_incident_metadata(effective_metadata)
         if not incident_quality["valid"]:
-            raise HTTPException(422, {
-                "message": "Thông tin Incident Response còn lỗi nghiêm trọng.",
-                "incidentQuality": incident_quality,
-            })
+            raise HTTPException(
+                422,
+                {
+                    "message": "Thông tin Incident Response còn lỗi nghiêm trọng.",
+                    "incidentQuality": incident_quality,
+                },
+            )
         effective_metadata["incidentQuality"] = incident_quality["summary"]
     warnings = [
-        issue for issue in quality.get("issues", [])
-        if str(issue.get("level", "")) == "warning"
+        issue for issue in quality.get("issues", []) if str(issue.get("level", "")) == "warning"
     ]
     return _payload_from_rows(rows, effective_metadata), quality, warnings
 
@@ -520,10 +532,16 @@ def _assert_template_compatible(template_path: str | None) -> None:
     template = get_db().get_template_by_path(str(Path(template_path)))
     resolved = Path(template_path).expanduser().resolve()
     managed_root = TEMPLATES_DIR.resolve()
-    if not template and not allow_custom_runtime_paths() and not resolved.is_relative_to(managed_root):
+    if (
+        not template
+        and not allow_custom_runtime_paths()
+        and not resolved.is_relative_to(managed_root)
+    ):
         raise HTTPException(403, "Custom template paths are disabled in local/team safe mode.")
     if template and template.get("compatibility_status") == "incompatible":
-        raise HTTPException(422, "Template is incompatible. Review its compatibility report before generating.")
+        raise HTTPException(
+            422, "Template is incompatible. Review its compatibility report before generating."
+        )
 
 
 def _assert_report_size(rows: list[dict[str, Any]]) -> None:
@@ -631,7 +649,9 @@ def _create_report_artifact_impl(
                     status=status,
                     output_filename=filename,
                     output_path=str(output_path) if output_path else "",
-                    file_size=output_path.stat().st_size if output_path and output_path.exists() else 0,
+                    file_size=output_path.stat().st_size
+                    if output_path and output_path.exists()
+                    else 0,
                     duration_ms=round((time.perf_counter() - started_at) * 1000),
                     error_code=error_code,
                     cache_status="cold_generate",
@@ -644,11 +664,13 @@ def _create_report_artifact_impl(
                 report_type=accepted.report_type if accepted is not None else req.report_type.value,
                 row_count=len(accepted.rows) if accepted is not None else len(req.rows),
                 server_count=sum(
-                    1 for row in (accepted.rows if accepted is not None else req.rows)
+                    1
+                    for row in (accepted.rows if accepted is not None else req.rows)
                     if row.get("type") == "server"
                 ),
                 client_count=sum(
-                    1 for row in (accepted.rows if accepted is not None else req.rows)
+                    1
+                    for row in (accepted.rows if accepted is not None else req.rows)
                     if row.get("type") == "client"
                 ),
                 output_filename=filename,
@@ -772,6 +794,7 @@ def _create_preview_artifact_impl(
     """Generate preview off the API event loop so lifecycle/status stays responsive."""
     if accepted is None or plugins is None:
         accepted, plugins = _accept_report_snapshot(req, metrics=metrics)
+
     def progress(value: int, rows: int) -> None:
         if check_cancelled is not None:
             check_cancelled()
@@ -820,6 +843,7 @@ def _run_runtime_operation(function: Any, *args: Any, **kwargs: Any) -> Any:
 # GET endpoints
 # ---------------------------------------------------------------------------
 
+
 @router.get("/health")
 async def health():
     plugins = _load_plugins()
@@ -828,10 +852,7 @@ async def health():
         "app": APP_NAME,
         "version": APP_VERSION,
         "databaseSchema": get_db().schema_version,
-        "plugins": [
-            {"name": p.name(), "version": getattr(p, "version", "0.0.0")}
-            for p in plugins
-        ],
+        "plugins": [{"name": p.name(), "version": getattr(p, "version", "0.0.0")} for p in plugins],
     }
 
 
@@ -960,7 +981,9 @@ async def restore_workspace(
 ):
     """Restore a previously dry-run archive, with automatic rollback on failure."""
     active_jobs = [
-        job for job in _report_jobs.list(limit=100) if job["status"] not in {"completed", "failed", "cancelled"}
+        job
+        for job in _report_jobs.list(limit=100)
+        if job["status"] not in {"completed", "failed", "cancelled"}
     ]
     if active_jobs:
         raise HTTPException(409, "Wait for active report jobs to finish before restoring.")
@@ -1011,12 +1034,16 @@ async def create_detection_rule(req: DetectionRuleRequest):
 async def export_detection_rules():
     rules = []
     for rule in get_db().list_detection_rules():
-        rules.append({
-            key: value for key, value in rule.items()
-            if key not in {"createdAt", "updatedAt", "source", "editable", "archived"}
-        })
+        rules.append(
+            {
+                key: value
+                for key, value in rule.items()
+                if key not in {"createdAt", "updatedAt", "source", "editable", "archived"}
+            }
+        )
     return {
-        "schemaVersion": "1.0", "exportedAt": datetime.now(timezone.utc).isoformat(),
+        "schemaVersion": "1.0",
+        "exportedAt": datetime.now(timezone.utc).isoformat(),
         "rules": rules,
     }
 
@@ -1033,14 +1060,17 @@ async def import_detection_rules(req: ImportRulesRequest):
     for index, candidate in enumerate(req.rules):
         try:
             clean = {
-                key: value for key, value in candidate.items()
+                key: value
+                for key, value in candidate.items()
                 if key not in {"id", "createdAt", "updatedAt", "source", "editable", "archived"}
             }
             rule = validate_rule(clean)
             original_name = rule["name"]
             if original_name.casefold() in existing_names:
                 if req.strategy == "skip":
-                    skipped.append({"index": index, "name": original_name, "reason": "duplicate_name"})
+                    skipped.append(
+                        {"index": index, "name": original_name, "reason": "duplicate_name"}
+                    )
                     continue
                 suffix = 2
                 renamed = f"{original_name} (imported)"
@@ -1052,7 +1082,9 @@ async def import_detection_rules(req: ImportRulesRequest):
             existing_names.add(saved["name"].casefold())
             imported.append(saved)
         except (ValueError, re.error, TypeError) as exc:
-            errors.append({"index": index, "name": str(candidate.get("name", "")), "reason": str(exc)})
+            errors.append(
+                {"index": index, "name": str(candidate.get("name", "")), "reason": str(exc)}
+            )
     return {"imported": imported, "skipped": skipped, "errors": errors}
 
 
@@ -1067,11 +1099,14 @@ async def detection_rule_conflicts():
 async def clone_detection_rule(rule_id: str):
     source = get_db().get_detection_rule(rule_id)
     if not source:
-        source = next((rule for rule in load_rule_pack()["rules"] if rule.get("id") == rule_id), None)
+        source = next(
+            (rule for rule in load_rule_pack()["rules"] if rule.get("id") == rule_id), None
+        )
     if not source:
         raise HTTPException(404, "Không tìm thấy rule")
     clone = {
-        key: value for key, value in source.items()
+        key: value
+        for key, value in source.items()
         if key not in {"id", "createdAt", "updatedAt", "source", "editable", "archived"}
     }
     clone["name"] = f"{source['name']} (copy)"
@@ -1121,8 +1156,7 @@ async def evaluate_detection_rule(req: EvaluateRuleRequest):
     existing_rules = [*pack["rules"], *get_db().list_detection_rules()]
     disabled = {*req.disabled_rule_ids, *([req.editing_rule_id] if req.editing_rule_id else [])}
     conflict_rules = [
-        item for item in existing_rules
-        if str(item.get("id", "")) != req.editing_rule_id
+        item for item in existing_rules if str(item.get("id", "")) != req.editing_rule_id
     ]
     matches = []
     changed_rows = 0
@@ -1144,21 +1178,24 @@ async def evaluate_detection_rule(req: EvaluateRuleRequest):
             changed_rows += int(changed)
             impact[rule["classification"]] += 1
             impact["servers" if row.get("type") == "server" else "clients"] += 1
-            matches.append({
-                "row": index,
-                "hostname": row.get("hostname", ""),
-                "type": row.get("type", ""),
-                "result": row.get("result", ""),
-                "notes": row.get("notes", ""),
-                "classificationBefore": before["classification"],
-                "classificationAfter": after["classification"],
-                "assessmentBefore": before["label"],
-                "assessmentAfter": after["label"],
-                "changed": changed,
-                "evidence": draft_findings[0]["evidence"],
-            })
+            matches.append(
+                {
+                    "row": index,
+                    "hostname": row.get("hostname", ""),
+                    "type": row.get("type", ""),
+                    "result": row.get("result", ""),
+                    "notes": row.get("notes", ""),
+                    "classificationBefore": before["classification"],
+                    "classificationAfter": after["classification"],
+                    "assessmentBefore": before["label"],
+                    "assessmentAfter": after["label"],
+                    "changed": changed,
+                    "evidence": draft_findings[0]["evidence"],
+                }
+            )
     conflicts = [
-        item for item in find_rule_conflicts([*conflict_rules, rule])
+        item
+        for item in find_rule_conflicts([*conflict_rules, rule])
         if "DRAFT_RULE" in item["ruleIds"]
     ]
     return {
@@ -1181,7 +1218,11 @@ async def list_templates():
     # Also scan for any DOCX in templates/ not yet in DB
     if TEMPLATES_DIR.exists():
         for f in TEMPLATES_DIR.rglob("*.docx"):
-            if f.suffix.lower() == ".docx" and not f.name.startswith("~") and "_versions" not in f.parts:
+            if (
+                f.suffix.lower() == ".docx"
+                and not f.name.startswith("~")
+                and "_versions" not in f.parts
+            ):
                 existing = db.get_template_by_filename(f.name)
                 if not existing:
                     report_type = _template_report_type(f)
@@ -1199,31 +1240,35 @@ async def list_templates():
                         heading_count=analysis.get("heading_count", 0),
                         **_compatibility_fields(analysis),
                     )
-                    if analysis.get("compatibility", {}).get("status") != "incompatible" and not db.get_default_template(report_type):
+                    if analysis.get("compatibility", {}).get(
+                        "status"
+                    ) != "incompatible" and not db.get_default_template(report_type):
                         db.set_default_template(tid)
     rows = db.list_templates()
     templates = []
     for r in rows:
-        templates.append({
-            "id": r["id"],
-            "name": r["name"],
-            "filename": r["filename"],
-            "path": r["file_path"],
-            "size": r["file_size"],
-            "fileHash": r.get("file_hash", ""),
-            "isDefault": bool(r["is_default"]),
-            "isGenerated": bool(r.get("is_generated", 0)),
-            "hasTokens": bool(r.get("has_tokens", 0)),
-            "templateMode": r.get("template_mode", "cover"),
-            "reportType": r.get("report_type", ReportType.FULL.value),
-            "tableCount": r.get("table_count", 0),
-            "headingCount": r.get("heading_count", 0),
-            "compatibilityStatus": r.get("compatibility_status", "unknown"),
-            "compatibilityVersion": r.get("compatibility_version", ""),
-            "compatibility": json.loads(r.get("compatibility_json") or "{}"),
-            "description": r.get("description", ""),
-            "createdAt": r.get("created_at", ""),
-        })
+        templates.append(
+            {
+                "id": r["id"],
+                "name": r["name"],
+                "filename": r["filename"],
+                "path": r["file_path"],
+                "size": r["file_size"],
+                "fileHash": r.get("file_hash", ""),
+                "isDefault": bool(r["is_default"]),
+                "isGenerated": bool(r.get("is_generated", 0)),
+                "hasTokens": bool(r.get("has_tokens", 0)),
+                "templateMode": r.get("template_mode", "cover"),
+                "reportType": r.get("report_type", ReportType.FULL.value),
+                "tableCount": r.get("table_count", 0),
+                "headingCount": r.get("heading_count", 0),
+                "compatibilityStatus": r.get("compatibility_status", "unknown"),
+                "compatibilityVersion": r.get("compatibility_version", ""),
+                "compatibility": json.loads(r.get("compatibility_json") or "{}"),
+                "description": r.get("description", ""),
+                "createdAt": r.get("created_at", ""),
+            }
+        )
     return {"templates": templates}
 
 
@@ -1235,10 +1280,11 @@ async def list_templates():
 # Smart header detection helpers
 # ---------------------------------------------------------------------------
 
+
 def _is_header_like(value: Any) -> bool:
     """Kiểm tra xem giá trị có giống tên cột (header) hay không.
     Header thường là chuỗi text, không phải số hay ngày tháng."""
-    if value is None or (isinstance(value, float) and str(value) == 'nan'):
+    if value is None or (isinstance(value, float) and str(value) == "nan"):
         return False
     s = str(value).strip()
     if not s:
@@ -1255,7 +1301,9 @@ def _is_header_like(value: Any) -> bool:
     return True
 
 
-def _detect_header_row(tmp_path: Path, suffix: str, sheet_name: str | None = None, max_scan: int = 10) -> int:
+def _detect_header_row(
+    tmp_path: Path, suffix: str, sheet_name: str | None = None, max_scan: int = 10
+) -> int:
     """Quét tối đa max_scan dòng đầu, chấm điểm mỗi dòng theo số ô
     trông giống header. Trả về chỉ số dòng (0-indexed) phù hợp nhất."""
     import pandas as pd
@@ -1285,8 +1333,9 @@ def _detect_header_row(tmp_path: Path, suffix: str, sheet_name: str | None = Non
     return best_row
 
 
-def _read_with_header(tmp_path: Path, suffix: str, header_row: int,
-                      sheet_name: str | None = None, nrows: int = 50) -> tuple[list[str], "pd.DataFrame"]:
+def _read_with_header(
+    tmp_path: Path, suffix: str, header_row: int, sheet_name: str | None = None, nrows: int = 50
+) -> tuple[list[str], Any]:
     """Đọc file với header_row chỉ định, trả về (columns, DataFrame)."""
     import pandas as pd
 
@@ -1316,8 +1365,9 @@ async def column_preview(req: ColumnPreviewRequest):
         tmp_path = Path(tmp.name)
         tmp.write(decoded)
 
-    # Phát hiện format thật bằng magic bytes
+    # Detect the real format from file content before selecting the parser.
     from core.input_parser import detect_real_format
+
     suffix = detect_real_format(tmp_path)
 
     try:
@@ -1331,8 +1381,11 @@ async def column_preview(req: ColumnPreviewRequest):
         # --- Xử lý file text thô (không phải Excel / CSV chuẩn) ---
         if suffix not in {".xlsx", ".xls", ".csv"}:
             raw = tmp_path.read_text(encoding="utf-8-sig")
+            import csv
+            import io
+
             from core.input_preprocessor import detect_delimiter
-            import csv, io
+
             delimiter = detect_delimiter(raw)
             reader = csv.DictReader(io.StringIO(raw), delimiter=delimiter)
             records = [dict(row) for row in list(reader)[:50]]
@@ -1363,8 +1416,7 @@ async def column_preview(req: ColumnPreviewRequest):
         sample_rows = first_frame.head(5).to_dict(orient="records")
         # Chuyển tất cả giá trị sang string cho JSON safety
         sample_rows = [
-            {k: str(v) if v != "" else "" for k, v in row.items()}
-            for row in sample_rows
+            {k: str(v) if v != "" else "" for k, v in row.items()} for row in sample_rows
         ]
         suggested = auto_detect_mapping(columns)
 
@@ -1380,7 +1432,9 @@ async def column_preview(req: ColumnPreviewRequest):
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(400, f"Không đọc được file '{req.filename}': {exc}. Hãy kiểm tra định dạng file.")
+        raise HTTPException(
+            400, f"Không đọc được file '{req.filename}': {exc}. Hãy kiểm tra định dạng file."
+        )
     finally:
         tmp_path.unlink(missing_ok=True)
 
@@ -1419,8 +1473,7 @@ async def sheet_select(req: SheetSelectRequest):
         df = df.fillna("")
         sample_rows = df.head(5).to_dict(orient="records")
         sample_rows = [
-            {k: str(v) if v != "" else "" for k, v in row.items()}
-            for row in sample_rows
+            {k: str(v) if v != "" else "" for k, v in row.items()} for row in sample_rows
         ]
         suggested = auto_detect_mapping(columns)
 
@@ -1454,14 +1507,11 @@ async def import_file(req: ImportFileRequest):
         tmp_path = Path(tmp.name)
         tmp.write(decoded)
 
-    # Phát hiện format thật bằng magic bytes
-    from core.input_parser import detect_real_format
-    suffix = detect_real_format(tmp_path)
-
     try:
         if req.column_mapping:
             # Use column mapping
             from core.input_parser import parse_with_column_mapping
+
             data = parse_with_column_mapping(
                 tmp_path,
                 req.column_mapping,
@@ -1547,7 +1597,9 @@ async def generate(req: GenerateRequest):
                 "Content-Disposition": f'attachment; filename="{artifact["filename"]}"',
                 "X-Report-Id": artifact["reportId"],
                 "X-Docx-Fields": artifact["fieldEngine"],
-                "X-Report-Integrity": "verified" if artifact["integrity"].get("valid") else "unknown",
+                "X-Report-Integrity": "verified"
+                if artifact["integrity"].get("valid")
+                else "unknown",
                 "X-Request-Signature": artifact["requestSignature"],
                 "X-Content-Signature": artifact["contentSignature"],
             },
@@ -1596,7 +1648,9 @@ def _run_report_job(job: ReportJob) -> dict[str, Any]:
         if history_id:
             current = get_db().get_report(history_id)
             if current and current.get("status") not in {"success", "failed", "cancelled"}:
-                get_db().update_report_execution(history_id, status="cancelled", error_code="CANCELLED")
+                get_db().update_report_execution(
+                    history_id, status="cancelled", error_code="CANCELLED"
+                )
         raise
     except Exception as exc:
         if history_id:
@@ -1625,7 +1679,9 @@ def _promote_preview_artifact(
             source_artifact_id=preview_id,
             cache_status="preview_cache_hit",
         )
-    _report_jobs.update(job, phase="promoting", progress=35, message="Đang dùng lại Preview đã xác minh")
+    _report_jobs.update(
+        job, phase="promoting", progress=35, message="Đang dùng lại Preview đã xác minh"
+    )
     GENERATED_REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     filename = _suggest_filename(request.output_name)
     final_path = GENERATED_REPORTS_DIR / f"{job.id}-{sanitize_filename(filename)}"
@@ -1818,7 +1874,9 @@ async def create_preview_job(req: PreviewDocxRequest):
         }
     except RuntimeError as exc:
         if "queue is full" in str(exc).casefold():
-            raise HTTPException(429, "Document queue is full.", headers={"Retry-After": "2"}) from exc
+            raise HTTPException(
+                429, "Document queue is full.", headers={"Retry-After": "2"}
+            ) from exc
         raise
 
 
@@ -1953,7 +2011,8 @@ async def create_report_job(req: GenerateRequest):
             context=job_context,
             fingerprint=(
                 f"report:{accepted.request_signature}:preview:{promotion_id}"
-                if promotion_id else f"report:{accepted.request_signature}:cold"
+                if promotion_id
+                else f"report:{accepted.request_signature}:cold"
             ),
             kind="report",
             requires_output=True,
@@ -2014,6 +2073,7 @@ async def download_report_job(job_id: str):
 # Validate rows
 # ---------------------------------------------------------------------------
 
+
 @router.post("/validate-rows")
 async def validate_rows(req: ValidateRowsRequest):
     """Kiểm tra dữ liệu rows và trả về issue cùng thống kê có thể lọc."""
@@ -2034,6 +2094,7 @@ async def validate_incident(req: ValidateIncidentRequest):
 # ---------------------------------------------------------------------------
 # Template management endpoints
 # ---------------------------------------------------------------------------
+
 
 @router.post("/templates/upload")
 async def upload_template(req: UploadTemplateRequest, background_tasks: BackgroundTasks):
@@ -2136,7 +2197,9 @@ async def update_template(template_id: str, req: UpdateTemplateRequest):
         updated = db.get_template(template_id)
     if req.is_default is True and not can_be_default:
         raise HTTPException(422, "Incompatible template cannot be set as default.")
-    if can_be_default and (req.is_default is True or moved_default or not db.get_default_template(target_type)):
+    if can_be_default and (
+        req.is_default is True or moved_default or not db.get_default_template(target_type)
+    ):
         db.set_default_template(template_id)
     return {"ok": True, "template": db.get_template(template_id)}
 
@@ -2199,9 +2262,12 @@ async def analyze_template_endpoint(template_id: str):
 
 def _version_payload(row: dict[str, Any]) -> dict[str, Any]:
     return {
-        "id": row["id"], "templateId": row["template_id"],
-        "version": row["version_number"], "size": row["file_size"],
-        "fileHash": row["file_hash"], "note": row.get("note", ""),
+        "id": row["id"],
+        "templateId": row["template_id"],
+        "version": row["version_number"],
+        "size": row["file_size"],
+        "fileHash": row["file_hash"],
+        "note": row.get("note", ""),
         "createdAt": row["created_at"],
         "analysis": json.loads(row.get("analysis_json") or "{}"),
     }
@@ -2214,8 +2280,12 @@ def _ensure_template_baseline_version(template: dict[str, Any]) -> None:
     path = _managed_template_path(template["file_path"])
     analysis = analyze_template(path, template.get("report_type", ReportType.FULL.value))
     db.add_template_version(
-        template["id"], file_path=str(path), file_size=path.stat().st_size,
-        file_hash=file_sha256(path), analysis=analysis, note="Baseline",
+        template["id"],
+        file_path=str(path),
+        file_size=path.stat().st_size,
+        file_hash=file_sha256(path),
+        analysis=analysis,
+        note="Baseline",
     )
 
 
@@ -2248,15 +2318,24 @@ async def create_template_version(template_id: str, req: TemplateVersionRequest)
     target.write_bytes(decoded)
     analysis = analyze_template(target, template.get("report_type", ReportType.FULL.value))
     version = db.add_template_version(
-        template_id, file_path=str(target), file_size=len(decoded), file_hash=file_sha256(target),
-        analysis=analysis, note=req.note.strip(),
+        template_id,
+        file_path=str(target),
+        file_size=len(decoded),
+        file_hash=file_sha256(target),
+        analysis=analysis,
+        note=req.note.strip(),
     )
     compatible = analysis.get("compatibility", {}).get("status") != "incompatible"
     if compatible:
         db.update_template(
-            template_id, file_path=str(target), file_size=len(decoded), file_hash=file_sha256(target),
-            has_tokens=analysis.get("has_tokens", False), template_mode=analysis.get("template_mode", "cover"),
-            table_count=analysis.get("table_count", 0), heading_count=analysis.get("heading_count", 0),
+            template_id,
+            file_path=str(target),
+            file_size=len(decoded),
+            file_hash=file_sha256(target),
+            has_tokens=analysis.get("has_tokens", False),
+            template_mode=analysis.get("template_mode", "cover"),
+            table_count=analysis.get("table_count", 0),
+            heading_count=analysis.get("heading_count", 0),
             **_compatibility_fields(analysis),
         )
     return {"version": _version_payload(version), "activated": compatible}
@@ -2274,9 +2353,14 @@ async def rollback_template_version(template_id: str, version_number: int):
     if analysis.get("compatibility", {}).get("status") == "incompatible":
         raise HTTPException(422, "Cannot roll back to an incompatible template version.")
     db.update_template(
-        template_id, file_path=str(path), file_size=version["file_size"], file_hash=version["file_hash"],
-        has_tokens=analysis.get("has_tokens", False), template_mode=analysis.get("template_mode", "cover"),
-        table_count=analysis.get("table_count", 0), heading_count=analysis.get("heading_count", 0),
+        template_id,
+        file_path=str(path),
+        file_size=version["file_size"],
+        file_hash=version["file_hash"],
+        has_tokens=analysis.get("has_tokens", False),
+        template_mode=analysis.get("template_mode", "cover"),
+        table_count=analysis.get("table_count", 0),
+        heading_count=analysis.get("heading_count", 0),
         **_compatibility_fields(analysis),
     )
     return {"ok": True, "activeVersion": version_number, "template": db.get_template(template_id)}
@@ -2290,7 +2374,8 @@ async def compare_template_versions(template_id: str, fromVersion: int, toVersio
     if not before or not after:
         raise HTTPException(404, "Template version not found.")
     return {
-        "fromVersion": fromVersion, "toVersion": toVersion,
+        "fromVersion": fromVersion,
+        "toVersion": toVersion,
         "diff": compare_template_analysis(
             json.loads(before.get("analysis_json") or "{}"),
             json.loads(after.get("analysis_json") or "{}"),
@@ -2301,6 +2386,7 @@ async def compare_template_versions(template_id: str, fromVersion: int, toVersio
 # ---------------------------------------------------------------------------
 # Preset endpoints
 # ---------------------------------------------------------------------------
+
 
 @router.get("/presets")
 async def list_presets():
@@ -2343,6 +2429,7 @@ async def get_preset(preset_id: str):
 # ---------------------------------------------------------------------------
 # Preview DOCX (generate without saving)
 # ---------------------------------------------------------------------------
+
 
 @router.post("/preview-docx")
 async def preview_docx(req: PreviewDocxRequest):
@@ -2405,6 +2492,7 @@ async def preview_docx(req: PreviewDocxRequest):
 # Save generated report as template
 # ---------------------------------------------------------------------------
 
+
 @router.post("/reports/{report_id}/save-as-template")
 async def save_report_as_template(report_id: str, req: SaveAsTemplateRequest):
     """Save a previously generated report DOCX as a reusable template."""
@@ -2433,6 +2521,7 @@ async def save_report_as_template(report_id: str, req: SaveAsTemplateRequest):
         counter += 1
 
     import shutil
+
     category_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy2(str(source_path), str(target))
 
@@ -2456,7 +2545,9 @@ async def save_report_as_template(report_id: str, req: SaveAsTemplateRequest):
         description=req.description,
         **_compatibility_fields(analysis),
     )
-    if analysis.get("compatibility", {}).get("status") != "incompatible" and not db.get_default_template(report_type):
+    if analysis.get("compatibility", {}).get(
+        "status"
+    ) != "incompatible" and not db.get_default_template(report_type):
         db.set_default_template(tid)
 
     return {
@@ -2471,6 +2562,7 @@ async def save_report_as_template(report_id: str, req: SaveAsTemplateRequest):
 # ---------------------------------------------------------------------------
 # Report history
 # ---------------------------------------------------------------------------
+
 
 @router.get("/reports/history")
 async def report_history():

@@ -41,9 +41,7 @@ def validate_docx_bytes(data: bytes, max_size: int = MAX_TEMPLATE_SIZE) -> None:
             f"File qua lon: {len(data) / 1024 / 1024:.1f} MB (gioi han {max_size / 1024 / 1024:.0f} MB)"
         )
     if not data[:4] == DOCX_MAGIC:
-        raise ValueError(
-            "File khong phai dinh dang DOCX hop le (magic bytes khong khop)"
-        )
+        raise ValueError("File khong phai dinh dang DOCX hop le (magic bytes khong khop)")
 
 
 def sanitize_filename(filename: str) -> str:
@@ -163,6 +161,7 @@ def analyze_template(file_path: Path, report_type: str = "full") -> dict[str, An
         "prototype_tables": prototype_tables,
     }
     from core.template_schema import evaluate_template_compatibility
+
     result["compatibility"] = evaluate_template_compatibility(result, report_type)
     return result
 

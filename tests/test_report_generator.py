@@ -10,7 +10,6 @@ from docx import Document
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 
-
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "apps" / "backend"
 sys.path.insert(0, str(BACKEND))
@@ -63,12 +62,7 @@ class ReportGeneratorTests(unittest.TestCase):
     @staticmethod
     def all_text(document: Document) -> str:
         paragraphs = [paragraph.text for paragraph in document.paragraphs]
-        cells = [
-            cell.text
-            for table in document.tables
-            for row in table.rows
-            for cell in row.cells
-        ]
+        cells = [cell.text for table in document.tables for row in table.rows for cell in row.cells]
         return "\n".join(paragraphs + cells)
 
     def test_server_only_bundled_template_generates_only_server_assets(self) -> None:
@@ -168,7 +162,9 @@ class ReportGeneratorTests(unittest.TestCase):
         self.assertTrue(headings)
 
         num_ids = {
-            paragraph._p.find("./" + qn("w:pPr") + "/" + qn("w:numPr") + "/" + qn("w:numId")).get(qn("w:val"))
+            paragraph._p.find("./" + qn("w:pPr") + "/" + qn("w:numPr") + "/" + qn("w:numId")).get(
+                qn("w:val")
+            )
             for paragraph in headings
         }
         self.assertEqual(len(num_ids), 1)
@@ -195,7 +191,9 @@ class ReportGeneratorTests(unittest.TestCase):
         for level in abstract_num.findall(qn("w:lvl")):
             level_index = int(level.get(qn("w:ilvl")))
             self.assertEqual(level.find(qn("w:start")).get(qn("w:val")), "1")
-            self.assertEqual(level.find(qn("w:lvlText")).get(qn("w:val")), expected_text[level_index])
+            self.assertEqual(
+                level.find(qn("w:lvlText")).get(qn("w:val")), expected_text[level_index]
+            )
             indentation = level.find("./" + qn("w:pPr") + "/" + qn("w:ind"))
             self.assertEqual(indentation.get(qn("w:left")), REPORTER_HEADING_TEXT_LEFT_TWIPS)
             self.assertEqual(indentation.get(qn("w:hanging")), REPORTER_HEADING_TEXT_LEFT_TWIPS)
@@ -285,14 +283,17 @@ class ReportGeneratorTests(unittest.TestCase):
             report_type=ReportType.SERVER_ONLY,
         )
         inventory = next(
-            table for table in document.tables
+            table
+            for table in document.tables
             if [cell.text.strip() for cell in table.rows[0].cells[:2]] == ["STT", "Máy chủ"]
         )
         stt_paragraphs = [row.cells[0].paragraphs[0] for row in inventory.rows[1:13]]
         # This template deliberately uses Word numbering. Generated STT cells
         # must be renderer-independent plain text, with no inherited list
         # numbering or ListParagraph style left to duplicate/hide the value.
-        self.assertEqual([paragraph.text for paragraph in stt_paragraphs], [str(index) for index in range(1, 13)])
+        self.assertEqual(
+            [paragraph.text for paragraph in stt_paragraphs], [str(index) for index in range(1, 13)]
+        )
         self.assertTrue(
             all(paragraph._p.find(".//" + qn("w:numPr")) is None for paragraph in stt_paragraphs)
         )
@@ -303,23 +304,39 @@ class ReportGeneratorTests(unittest.TestCase):
     def test_anomaly_only_marks_evidence_backed_rows(self) -> None:
         asset = self.data["servers"][0]
         self.assertEqual(_get_anomaly_text("Kiểm tra rootkit", asset), DEFAULT_RESULT_TEXT)
-        self.assertIn("Phát hiện", _get_anomaly_text("Xác định các Service, process, loaded DLL bất thường", asset))
-        self.assertIn("Phát hiện", _get_anomaly_text("Xác định, phân tích các tệp tin bất thường", asset))
+        self.assertIn(
+            "Phát hiện",
+            _get_anomaly_text("Xác định các Service, process, loaded DLL bất thường", asset),
+        )
+        self.assertIn(
+            "Phát hiện", _get_anomaly_text("Xác định, phân tích các tệp tin bất thường", asset)
+        )
 
     def test_incident_response_has_dedicated_sections(self) -> None:
         self.data["metadata"] = {
             "incident_id": "IR-001",
             "severity": "High",
-            "timeline": [{"time": "10:00", "event": "Detected", "evidence": "EDR-001", "relatedIocs": "10.0.0.1"}],
+            "timeline": [
+                {
+                    "time": "10:00",
+                    "event": "Detected",
+                    "evidence": "EDR-001",
+                    "relatedIocs": "10.0.0.1",
+                }
+            ],
             "iocs": [{"type": "ip", "value": "10.0.0.1", "source": "EDR-001"}],
-            "containmentActions": [{"action": "Isolate host", "status": "Done", "owner": "SOC", "evidence": "EDR-002"}],
+            "containmentActions": [
+                {"action": "Isolate host", "status": "Done", "owner": "SOC", "evidence": "EDR-002"}
+            ],
         }
         document = self.build(ReportType.INCIDENT_RESPONSE)
         headings = [p.text for p in document.paragraphs if p.style.name.startswith("Heading")]
         self.assertIn("Thông tin sự cố", headings)
         self.assertIn("Dòng thời gian", headings)
         self.assertIn("MITRE ATT&CK", headings)
-        table_text = "\n".join(cell.text for table in document.tables for row in table.rows for cell in row.cells)
+        table_text = "\n".join(
+            cell.text for table in document.tables for row in table.rows for cell in row.cells
+        )
         self.assertIn("EDR-001", table_text)
         self.assertIn("IoC liên quan", table_text)
         self.assertIn("Isolate host", table_text)

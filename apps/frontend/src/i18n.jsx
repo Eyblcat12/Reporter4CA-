@@ -205,17 +205,20 @@ const translations = {
     'backup.subtitle': 'Bảo vệ cấu hình, lịch sử và template của bạn',
     'backup.snapshot': 'Snapshot nhất quán, sẵn sàng lưu trữ',
     'backup.contents': 'Bao gồm SQLite database và toàn bộ template DOCX hiện có.',
-    'backup.warning': 'Backup có thể chứa cấu hình kết nối đã lưu. Hãy bảo quản file ZIP như dữ liệu nhạy cảm.',
+    'backup.warning':
+      'Backup có thể chứa cấu hình kết nối đã lưu. Hãy bảo quản file ZIP như dữ liệu nhạy cảm.',
     'backup.download': 'Tạo và tải backup',
     'backup.creating': 'Đang tạo backup...',
     'backup.restoreTitle': 'Khôi phục workspace',
-    'backup.restoreDescription': 'Chọn backup ZIP để kiểm tra trước. Dữ liệu chỉ thay đổi sau khi bạn xác nhận.',
+    'backup.restoreDescription':
+      'Chọn backup ZIP để kiểm tra trước. Dữ liệu chỉ thay đổi sau khi bạn xác nhận.',
     'backup.restoreSelect': 'Chọn backup để kiểm tra',
     'backup.restoreChecking': 'Đang chạy dry-run và kiểm tra checksum...',
     'backup.restoreValid': 'Backup hợp lệ và sẵn sàng khôi phục.',
     'backup.restoreCreated': 'Thời điểm tạo',
     'backup.restoreApply': 'Khôi phục backup này',
-    'backup.restoreConfirm': 'Workspace hiện tại sẽ được thay bằng nội dung backup. Hệ thống sẽ tự rollback nếu có lỗi. Tiếp tục?',
+    'backup.restoreConfirm':
+      'Workspace hiện tại sẽ được thay bằng nội dung backup. Hệ thống sẽ tự rollback nếu có lỗi. Tiếp tục?',
     'backup.restoring': 'Đang khôi phục và kiểm tra lại workspace...',
     'backup.restoreSuccess': 'Khôi phục thành công. Hãy tải lại giao diện để đồng bộ dữ liệu.',
     'backup.reload': 'Tải lại',
@@ -441,17 +444,20 @@ const translations = {
     'backup.subtitle': 'Protect your settings, history, and templates',
     'backup.snapshot': 'Consistent snapshot, ready for safe storage',
     'backup.contents': 'Includes the SQLite database and every current DOCX template.',
-    'backup.warning': 'The backup may contain saved connection settings. Protect the ZIP as sensitive data.',
+    'backup.warning':
+      'The backup may contain saved connection settings. Protect the ZIP as sensitive data.',
     'backup.download': 'Create & Download Backup',
     'backup.creating': 'Creating backup...',
     'backup.restoreTitle': 'Restore workspace',
-    'backup.restoreDescription': 'Select a backup ZIP for validation. Nothing changes until you confirm.',
+    'backup.restoreDescription':
+      'Select a backup ZIP for validation. Nothing changes until you confirm.',
     'backup.restoreSelect': 'Select backup to inspect',
     'backup.restoreChecking': 'Running dry-run and checksum validation...',
     'backup.restoreValid': 'Backup is valid and ready to restore.',
     'backup.restoreCreated': 'Created',
     'backup.restoreApply': 'Restore this backup',
-    'backup.restoreConfirm': 'The current workspace will be replaced by this backup. Automatic rollback is used if anything fails. Continue?',
+    'backup.restoreConfirm':
+      'The current workspace will be replaced by this backup. Automatic rollback is used if anything fails. Continue?',
     'backup.restoring': 'Restoring and verifying the workspace...',
     'backup.restoreSuccess': 'Restore completed. Reload the interface to synchronize its state.',
     'backup.reload': 'Reload',
@@ -491,9 +497,12 @@ export function I18nProvider({ children, defaultLocale = 'vi' }) {
     localStorage.setItem('reporter-locale', newLocale);
   }, []);
 
-  const t = useCallback((key) => {
-    return translations[locale]?.[key] || translations['en']?.[key] || key;
-  }, [locale]);
+  const t = useCallback(
+    (key) => {
+      return translations[locale]?.[key] || translations['en']?.[key] || key;
+    },
+    [locale],
+  );
 
   return (
     <I18nContext.Provider value={{ locale, setLocale: changeLocale, t }}>

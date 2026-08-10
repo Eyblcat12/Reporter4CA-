@@ -23,7 +23,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
-
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "apps" / "backend"
 DEFAULT_MANIFEST = ROOT / "tests" / "fixtures" / "performance" / "manifest.json"
@@ -35,7 +34,6 @@ from core.performance_metrics import (  # noqa: E402
     current_rss_mib,
     peak_rss_mib,
 )
-
 
 REPORT_TYPES = (
     "full",
@@ -175,9 +173,7 @@ def validate_fixture(
             f"Fixture size mismatch for {fixture.get('id')}: {actual_size}"
         )
     if actual_hash != fixture.get("sha256"):
-        raise BenchmarkConfigurationError(
-            f"Fixture SHA-256 mismatch for {fixture.get('id')}"
-        )
+        raise BenchmarkConfigurationError(f"Fixture SHA-256 mismatch for {fixture.get('id')}")
     return fixture_path, expected_by_type[report_type]
 
 
@@ -234,12 +230,11 @@ def run_trial(config: dict[str, Any]) -> dict[str, Any]:
         if name in FEATURE_FLAG_NAMES:
             os.environ[name] = str(value)
 
-    from docx import Document
-
     from core.docx_field_updater import refresh_docx_fields
     from core.input_parser import parse_input
     from core.report_generator import ReportType, generate_report
     from core.report_integrity import verify_report_document
+    from docx import Document
 
     fixture_path = Path(config["fixturePath"]).resolve()
     template_path = Path(config["templatePath"]).resolve()
@@ -365,9 +360,7 @@ def run_trial(config: dict[str, Any]) -> dict[str, Any]:
             "expectedFindings": expected_findings,
             "findingVerificationApplicable": finding_verification_applicable,
             "verifiedFindings": (
-                expected_findings - missing_findings
-                if finding_verification_applicable
-                else None
+                expected_findings - missing_findings if finding_verification_applicable else None
             ),
             "missingFindingCount": missing_findings,
         },
@@ -425,6 +418,7 @@ def _git_metadata() -> dict[str, Any]:
 
 def _total_memory_mib() -> int | None:
     if os.name == "nt":
+
         class MemoryStatus(ctypes.Structure):
             _fields_ = [
                 ("dwLength", ctypes.c_ulong),
@@ -499,23 +493,15 @@ def aggregate_trials(trials: list[dict[str, Any]]) -> dict[str, Any]:
         "productLatencyMs": summarize_samples(
             trial["metrics"]["productLatencyMs"] for trial in passed
         ),
-        "auditLatencyMs": summarize_samples(
-            trial["metrics"]["auditLatencyMs"] for trial in passed
-        ),
-        "peakRssMiB": summarize_samples(
-            trial["resources"]["peakRssMiB"] for trial in passed
-        ),
-        "outputBytes": summarize_samples(
-            trial["artifact"]["bytes"] for trial in passed
-        ),
+        "auditLatencyMs": summarize_samples(trial["metrics"]["auditLatencyMs"] for trial in passed),
+        "peakRssMiB": summarize_samples(trial["resources"]["peakRssMiB"] for trial in passed),
+        "outputBytes": summarize_samples(trial["artifact"]["bytes"] for trial in passed),
         "phases": {
-            name: summarize_samples(samples)
-            for name, samples in sorted(phase_samples.items())
+            name: summarize_samples(samples) for name, samples in sorted(phase_samples.items())
         },
         "aggregates": {
             f"{name}:{category}": {
-                field: summarize_samples(values)
-                for field, values in samples.items()
+                field: summarize_samples(values) for field, values in samples.items()
             }
             for (name, category), samples in sorted(aggregate_samples.items())
         },
@@ -546,7 +532,8 @@ def run_benchmark(args: argparse.Namespace) -> tuple[dict[str, Any], Path]:
         name: os.getenv(
             name,
             "1"
-            if name in {
+            if name
+            in {
                 "AUTO_REPORT_PREPARED_TEMPLATE",
                 "AUTO_REPORT_FAST_CELL",
                 "AUTO_REPORT_UNIFIED_SCHEDULER",
@@ -632,11 +619,13 @@ def run_benchmark(args: argparse.Namespace) -> tuple[dict[str, Any], Path]:
             flush=True,
         )
 
-    observed_cache_states = sorted({
-        str(trial.get("metrics", {}).get("metadata", {}).get("cacheState"))
-        for trial in trials
-        if trial.get("metrics", {}).get("metadata", {}).get("cacheState")
-    })
+    observed_cache_states = sorted(
+        {
+            str(trial.get("metrics", {}).get("metadata", {}).get("cacheState"))
+            for trial in trials
+            if trial.get("metrics", {}).get("metadata", {}).get("cacheState")
+        }
+    )
     report = {
         "schemaVersion": 1,
         "createdAt": datetime.now(timezone.utc).isoformat(),
@@ -648,9 +637,7 @@ def run_benchmark(args: argparse.Namespace) -> tuple[dict[str, Any], Path]:
             "templateHash": sha256_file(template_path),
             "trialIsolation": "fresh-process",
             "cacheState": (
-                observed_cache_states[0]
-                if len(observed_cache_states) == 1
-                else "mixed"
+                observed_cache_states[0] if len(observed_cache_states) == 1 else "mixed"
             ),
             "cacheStates": observed_cache_states,
             "osFilesystemCacheControlled": False,

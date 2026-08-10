@@ -23,11 +23,8 @@ from docx.oxml import OxmlElement, parse_xml
 from docx.oxml.ns import qn
 from lxml import etree
 
-
 BLUEPRINT_SCHEMA_VERSION = 1
-OFFICE_RELATIONSHIP_NS = (
-    "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
-)
+OFFICE_RELATIONSHIP_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
 
 
 @dataclass(frozen=True, slots=True)
@@ -147,14 +144,18 @@ def _row_style_signature(row: Any) -> str:
                 encoded = _run_style_signature(run).hex()
                 if not styles or styles[-1] != encoded:
                     styles.append(encoded)
-            paragraphs.append({
-                "pPr": _canonical_xml(paragraph.find(qn("w:pPr"))).hex(),
-                "runStyles": styles,
-            })
-        cells.append({
-            "tcPr": _canonical_xml(cell.find(qn("w:tcPr"))).hex(),
-            "paragraphs": paragraphs,
-        })
+            paragraphs.append(
+                {
+                    "pPr": _canonical_xml(paragraph.find(qn("w:pPr"))).hex(),
+                    "runStyles": styles,
+                }
+            )
+        cells.append(
+            {
+                "tcPr": _canonical_xml(cell.find(qn("w:tcPr"))).hex(),
+                "paragraphs": paragraphs,
+            }
+        )
     payload = {
         "trPr": _canonical_xml(row.find(qn("w:trPr"))).hex(),
         "cells": cells,
@@ -223,10 +224,7 @@ def _classify_table_and_row_structure(
         or (grid_column_count and header_cell_count != grid_column_count)
         or any(
             len(row.findall(qn("w:tc"))) != header_cell_count
-            or (
-                grid_column_count
-                and len(row.findall(qn("w:tc"))) != grid_column_count
-            )
+            or (grid_column_count and len(row.findall(qn("w:tc"))) != grid_column_count)
             for row in rows
         )
     ):
@@ -313,10 +311,7 @@ def classify_table_for_fast_path(table: Any) -> FastPathClassification:
         if len(paragraphs) > 1:
             _append_reason(reasons, "multiple_paragraphs")
         for paragraph in paragraphs:
-            run_styles = {
-                _run_style_signature(run)
-                for run in paragraph.findall(qn("w:r"))
-            }
+            run_styles = {_run_style_signature(run) for run in paragraph.findall(qn("w:r"))}
             if len(run_styles) > 1:
                 _append_reason(reasons, "mixed_run_styles")
 
@@ -391,11 +386,7 @@ def compile_table_blueprint(
     source_xml = _serialize(element)
     compact_xml = _serialize(compact)
     header_cells = header_row.findall(qn("w:tc"))
-    grid_columns = (
-        tbl_grid.findall(qn("w:gridCol"))
-        if tbl_grid is not None
-        else []
-    )
+    grid_columns = tbl_grid.findall(qn("w:gridCol")) if tbl_grid is not None else []
     return TableBlueprint(
         schema_version=BLUEPRINT_SCHEMA_VERSION,
         fingerprint=_fingerprint_parts(fingerprint_parts),

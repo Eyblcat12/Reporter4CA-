@@ -105,7 +105,9 @@
   font-weight: 500;
   font-family: var(--font-ui);
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
   text-align: left;
   width: 100%;
   overflow: hidden;

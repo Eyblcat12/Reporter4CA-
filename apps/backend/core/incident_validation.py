@@ -15,7 +15,9 @@ def assess_incident_metadata(metadata: dict[str, Any] | None) -> dict[str, Any]:
     errors: list[dict[str, Any]] = []
     warnings: list[dict[str, Any]] = []
 
-    def issue(target: list[dict[str, Any]], code: str, field: str, message: str, row: int | None = None) -> None:
+    def issue(
+        target: list[dict[str, Any]], code: str, field: str, message: str, row: int | None = None
+    ) -> None:
         item: dict[str, Any] = {"code": code, "field": field, "message": message}
         if row is not None:
             item["row"] = row
@@ -37,23 +39,53 @@ def assess_incident_metadata(metadata: dict[str, Any] | None) -> dict[str, Any]:
     if not timeline:
         issue(errors, "missing_timeline", "timeline", "Timeline phải có ít nhất một sự kiện.")
 
-    known_iocs = {_text(item.get("value")) for item in iocs if isinstance(item, dict) and _text(item.get("value"))}
+    known_iocs = {
+        _text(item.get("value"))
+        for item in iocs
+        if isinstance(item, dict) and _text(item.get("value"))
+    }
     evidence_refs: set[str] = set()
     for index, event in enumerate(timeline, start=1):
         event = event if isinstance(event, dict) else {}
         if not _text(event.get("event")):
-            issue(errors, "missing_timeline_event", "timeline", "Sự kiện timeline chưa có mô tả.", index)
+            issue(
+                errors,
+                "missing_timeline_event",
+                "timeline",
+                "Sự kiện timeline chưa có mô tả.",
+                index,
+            )
         if not _text(event.get("time")):
-            issue(warnings, "missing_timeline_time", "timeline", "Sự kiện timeline chưa có thời gian.", index)
+            issue(
+                warnings,
+                "missing_timeline_time",
+                "timeline",
+                "Sự kiện timeline chưa có thời gian.",
+                index,
+            )
         evidence = _text(event.get("evidence"))
         if evidence:
             evidence_refs.add(evidence)
         else:
-            issue(warnings, "missing_timeline_evidence", "timeline", "Sự kiện timeline chưa liên kết evidence.", index)
-        related = [part.strip() for part in _text(event.get("relatedIocs")).split(",") if part.strip()]
+            issue(
+                warnings,
+                "missing_timeline_evidence",
+                "timeline",
+                "Sự kiện timeline chưa liên kết evidence.",
+                index,
+            )
+        related = [
+            part.strip() for part in _text(event.get("relatedIocs")).split(",") if part.strip()
+        ]
         for value in related:
             if value not in known_iocs:
-                issue(warnings, "unknown_related_ioc", "timeline", f"IoC liên quan '{value}' chưa có trong danh sách IoC.", index)
+                issue(
+                    warnings,
+                    "unknown_related_ioc",
+                    "timeline",
+                    f"IoC liên quan '{value}' chưa có trong danh sách IoC.",
+                    index,
+                )
 
     for index, ioc in enumerate(iocs, start=1):
         ioc = ioc if isinstance(ioc, dict) else {}
@@ -74,15 +106,33 @@ def assess_incident_metadata(metadata: dict[str, Any] | None) -> dict[str, Any]:
             action = action if isinstance(action, dict) else {}
             if not _text(action.get("action")):
                 issue(errors, "missing_action", field, f"Hành động {label} chưa có mô tả.", index)
-            if _text(action.get("status")).lower() in {"done", "completed", "complete", "đã hoàn thành", "hoàn thành"}:
+            if _text(action.get("status")).lower() in {
+                "done",
+                "completed",
+                "complete",
+                "đã hoàn thành",
+                "hoàn thành",
+            }:
                 completed_count += 1
             if not _text(action.get("owner")):
-                issue(warnings, "missing_action_owner", field, f"Hành động {label} chưa có người phụ trách.", index)
+                issue(
+                    warnings,
+                    "missing_action_owner",
+                    field,
+                    f"Hành động {label} chưa có người phụ trách.",
+                    index,
+                )
             evidence = _text(action.get("evidence"))
             if evidence:
                 evidence_refs.add(evidence)
             else:
-                issue(warnings, "missing_action_evidence", field, f"Hành động {label} chưa liên kết evidence.", index)
+                issue(
+                    warnings,
+                    "missing_action_evidence",
+                    field,
+                    f"Hành động {label} chưa liên kết evidence.",
+                    index,
+                )
 
     return {
         "valid": not errors,

@@ -8,7 +8,6 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "apps" / "backend"
 sys.path.insert(0, str(BACKEND))
@@ -16,7 +15,7 @@ sys.path.insert(0, str(BACKEND))
 from api.routes import health  # noqa: E402
 from core import database as database_module  # noqa: E402
 from core.config import APP_VERSION, DEFAULT_CORS_ORIGINS, cors_origins  # noqa: E402
-from core.database import Database, LATEST_SCHEMA_VERSION, close_db  # noqa: E402
+from core.database import LATEST_SCHEMA_VERSION, Database, close_db  # noqa: E402
 
 
 class SystemHealthTests(unittest.TestCase):

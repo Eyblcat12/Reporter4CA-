@@ -25,8 +25,8 @@ TEMPLATE_ROOT = BACKEND / "templates"
 sys.path.insert(0, str(BACKEND))
 
 from core.report_generator import ReportType, generate_report
-from tests.docx_golden_report import structural_diff, write_diff_reports
 
+from tests.docx_golden_report import structural_diff, write_diff_reports
 
 REPORT_TYPES = [item.value for item in ReportType]
 REPORT_TEMPLATE_PATHS = {
@@ -51,17 +51,30 @@ GOLDEN_REPORT_DIR = Path(
 
 def fixture_data() -> dict:
     return {
-        "servers": [{
-            "hostname": "SRV-GOLDEN-01", "ip": "10.10.0.10", "os": "Windows Server 2022",
-            "result": "Malware detected", "notes": "SHA256 evidence linked to T1055",
-        }],
-        "clients": [{
-            "hostname": "WS-GOLDEN-01", "ip": "10.10.0.20", "os": "Windows 11",
-            "result": "No finding", "notes": "Validated by endpoint telemetry",
-        }],
+        "servers": [
+            {
+                "hostname": "SRV-GOLDEN-01",
+                "ip": "10.10.0.10",
+                "os": "Windows Server 2022",
+                "result": "Malware detected",
+                "notes": "SHA256 evidence linked to T1055",
+            }
+        ],
+        "clients": [
+            {
+                "hostname": "WS-GOLDEN-01",
+                "ip": "10.10.0.20",
+                "os": "Windows 11",
+                "result": "No finding",
+                "notes": "Validated by endpoint telemetry",
+            }
+        ],
         "metadata": {
-            "incidentName": "Golden incident", "severity": "high",
-            "timeline": [{"time": "2026-07-20T10:00:00Z", "event": "Detection", "evidence": "EDR-001"}],
+            "incidentName": "Golden incident",
+            "severity": "high",
+            "timeline": [
+                {"time": "2026-07-20T10:00:00Z", "event": "Detection", "evidence": "EDR-001"}
+            ],
         },
     }
 
@@ -112,10 +125,7 @@ def _format_property_projection(element) -> dict[str, object] | None:
     for name, value in element.attrib.items():
         qualified = etree.QName(name)
         local_name = qualified.localname.casefold()
-        if (
-            local_name.startswith("rsid")
-            or local_name in _VOLATILE_FORMAT_ATTRIBUTES
-        ):
+        if local_name.startswith("rsid") or local_name in _VOLATILE_FORMAT_ATTRIBUTES:
             continue
         attributes.append((_qualified_name(name), value))
 
@@ -143,42 +153,39 @@ def _table_format_projection(table) -> dict[str, object]:
             for paragraph in cell.findall(qn("w:p")):
                 run_properties = []
                 for run in paragraph.iter(qn("w:r")):
-                    properties = _format_property_projection(
-                        run.find(qn("w:rPr"))
-                    )
+                    properties = _format_property_projection(run.find(qn("w:rPr")))
                     # Splitting text into adjacent, identically styled runs is
                     # not a visual format change and must not churn goldens.
                     if not run_properties or run_properties[-1] != properties:
                         run_properties.append(properties)
-                paragraphs.append({
-                    "pPr": _format_property_projection(
-                        paragraph.find(qn("w:pPr"))
-                    ),
-                    "rPr": run_properties,
-                })
-            cells.append({
-                "tcPr": _format_property_projection(cell.find(qn("w:tcPr"))),
-                "paragraphs": paragraphs,
-            })
-        rows.append({
-            "trPr": _format_property_projection(row.find(qn("w:trPr"))),
-            "cells": cells,
-        })
+                paragraphs.append(
+                    {
+                        "pPr": _format_property_projection(paragraph.find(qn("w:pPr"))),
+                        "rPr": run_properties,
+                    }
+                )
+            cells.append(
+                {
+                    "tcPr": _format_property_projection(cell.find(qn("w:tcPr"))),
+                    "paragraphs": paragraphs,
+                }
+            )
+        rows.append(
+            {
+                "trPr": _format_property_projection(row.find(qn("w:trPr"))),
+                "cells": cells,
+            }
+        )
 
     return {
         "tblPr": _format_property_projection(table._tbl.find(qn("w:tblPr"))),
-        "tblGrid": _format_property_projection(
-            table._tbl.find(qn("w:tblGrid"))
-        ),
+        "tblGrid": _format_property_projection(table._tbl.find(qn("w:tblGrid"))),
         "rows": rows,
     }
 
 
 def _table_snapshot(table) -> dict:
-    cells = [
-        [_normalize_text(cell.text) for cell in row.cells]
-        for row in table.rows
-    ]
+    cells = [[_normalize_text(cell.text) for cell in row.cells] for row in table.rows]
     return {
         "rows": len(cells),
         "columns": max((len(row) for row in cells), default=0),
@@ -206,11 +213,7 @@ def _element_attributes(parent, tag: str, names: tuple[str, ...]) -> dict[str, s
     element = parent.find(qn(f"w:{tag}"))
     if element is None:
         return {}
-    return {
-        name: value
-        for name in names
-        if (value := element.get(qn(f"w:{name}"))) is not None
-    }
+    return {name: value for name in names if (value := element.get(qn(f"w:{name}"))) is not None}
 
 
 def _section_properties(section) -> dict:
@@ -258,19 +261,14 @@ def _section_properties(section) -> dict:
         "titlePage": section_properties.find(qn("w:titlePg")) is not None,
         "headerTypes": header_types,
         "footerTypes": footer_types,
-        "propertiesDigest": hashlib.sha256(
-            etree.tostring(normalized, method="c14n")
-        ).hexdigest(),
+        "propertiesDigest": hashlib.sha256(etree.tostring(normalized, method="c14n")).hexdigest(),
     }
 
 
 def _xml_part_content(root: ElementTree.Element) -> dict:
     paragraphs = [
         _normalize_text(
-            "".join(
-                node.text or ""
-                for node in paragraph.findall(".//w:t", XML_NAMESPACES)
-            )
+            "".join(node.text or "" for node in paragraph.findall(".//w:t", XML_NAMESPACES))
         )
         for paragraph in root.findall(".//w:p", XML_NAMESPACES)
     ]
@@ -278,15 +276,14 @@ def _xml_part_content(root: ElementTree.Element) -> dict:
     for table in root.findall(".//w:tbl", XML_NAMESPACES):
         rows: list[list[str]] = []
         for row in table.findall("./w:tr", XML_NAMESPACES):
-            rows.append([
-                _normalize_text(
-                    "".join(
-                        node.text or ""
-                        for node in cell.findall(".//w:t", XML_NAMESPACES)
+            rows.append(
+                [
+                    _normalize_text(
+                        "".join(node.text or "" for node in cell.findall(".//w:t", XML_NAMESPACES))
                     )
-                )
-                for cell in row.findall("./w:tc", XML_NAMESPACES)
-            ])
+                    for cell in row.findall("./w:tc", XML_NAMESPACES)
+                ]
+            )
         tables.append(rows)
     instructions = [
         _normalize_text(node.text)
@@ -305,21 +302,17 @@ def _xml_part_content(root: ElementTree.Element) -> dict:
 def _header_footer_snapshot(archive: zipfile.ZipFile) -> list[dict[str, object]]:
     parts: list[dict[str, object]] = []
     names = sorted(
-        name
-        for name in archive.namelist()
-        if re.fullmatch(r"word/(?:header|footer)\d+\.xml", name)
+        name for name in archive.namelist() if re.fullmatch(r"word/(?:header|footer)\d+\.xml", name)
     )
     for name in names:
         root = ElementTree.fromstring(archive.read(name))
-        parts.append({
-            "part": name,
-            "kind": (
-                "header"
-                if PurePosixPath(name).name.startswith("header")
-                else "footer"
-            ),
-            **_xml_part_content(root),
-        })
+        parts.append(
+            {
+                "part": name,
+                "kind": ("header" if PurePosixPath(name).name.startswith("header") else "footer"),
+                **_xml_part_content(root),
+            }
+        )
     return parts
 
 
@@ -337,12 +330,14 @@ def _relationship_snapshot(archive: zipfile.ZipFile) -> list[dict[str, str]]:
     for name in sorted(item for item in archive.namelist() if item.endswith(".rels")):
         root = ElementTree.fromstring(archive.read(name))
         for relationship in root.findall("pr:Relationship", XML_NAMESPACES):
-            relationships.append({
-                "source": _relationship_source(name),
-                "type": relationship.get("Type", ""),
-                "target": relationship.get("Target", "").replace("\\", "/"),
-                "targetMode": relationship.get("TargetMode", "Internal"),
-            })
+            relationships.append(
+                {
+                    "source": _relationship_source(name),
+                    "type": relationship.get("Type", ""),
+                    "target": relationship.get("Target", "").replace("\\", "/"),
+                    "targetMode": relationship.get("TargetMode", "Internal"),
+                }
+            )
     return sorted(
         relationships,
         key=lambda item: (
@@ -402,12 +397,8 @@ def _semantic_counts(manifest: dict[str, object] | None) -> dict[str, object]:
         "assetCount": int(source.get("assetCount", 0)),
         "findingCount": int(source.get("findingCount", 0)),
         "evidenceCount": int(source.get("evidenceCount", 0)),
-        "assetTypeCounts": dict(
-            sorted(dict(source.get("assetTypeCounts", {})).items())
-        ),
-        "assessmentCounts": dict(
-            sorted(dict(source.get("assessmentCounts", {})).items())
-        ),
+        "assetTypeCounts": dict(sorted(dict(source.get("assetTypeCounts", {})).items())),
+        "assessmentCounts": dict(sorted(dict(source.get("assessmentCounts", {})).items())),
         "ruleCounts": dict(sorted(dict(source.get("ruleCounts", {})).items())),
     }
 
@@ -434,9 +425,9 @@ def document_snapshot(document, manifest: dict[str, object] | None = None) -> di
         ]
         tables = [_table_snapshot(table) for table in reopened.tables]
         numbered = sum(
-            1 for paragraph in reopened.paragraphs
-            if paragraph._p.pPr is not None
-            and paragraph._p.pPr.numPr is not None
+            1
+            for paragraph in reopened.paragraphs
+            if paragraph._p.pPr is not None and paragraph._p.pPr.numPr is not None
         )
         sections = [_section_properties(section) for section in reopened.sections]
 
@@ -445,11 +436,13 @@ def document_snapshot(document, manifest: dict[str, object] | None = None) -> di
             for name in archive.namelist():
                 if name.startswith("word/media/") and not name.endswith("/"):
                     content = archive.read(name)
-                    media.append({
-                        "name": PurePosixPath(name).name,
-                        "size": len(content),
-                        "sha256": hashlib.sha256(content).hexdigest(),
-                    })
+                    media.append(
+                        {
+                            "name": PurePosixPath(name).name,
+                            "size": len(content),
+                            "sha256": hashlib.sha256(content).hexdigest(),
+                        }
+                    )
             headers_footers = _header_footer_snapshot(archive)
             relationships = _relationship_snapshot(archive)
             fields = _field_snapshot(archive)
@@ -459,9 +452,7 @@ def document_snapshot(document, manifest: dict[str, object] | None = None) -> di
     return {
         "snapshotSchemaVersion": 3,
         "paragraphCount": len(paragraphs),
-        "paragraphDigest": hashlib.sha256(
-            "\n".join(paragraphs).encode("utf-8")
-        ).hexdigest(),
+        "paragraphDigest": hashlib.sha256("\n".join(paragraphs).encode("utf-8")).hexdigest(),
         "headings": headings,
         "tables": tables,
         "numberedParagraphs": numbered,
@@ -592,9 +583,7 @@ class DocxGoldenTests(unittest.TestCase):
                 )
                 differences = structural_diff(baseline, changed)
                 format_differences = [
-                    item
-                    for item in differences
-                    if item["path"] == "root.tables[0].formatDigest"
+                    item for item in differences if item["path"] == "root.tables[0].formatDigest"
                 ]
                 self.assertEqual(len(format_differences), 1)
                 self.assertEqual(format_differences[0]["category"], "Tables")
@@ -617,7 +606,9 @@ class DocxGoldenTests(unittest.TestCase):
         for report_type in REPORT_TYPES:
             with self.subTest(report_type=report_type):
                 document = generate_report(
-                    fixture_data(), title="Golden Report", organization="Reporter Team",
+                    fixture_data(),
+                    title="Golden Report",
+                    organization="Reporter Team",
                     assessment_date="2026-07-20",
                     template_path=REPORT_TEMPLATE_PATHS[report_type],
                     report_type=report_type,
@@ -657,9 +648,7 @@ class DocxGoldenTests(unittest.TestCase):
             "remainingTokens": [],
             "media": [{"name": "chart.png", "size": 100}],
             "sections": [{"pageSize": {"w": "11906"}}],
-            "headersFooters": [
-                {"part": "word/header1.xml", "paragraphs": ["Reporter"]}
-            ],
+            "headersFooters": [{"part": "word/header1.xml", "paragraphs": ["Reporter"]}],
             "relationships": [{"type": "image", "target": "media/logo.png"}],
             "tocFields": {"tocCount": 1, "updateFields": True},
             "semanticCounts": {"findingCount": 1, "evidenceCount": 1},
@@ -670,9 +659,7 @@ class DocxGoldenTests(unittest.TestCase):
             "remainingTokens": ["{{UNRESOLVED}}"],
             "media": [],
             "sections": [{"pageSize": {"w": "12240"}}],
-            "headersFooters": [
-                {"part": "word/header1.xml", "paragraphs": ["Changed"]}
-            ],
+            "headersFooters": [{"part": "word/header1.xml", "paragraphs": ["Changed"]}],
             "relationships": [{"type": "image", "target": "media/new-logo.png"}],
             "tocFields": {"tocCount": 0, "updateFields": False},
             "semanticCounts": {"findingCount": 2, "evidenceCount": 3},

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import os
 
-
 APP_NAME = "Reporter Pro"
 APP_VERSION = "2.1.2"
 DEFAULT_CORS_ORIGINS = (
@@ -61,10 +60,7 @@ def performance_metrics_enabled() -> bool:
 def compact_prototype_enabled() -> bool:
     """Return whether the conservative compact table-prototype path is enabled."""
 
-    return (
-        os.getenv("AUTO_REPORT_COMPACT_PROTOTYPE", "0").strip().lower()
-        in _TRUTHY
-    )
+    return os.getenv("AUTO_REPORT_COMPACT_PROTOTYPE", "0").strip().lower() in _TRUTHY
 
 
 def fast_cell_enabled() -> bool:
@@ -101,7 +97,9 @@ def preview_artifact_ttl_seconds() -> int:
 
 
 def preview_artifact_cache_entries() -> int:
-    raw = os.getenv("AUTO_REPORT_PREVIEW_CACHE_ENTRIES", str(DEFAULT_PREVIEW_ARTIFACT_CACHE_ENTRIES))
+    raw = os.getenv(
+        "AUTO_REPORT_PREVIEW_CACHE_ENTRIES", str(DEFAULT_PREVIEW_ARTIFACT_CACHE_ENTRIES)
+    )
     try:
         value = int(raw)
     except ValueError:
@@ -121,10 +119,7 @@ def preview_artifact_cache_bytes() -> int:
 def prepared_template_enabled() -> bool:
     """Return whether immutable prepared-template artifacts may be reused."""
 
-    return (
-        os.getenv("AUTO_REPORT_PREPARED_TEMPLATE", "1").strip().lower()
-        in _TRUTHY
-    )
+    return os.getenv("AUTO_REPORT_PREPARED_TEMPLATE", "1").strip().lower() in _TRUTHY
 
 
 def prepared_template_cache_entries() -> int:

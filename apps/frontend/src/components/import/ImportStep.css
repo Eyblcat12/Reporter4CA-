@@ -20,7 +20,9 @@
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow-inner), var(--shadow-sm);
-  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
 }
 
 .import-section:hover {
@@ -58,7 +60,9 @@
 
 .import-section__header--toggle svg {
   color: var(--text-tertiary);
-  transition: color 0.2s ease, transform 0.2s ease;
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .import-section__header--toggle:hover svg {

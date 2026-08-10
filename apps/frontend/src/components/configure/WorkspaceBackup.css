@@ -164,7 +164,9 @@
 }
 
 @media (max-width: 760px) {
-  .workspace-backup__preview dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .workspace-backup__preview dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .workspace-backup__spinner {
@@ -172,5 +174,7 @@
 }
 
 @keyframes workspace-backup-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }

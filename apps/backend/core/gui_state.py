@@ -4,7 +4,6 @@ from typing import Any
 
 from core.input_preprocessor import DEFAULT_SECTION, normalize_asset_type
 
-
 GUI_ROW_KEYS = ("type", "hostname", "os", "ip", "notes", "result")
 BASE_ASSET_KEYS = {"hostname", "os", "ip", "notes", "result"}
 

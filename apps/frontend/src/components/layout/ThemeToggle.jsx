@@ -16,9 +16,7 @@ export default function ThemeToggle({ compact }) {
         {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
       </div>
       {!compact && (
-        <span className="theme-toggle__label">
-          {theme === 'dark' ? 'Light' : 'Dark'}
-        </span>
+        <span className="theme-toggle__label">{theme === 'dark' ? 'Light' : 'Dark'}</span>
       )}
     </button>
   );
