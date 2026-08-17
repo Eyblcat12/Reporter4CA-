@@ -309,6 +309,8 @@ def run_trial(config: dict[str, Any]) -> dict[str, Any]:
         }
 
     product_finished_ns = time.perf_counter_ns()
+    product_final_rss = current_rss_mib()
+    product_peak_rss = peak_rss_mib()
     audit_started_ns = time.perf_counter_ns()
     with metrics.phase("packageValidation", latency_class="audit"):
         if not zipfile.is_zipfile(output_path):
@@ -344,6 +346,8 @@ def run_trial(config: dict[str, Any]) -> dict[str, Any]:
         "resources": {
             "cpuTimeMs": round((time.process_time() - cpu_started) * 1000, 3),
             "rssBaselineMiB": round(baseline_rss, 3),
+            "productFinalRssMiB": round(product_final_rss, 3),
+            "productPeakRssMiB": round(product_peak_rss, 3),
             "rssFinalMiB": round(current_rss_mib(), 3),
             "peakRssMiB": round(peak_rss_mib(), 3),
         },
@@ -494,6 +498,10 @@ def aggregate_trials(trials: list[dict[str, Any]]) -> dict[str, Any]:
             trial["metrics"]["productLatencyMs"] for trial in passed
         ),
         "auditLatencyMs": summarize_samples(trial["metrics"]["auditLatencyMs"] for trial in passed),
+        "productPeakRssMiB": summarize_samples(
+            trial["resources"].get("productPeakRssMiB", trial["resources"]["peakRssMiB"])
+            for trial in passed
+        ),
         "peakRssMiB": summarize_samples(trial["resources"]["peakRssMiB"] for trial in passed),
         "outputBytes": summarize_samples(trial["artifact"]["bytes"] for trial in passed),
         "phases": {

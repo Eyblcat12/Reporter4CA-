@@ -283,7 +283,7 @@ Các flag được khai báo tập trung trong `apps/backend/core/config.py`:
 | Flag | Mặc định ban đầu | Chức năng |
 |---|---:|---|
 | `AUTO_REPORT_PERF_METRICS` | `0` | Ghi timing chi tiết |
-| `AUTO_REPORT_COMPACT_PROTOTYPE` | `0` | Dùng prototype table rút gọn |
+| `AUTO_REPORT_COMPACT_PROTOTYPE` | `1` | Prototype table rút gọn; đặt `0` để fallback legacy |
 | `AUTO_REPORT_PREPARED_TEMPLATE` | `1` sau Phase 2 | Dùng template đã compile; đặt `0` để rollback |
 | `AUTO_REPORT_FAST_CELL` | `0` | Dùng simple-cell fast path |
 | `AUTO_REPORT_PREVIEW_JOBS` | `0` | Đưa Preview vào bounded scheduler |
@@ -990,7 +990,8 @@ Quy tắc:
 - 50 máy cache-hit Generate: p50 dưới 2 giây đến download-ready.
 - 1.000/3.000 máy: peak process-tree RSS không tăng quá 5% so với baseline tương ứng.
 - 3.000 máy: development gate 3/3; chỉ công bố stable khi 10/10 lần đạt,
-  integrity đúng và peak dưới 2.765 MiB để giữ khoảng 10% dưới giới hạn 3 GiB.
+  integrity đúng và **product peak RSS** dưới 2.765 MiB để giữ khoảng 10% dưới
+  giới hạn 3 GiB. Peak audit mở lại DOCX được báo riêng và không thay thế product peak.
 - 3.750 máy: giữ trạng thái exploratory; không gọi stable nếu chỉ vừa dưới 3 GiB.
 - Không tăng peak RSS so với baseline tại cùng fixture/report type.
 - Không thiếu finding/evidence/asset ở mọi mốc.

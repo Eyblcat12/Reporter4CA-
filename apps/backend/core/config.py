@@ -132,7 +132,7 @@ def performance_metrics_enabled() -> bool:
 def compact_prototype_enabled() -> bool:
     """Return whether the conservative compact table-prototype path is enabled."""
 
-    return os.getenv("AUTO_REPORT_COMPACT_PROTOTYPE", "0").strip().lower() in _TRUTHY
+    return os.getenv("AUTO_REPORT_COMPACT_PROTOTYPE", "1").strip().lower() in _TRUTHY
 
 
 def fast_cell_enabled() -> bool:

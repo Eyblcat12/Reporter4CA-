@@ -252,7 +252,10 @@ class BenchmarkAggregationTests(unittest.TestCase):
                 "auditLatencyMs": float(index) / 2,
                 "phases": [{"name": "documentBuild", "durationMs": float(index)}],
             },
-            "resources": {"peakRssMiB": 100.0 + index},
+            "resources": {
+                "productPeakRssMiB": 80.0 + index,
+                "peakRssMiB": 100.0 + index,
+            },
             "artifact": {"bytes": 1000 + index},
         }
 
@@ -262,6 +265,8 @@ class BenchmarkAggregationTests(unittest.TestCase):
         self.assertEqual(summary["productLatencyMs"]["p50"], 2.0)
         self.assertIsNone(summary["productLatencyMs"]["p95"])
         self.assertFalse(summary["productLatencyMs"]["p95Published"])
+        self.assertEqual(summary["productPeakRssMiB"]["p50"], 82.0)
+        self.assertEqual(summary["peakRssMiB"]["p50"], 102.0)
 
     def test_p95_is_published_at_ten_samples(self) -> None:
         summary = aggregate_trials([self._trial(index) for index in range(1, 11)])

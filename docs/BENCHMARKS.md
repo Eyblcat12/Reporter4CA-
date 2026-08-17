@@ -197,6 +197,27 @@ Mốc Full 3.000 máy cũng hoàn tất: 376,6 giây, peak RSS 2.258,0 MB, file
   số object Word giữ đồng thời trong RAM. Không nên tăng giới hạn một cách mù
   quáng vì có thể làm máy cá nhân mất phản hồi.
 
+## Full 3.000 máy — phân tách product/audit RSS
+
+Ngày 17/08/2026, fixture tổng hợp `mixed-3000` gồm 1.200 server, 1.800 client
+và 2.500 finding dự kiến được chạy trong fresh process với template Full mặc định.
+Kết quả một lượt A/B có integrity đầy đủ:
+
+| Cấu hình | Product latency | Product peak RSS | Peak gồm reopen audit | Output | Asset |
+|---|---:|---:|---:|---:|---:|
+| Legacy prototype | 221,7 giây | Chưa tách ở artifact cũ | 3.891,6 MiB | 3.679.182 byte | 3.000/3.000 |
+| Compact prototype | 243,9 giây | **2.318,8 MiB** | 3.302,8 MiB | 3.679.182 byte | 3.000/3.000 |
+
+Hai peak không được diễn giải như nhau. `productPeakRssMiB` được chụp ngay sau khi
+DOCX đã save và trước audit; đây là peak gần với workflow Generate của người dùng.
+`peakRssMiB` còn gồm benchmark mở lại DOCX trong khi object document gốc vẫn tồn tại
+để kiểm tra semantic integrity, nên cao hơn nhưng không phải RAM của Generate.
+
+Compact prototype giữ nguyên số byte output ở A/B này, vượt structural golden cho
+sáu report type và đưa product peak dưới gate 2.765 MiB. Flag được bật mặc định cho
+local/team với rollback `AUTO_REPORT_COMPACT_PROTOTYPE=0`. Kết quả trên mới là một
+trial xác nhận instrumentation; bảng stability P50/P95 chỉ công bố sau 10 fresh run.
+
 ## Soak test job nền
 
 Soak test dài 120 phút chạy workload 500 dòng/job:

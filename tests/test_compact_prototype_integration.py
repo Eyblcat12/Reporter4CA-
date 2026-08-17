@@ -130,9 +130,9 @@ def _fixture_data() -> dict:
 
 
 class CompactPrototypeConfigTests(unittest.TestCase):
-    def test_feature_flag_defaults_off_and_accepts_only_truthy_values(self) -> None:
+    def test_feature_flag_defaults_on_and_zero_restores_legacy_path(self) -> None:
         with patch.dict(os.environ, {}, clear=True):
-            self.assertFalse(compact_prototype_enabled())
+            self.assertTrue(compact_prototype_enabled())
 
         for raw_value in ("1", "true", "TRUE", " yes ", "on"):
             with self.subTest(value=raw_value):

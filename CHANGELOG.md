@@ -14,6 +14,8 @@ Mọi thay đổi đáng chú ý của Reporter Pro được ghi tại đây. D�
   giữ nguyên dữ liệu import và trả lỗi rõ ràng sau ba lần thử lại.
 - E2E server trên Windows tự shutdown sau suite thay vì để lại Node/Vite process;
   workflow chính cũng đợi download hoàn tất trước khi kết thúc test.
+- Benchmark tách product peak RSS khỏi peak audit mở lại DOCX, tránh đánh giá sai
+  lượng RAM mà workflow Generate thực sự sử dụng.
 
 ### Added
 
@@ -32,6 +34,8 @@ Mọi thay đổi đáng chú ý của Reporter Pro được ghi tại đây. D�
   archive vẫn dùng manifest/checksum và restore dry-run/rollback hiện có.
 - Pre-migration SQLite checkpoint có SHA-256 và retention ba phiên bản; toàn bộ
   pending migration chạy trong một transaction và tự phục hồi checkpoint nếu lỗi.
+- Compact table prototype được bật mặc định sau gate Full 3.000 asset giữ nguyên
+  integrity/output và giảm product peak RSS; flag `0` vẫn rollback về legacy path.
 
 ## [2.1.2] - 2026-08-03
 
