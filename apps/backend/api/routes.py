@@ -22,6 +22,9 @@ from core.config import (
     APP_NAME,
     APP_VERSION,
     allow_custom_runtime_paths,
+    job_memory_limit_mib,
+    job_resource_poll_seconds,
+    job_timeout_seconds,
     max_import_bytes,
     max_report_rows,
     performance_metrics_enabled,
@@ -121,7 +124,13 @@ router = APIRouter(prefix="/api")
 
 # Store last generated report path for save-as-template
 _last_generated: dict[str, Path] = {}
-_report_jobs = ReportJobManager(max_workers=1, max_pending=2)
+_report_jobs = ReportJobManager(
+    max_workers=1,
+    max_pending=2,
+    memory_limit_mib=job_memory_limit_mib(),
+    timeout_seconds=job_timeout_seconds(),
+    resource_poll_seconds=job_resource_poll_seconds(),
+)
 _report_orchestrator = ReportOrchestrator()
 _preview_artifacts = PreviewArtifactRegistry(
     PROJECT_ROOT / "data" / "cache" / "previews",
@@ -732,9 +741,9 @@ def _create_report_artifact_impl(
             "requestSignature": accepted.request_signature,
             "contentSignature": orchestrated.prepared.content_signature,
         }
-    except JobCancelled:
+    except JobCancelled as exc:
         if not history_recorded:
-            record("cancelled", error_code="CANCELLED")
+            record("cancelled", error_code=exc.code)
         (output_path or temporary_path) and (output_path or temporary_path).unlink(missing_ok=True)
         raise
     except HTTPException as exc:
@@ -1644,12 +1653,12 @@ def _run_report_job(job: ReportJob) -> dict[str, Any]:
             metrics=job.metrics,
             history_id=history_id,
         )
-    except JobCancelled:
+    except JobCancelled as exc:
         if history_id:
             current = get_db().get_report(history_id)
             if current and current.get("status") not in {"success", "failed", "cancelled"}:
                 get_db().update_report_execution(
-                    history_id, status="cancelled", error_code="CANCELLED"
+                    history_id, status="cancelled", error_code=exc.code
                 )
         raise
     except Exception as exc:

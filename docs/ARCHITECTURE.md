@@ -34,6 +34,8 @@ khi generate để tránh âm thầm xuất tài liệu thiếu section.
 - API bind vào `127.0.0.1` theo launcher mặc định.
 - CORS dùng allow-list, không bật wildcard mặc định.
 - File import và số dòng có giới hạn cấu hình.
+- Preview/Generate luôn đo elapsed time và backend RSS. Trần RAM/timeout là opt-in;
+  khi bật, job hủy hợp tác tại checkpoint, dọn tệp tạm và ghi termination reason.
 - Custom runtime path bị tắt mặc định.
 - `.env`, database, log, build và output nằm ngoài source control.
 - Plugin kết nối ngoài là opt-in và dependency được cài riêng.

@@ -81,9 +81,12 @@ Backend tự động đọc `.env` ở thư mục gốc.
 | `AUTO_REPORT_CORS_ORIGINS` | localhost:5173 | Origin được phép gọi API |
 | `AUTO_REPORT_MAX_IMPORT_MB` | 50 | Giới hạn file import, 1–512 MB |
 | `AUTO_REPORT_MAX_ROWS` | 50000 | Giới hạn dòng/report, 100–500000 |
+| `AUTO_REPORT_JOB_MEMORY_LIMIT_MB` | 0 | Ngưỡng RAM backend/job; 0 chỉ theo dõi, không tự hủy |
+| `AUTO_REPORT_JOB_TIMEOUT_SECONDS` | 0 | Timeout Preview/Generate; 0 không tự giới hạn |
+| `AUTO_REPORT_JOB_RESOURCE_POLL_MS` | 500 | Chu kỳ đo RAM/thời gian, 100–5000 ms |
 | `AUTO_REPORT_ALLOW_CUSTOM_PATHS` | 0 | Cho phép đường dẫn runtime tùy chỉnh |
-| `AUTO_REPORT_PREVIEW_JOBS` | 0 | Bật Preview Job API thử nghiệm |
-| `AUTO_REPORT_PREVIEW_CACHE` | 0 | Cho phép Generate dùng lại Preview đã xác minh |
+| `AUTO_REPORT_PREVIEW_JOBS` | 1 | Bật Preview Job API; đặt 0 để rollback workflow cũ |
+| `AUTO_REPORT_PREVIEW_CACHE` | 1 | Cho phép Generate dùng lại Preview đã xác minh |
 | `AUTO_REPORT_PREVIEW_TTL_SECONDS` | 900 | TTL artifact Preview cục bộ |
 | `ELASTIC_HOST` | rỗng | Endpoint plugin Elasticsearch tùy chọn |
 | `ELASTIC_INDEX` | rỗng | Index plugin Elasticsearch tùy chọn |
@@ -91,9 +94,10 @@ Backend tự động đọc `.env` ở thư mục gốc.
 Elasticsearch không cần thiết cho chức năng cốt lõi. Nếu sử dụng plugin này, cài
 thêm package `elasticsearch` vào venv và chỉ dùng tài khoản read-only.
 
-Hai flag Preview vẫn mặc định tắt. Frontend tự fallback về endpoint Preview tương
-thích cũ; chỉ bật hai flag khi muốn thử workflow artifact cache và đã đọc giới hạn
-cold Preview trong [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
+Hai flag Preview đã vượt release gate local/team và được bật mặc định. Frontend vẫn
+fallback về endpoint tương thích cũ khi đặt flag về 0. Resource limit không được suy
+ra từ số dòng: hãy benchmark đúng template khách hàng trước khi đặt ngưỡng RAM hoặc
+timeout, vì Full/Server/Client có mức sử dụng bộ nhớ khác nhau.
 
 ## Xử lý lỗi thường gặp
 

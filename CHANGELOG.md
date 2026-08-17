@@ -19,6 +19,9 @@ Mọi thay đổi đáng chú ý của Reporter Pro được ghi tại đây. D�
   `format:check` dành cho contributor.
 - Thanh tiến độ import file xác định từ 0–100% trên dashboard và màn Import, kèm
   giai đoạn đọc/phân tích/nhập dữ liệu, số dòng hoàn tất, trạng thái lỗi và hủy an toàn.
+- Resource monitor cho Preview/Generate: đo elapsed time và backend RSS ngay trong
+  panel tiến độ; hỗ trợ ngưỡng RAM/timeout opt-in, hủy hợp tác, cleanup và termination
+  reason rõ ràng mà không áp giới hạn cứng lên template khách hàng theo mặc định.
 
 ## [2.1.2] - 2026-08-03
 

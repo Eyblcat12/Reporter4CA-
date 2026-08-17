@@ -17,6 +17,7 @@ DEFAULT_PREPARED_TEMPLATE_CACHE_ENTRIES = 12
 DEFAULT_PREVIEW_ARTIFACT_TTL_SECONDS = 15 * 60
 DEFAULT_PREVIEW_ARTIFACT_CACHE_MB = 512
 DEFAULT_PREVIEW_ARTIFACT_CACHE_ENTRIES = 20
+DEFAULT_JOB_RESOURCE_POLL_MS = 500
 _TRUTHY = {"1", "true", "yes", "on"}
 
 
@@ -45,6 +46,48 @@ def max_report_rows() -> int:
     except ValueError:
         rows = DEFAULT_MAX_REPORT_ROWS
     return min(max(rows, 100), 500_000)
+
+
+def job_memory_limit_mib() -> int | None:
+    """Return an opt-in backend RSS limit for one document job.
+
+    A value of zero keeps monitoring enabled without cancelling large workloads.
+    The limit is intentionally not inferred from row count because DOCX memory use
+    depends heavily on the selected customer template and report type.
+    """
+
+    raw = os.getenv("AUTO_REPORT_JOB_MEMORY_LIMIT_MB", "0")
+    try:
+        value = int(raw)
+    except ValueError:
+        value = 0
+    if value <= 0:
+        return None
+    return min(max(value, 256), 131_072)
+
+
+def job_timeout_seconds() -> int | None:
+    """Return an opt-in wall-clock timeout for Preview/Generate jobs."""
+
+    raw = os.getenv("AUTO_REPORT_JOB_TIMEOUT_SECONDS", "0")
+    try:
+        value = int(raw)
+    except ValueError:
+        value = 0
+    if value <= 0:
+        return None
+    return min(max(value, 30), 24 * 60 * 60)
+
+
+def job_resource_poll_seconds() -> float:
+    """Return the resource sampling interval, clamped to 100–5,000 ms."""
+
+    raw = os.getenv("AUTO_REPORT_JOB_RESOURCE_POLL_MS", str(DEFAULT_JOB_RESOURCE_POLL_MS))
+    try:
+        value = int(raw)
+    except ValueError:
+        value = DEFAULT_JOB_RESOURCE_POLL_MS
+    return min(max(value, 100), 5_000) / 1_000
 
 
 def allow_custom_runtime_paths() -> bool:

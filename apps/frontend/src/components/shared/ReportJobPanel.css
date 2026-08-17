@@ -81,6 +81,19 @@
   background: linear-gradient(90deg, var(--accent-primary), #ec4899);
   transition: width 0.35s ease;
 }
+.report-job-panel__resources {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 5px 12px;
+  margin-top: 9px;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+.report-job-panel__resources b {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
 .report-job-panel__actions {
   display: flex;
   align-items: center;

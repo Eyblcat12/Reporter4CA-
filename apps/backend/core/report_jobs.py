@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
-from core.performance_metrics import PerformanceMetrics
+from core.performance_metrics import PerformanceMetrics, current_rss_mib
 
 TERMINAL_STATES = {"completed", "failed", "cancelled"}
 
@@ -24,6 +24,18 @@ def _now_iso() -> str:
 
 class JobCancelled(Exception):
     """Raised cooperatively between report generation phases."""
+
+    def __init__(
+        self,
+        message: str = "Job was cancelled",
+        *,
+        code: str = "CANCELLED",
+        termination_reason: str = "user_cancelled",
+    ) -> None:
+        super().__init__(message)
+        self.code = code
+        self.public_message = message
+        self.termination_reason = termination_reason
 
 
 @dataclass
@@ -50,11 +62,20 @@ class ReportJob:
     output_path: str = ""
     error_code: str = ""
     error_message: str = ""
+    termination_reason: str = ""
+    elapsed_ms: int = 0
+    current_rss_mib: float = 0.0
+    peak_rss_mib: float = 0.0
+    memory_limit_mib: int | None = None
+    timeout_seconds: int | None = None
     integrity: dict[str, Any] = field(default_factory=dict)
     artifact: dict[str, Any] = field(default_factory=dict)
     cancel_event: threading.Event = field(default_factory=threading.Event, repr=False)
     future: Future | None = field(default=None, repr=False)
     on_cancel: Callable[["ReportJob"], None] | None = field(default=None, repr=False)
+    resource_cancel_code: str = field(default="", repr=False)
+    resource_cancel_message: str = field(default="", repr=False)
+    started_at_ns: int = field(default=0, repr=False)
 
     def public(self) -> dict[str, Any]:
         return {
@@ -73,6 +94,14 @@ class ReportJob:
             "downloadReady": self.status == "completed" and bool(self.output_path),
             "errorCode": self.error_code,
             "errorMessage": self.error_message,
+            "terminationReason": self.termination_reason,
+            "resources": {
+                "elapsedMs": self.elapsed_ms,
+                "currentRssMiB": round(self.current_rss_mib, 1),
+                "peakRssMiB": round(self.peak_rss_mib, 1),
+                "memoryLimitMiB": self.memory_limit_mib,
+                "timeoutSeconds": self.timeout_seconds,
+            },
             "integrity": self.integrity,
             "requestSignature": str(self.artifact.get("requestSignature", "")),
             "contentSignature": str(self.artifact.get("contentSignature", "")),
@@ -88,7 +117,15 @@ class ReportJobManager:
     """One-worker queue with bounded capacity and active-request deduplication."""
 
     def __init__(
-        self, *, max_workers: int = 1, max_pending: int = 2, max_retained: int = 100
+        self,
+        *,
+        max_workers: int = 1,
+        max_pending: int = 2,
+        max_retained: int = 100,
+        memory_limit_mib: int | None = None,
+        timeout_seconds: int | None = None,
+        resource_poll_seconds: float = 0.5,
+        resource_sampler: Callable[[], float] = current_rss_mib,
     ) -> None:
         self._executor = ThreadPoolExecutor(
             max_workers=max_workers, thread_name_prefix="report-job"
@@ -97,6 +134,10 @@ class ReportJobManager:
         self._max_retained = max(max_retained, self._capacity)
         self._jobs: dict[str, ReportJob] = {}
         self._lock = threading.RLock()
+        self._memory_limit_mib = memory_limit_mib
+        self._timeout_seconds = timeout_seconds
+        self._resource_poll_seconds = min(max(resource_poll_seconds, 0.05), 5.0)
+        self._resource_sampler = resource_sampler
 
     @staticmethod
     def fingerprint(request: dict[str, Any]) -> str:
@@ -140,6 +181,8 @@ class ReportJobManager:
                 context=context,
                 artifact=dict(artifact_metadata or {}),
                 on_cancel=on_cancel,
+                memory_limit_mib=self._memory_limit_mib,
+                timeout_seconds=self._timeout_seconds,
             )
             if on_accept is not None:
                 on_accept(job)
@@ -169,6 +212,15 @@ class ReportJobManager:
             return
         self.update(job, status="running", phase="preparing", progress=5, message="Đang chuẩn bị")
         job.started_at = _now_iso()
+        job.started_at_ns = time.perf_counter_ns()
+        monitor_stop = threading.Event()
+        monitor = threading.Thread(
+            target=self._monitor_resources,
+            args=(job, monitor_stop),
+            name=f"resource-monitor-{job.id}",
+            daemon=True,
+        )
+        monitor.start()
         try:
             result = runner(job)
             with self._lock:
@@ -203,8 +255,8 @@ class ReportJobManager:
                     progress=100,
                     message="Báo cáo đã sẵn sàng",
                 )
-        except JobCancelled:
-            self._finish_cancelled(job)
+        except JobCancelled as exc:
+            self._finish_cancelled(job, exc)
         except Exception as exc:
             with self._lock:
                 job.failure = exc
@@ -216,10 +268,53 @@ class ReportJobManager:
                     phase="failed",
                     message="Không thể tạo báo cáo",
                 )
+        finally:
+            monitor_stop.set()
+            monitor.join(timeout=max(0.1, self._resource_poll_seconds * 2))
+            self._sample_resources(job, enforce_limits=False)
 
-    def _finish_cancelled(self, job: ReportJob) -> None:
+    def _monitor_resources(self, job: ReportJob, stop: threading.Event) -> None:
+        while not stop.is_set():
+            self._sample_resources(job, enforce_limits=True)
+            if job.cancel_event.is_set():
+                return
+            stop.wait(self._resource_poll_seconds)
+
+    def _sample_resources(self, job: ReportJob, *, enforce_limits: bool) -> None:
+        try:
+            rss_mib = max(0.0, float(self._resource_sampler()))
+        except Exception:
+            rss_mib = 0.0
+        elapsed_ms = (
+            max(0, time.perf_counter_ns() - job.started_at_ns) // 1_000_000
+            if job.started_at_ns
+            else 0
+        )
         with self._lock:
-            job.error_code = "CANCELLED"
+            job.elapsed_ms = int(elapsed_ms)
+            job.current_rss_mib = rss_mib
+            job.peak_rss_mib = max(job.peak_rss_mib, rss_mib)
+            if not enforce_limits or job.status in TERMINAL_STATES or job.cancel_event.is_set():
+                return
+            if job.memory_limit_mib is not None and rss_mib > job.memory_limit_mib:
+                job.resource_cancel_code = "MEMORY_LIMIT_EXCEEDED"
+                job.resource_cancel_message = "Đã dừng an toàn vì tác vụ vượt giới hạn RAM."
+                job.termination_reason = "memory_limit"
+            elif job.timeout_seconds is not None and elapsed_ms > job.timeout_seconds * 1_000:
+                job.resource_cancel_code = "JOB_TIMEOUT"
+                job.resource_cancel_message = "Đã dừng an toàn vì tác vụ vượt thời gian cho phép."
+                job.termination_reason = "timeout"
+            else:
+                return
+            job.message = job.resource_cancel_message
+            job.updated_at = _now_iso()
+            job.cancel_event.set()
+
+    def _finish_cancelled(self, job: ReportJob, exc: JobCancelled | None = None) -> None:
+        with self._lock:
+            job.error_code = exc.code if exc is not None else "CANCELLED"
+            job.error_message = exc.public_message if exc is not None else "Đã hủy theo yêu cầu."
+            job.termination_reason = exc.termination_reason if exc is not None else "user_cancelled"
             if job.output_path:
                 Path(job.output_path).unlink(missing_ok=True)
                 job.output_path = ""
@@ -227,7 +322,7 @@ class ReportJobManager:
                 job,
                 status="cancelled",
                 phase="cancelled",
-                message="Đã hủy an toàn",
+                message=job.error_message,
             )
             if job.on_cancel is not None:
                 job.on_cancel(job)
@@ -262,7 +357,13 @@ class ReportJobManager:
 
     def check_cancelled(self, job: ReportJob) -> None:
         if job.cancel_event.is_set():
-            raise JobCancelled()
+            if job.resource_cancel_code:
+                raise JobCancelled(
+                    job.resource_cancel_message,
+                    code=job.resource_cancel_code,
+                    termination_reason=job.termination_reason,
+                )
+            raise JobCancelled("Đã hủy theo yêu cầu.")
 
     def get(self, job_id: str) -> ReportJob | None:
         with self._lock:
@@ -289,6 +390,8 @@ class ReportJobManager:
             job = self._jobs.get(job_id)
             if not job or job.status in TERMINAL_STATES:
                 return job
+            if not job.termination_reason:
+                job.termination_reason = "user_cancelled"
             job.cancel_event.set()
             job.message = "Đang hủy sau phase hiện tại"
             job.updated_at = _now_iso()

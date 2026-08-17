@@ -41,6 +41,9 @@ export default function ReportJobPanel() {
 
   const completed = job.status === 'completed';
   const failed = job.status === 'failed' || job.status === 'cancelled';
+  const resources = job.resources || {};
+  const showResources = Number(resources.peakRssMiB) > 0;
+  const elapsedSeconds = Math.max(0, Math.round(Number(resources.elapsedMs || 0) / 1000));
   return (
     <aside className="report-job-panel" aria-label={t('jobs.title')}>
       <div className="report-job-panel__head">
@@ -68,6 +71,19 @@ export default function ReportJobPanel() {
       <div className="report-job-panel__track">
         <i style={{ width: `${job.progress || 0}%` }} />
       </div>
+      {showResources && (
+        <div className="report-job-panel__resources" aria-label={t('jobs.resources')}>
+          <span>
+            {t('jobs.memory')}: <b>{resources.currentRssMiB} MB</b>
+            {Number(resources.peakRssMiB) > 0 && ` · ${t('jobs.peak')} ${resources.peakRssMiB} MB`}
+            {resources.memoryLimitMiB && ` / ${resources.memoryLimitMiB} MB`}
+          </span>
+          <span>
+            {t('jobs.elapsed')}: <b>{elapsedSeconds}s</b>
+            {resources.timeoutSeconds && ` / ${resources.timeoutSeconds}s`}
+          </span>
+        </div>
+      )}
       <div className="report-job-panel__actions">
         <small>
           {RUNNING.has(job.status) ? t('jobs.backgroundHint') : t(`jobs.status.${job.status}`)}

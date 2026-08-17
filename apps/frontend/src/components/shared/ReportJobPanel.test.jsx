@@ -30,10 +30,19 @@ describe('ReportJobPanel', () => {
       phase: 'generating',
       progress: 45,
       message: 'Generating',
+      resources: {
+        elapsedMs: 12500,
+        currentRssMiB: 420.5,
+        peakRssMiB: 512.25,
+        memoryLimitMiB: null,
+        timeoutSeconds: null,
+      },
     };
     render(<ReportJobPanel />);
 
     expect(screen.getByText('45%')).toBeInTheDocument();
+    expect(screen.getByText(/420.5 MB/)).toBeInTheDocument();
+    expect(screen.getByText(/13s/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'jobs.cancel' }));
     expect(context.cancelReportJob).toHaveBeenCalledWith('job-1');
 

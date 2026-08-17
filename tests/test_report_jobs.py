@@ -186,6 +186,56 @@ class ReportJobManagerTests(unittest.TestCase):
         self.assertEqual(maximum, 1)
         manager.shutdown()
 
+    def test_resource_metrics_are_exposed_without_enforcing_a_limit(self) -> None:
+        manager = ReportJobManager(resource_sampler=lambda: 321.25, resource_poll_seconds=0.01)
+        job, _ = manager.submit({"id": "metrics"}, lambda _job: {})
+        wait_for(lambda: job.status == "completed")
+        resources = job.public()["resources"]
+        self.assertEqual(resources["peakRssMiB"], 321.2)
+        self.assertIsNone(resources["memoryLimitMiB"])
+        self.assertEqual(job.termination_reason, "")
+        manager.shutdown()
+
+    def test_memory_limit_requests_cooperative_cleanup_with_clear_reason(self) -> None:
+        manager = ReportJobManager(
+            memory_limit_mib=100,
+            resource_poll_seconds=0.005,
+            resource_sampler=lambda: 150,
+        )
+
+        def runner(job):
+            while True:
+                manager.check_cancelled(job)
+                time.sleep(0.002)
+
+        job, _ = manager.submit({"id": "memory-limit"}, runner)
+        wait_for(lambda: job.status == "cancelled")
+        public = job.public()
+        self.assertEqual(public["errorCode"], "MEMORY_LIMIT_EXCEEDED")
+        self.assertEqual(public["terminationReason"], "memory_limit")
+        self.assertEqual(public["resources"]["memoryLimitMiB"], 100)
+        manager.shutdown()
+
+    def test_timeout_requests_cooperative_cleanup_with_clear_reason(self) -> None:
+        manager = ReportJobManager(
+            timeout_seconds=0.02,
+            resource_poll_seconds=0.005,
+            resource_sampler=lambda: 10,
+        )
+
+        def runner(job):
+            while True:
+                manager.check_cancelled(job)
+                time.sleep(0.002)
+
+        job, _ = manager.submit({"id": "timeout"}, runner)
+        wait_for(lambda: job.status == "cancelled")
+        public = job.public()
+        self.assertEqual(public["errorCode"], "JOB_TIMEOUT")
+        self.assertEqual(public["terminationReason"], "timeout")
+        self.assertGreaterEqual(public["resources"]["elapsedMs"], 20)
+        manager.shutdown()
+
 
 if __name__ == "__main__":
     unittest.main()

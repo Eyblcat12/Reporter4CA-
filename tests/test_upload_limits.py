@@ -13,6 +13,11 @@ BACKEND = ROOT / "apps" / "backend"
 sys.path.insert(0, str(BACKEND))
 
 from api.routes import _assert_report_size, _decode_base64  # noqa: E402
+from core.config import (  # noqa: E402
+    job_memory_limit_mib,
+    job_resource_poll_seconds,
+    job_timeout_seconds,
+)
 
 
 class UploadLimitTests(unittest.TestCase):
@@ -41,6 +46,22 @@ class UploadLimitTests(unittest.TestCase):
             with self.assertRaises(HTTPException) as context:
                 _assert_report_size([{}] * 101)
         self.assertEqual(context.exception.status_code, 413)
+
+    def test_job_resource_limits_are_opt_in_and_bounded(self) -> None:
+        with patch.dict("os.environ", {}, clear=True):
+            self.assertIsNone(job_memory_limit_mib())
+            self.assertIsNone(job_timeout_seconds())
+        with patch.dict(
+            "os.environ",
+            {
+                "AUTO_REPORT_JOB_MEMORY_LIMIT_MB": "64",
+                "AUTO_REPORT_JOB_TIMEOUT_SECONDS": "5",
+                "AUTO_REPORT_JOB_RESOURCE_POLL_MS": "1",
+            },
+        ):
+            self.assertEqual(job_memory_limit_mib(), 256)
+            self.assertEqual(job_timeout_seconds(), 30)
+            self.assertEqual(job_resource_poll_seconds(), 0.1)
 
 
 if __name__ == "__main__":
