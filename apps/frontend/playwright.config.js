@@ -4,7 +4,7 @@ export default defineConfig({
   testDir: './e2e',
   globalTeardown: './e2e/global-teardown.js',
   fullyParallel: false,
-  workers: process.platform === 'win32' ? 1 : undefined,
+  workers: 1,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: {
