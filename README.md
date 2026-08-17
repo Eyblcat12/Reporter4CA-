@@ -94,22 +94,22 @@ API tương tác và schema có sẵn tại
 
 ![Reporter Pro benchmark](docs/images/benchmark-large-workload.svg)
 
-Benchmark tháng 07/2026 trên Lenovo 82RD, Ryzen 7 6800H, RAM 16 GB, với input
-50.000 máy (20.000 server / 30.000 client), một DOCX và template bắt buộc:
+Benchmark tháng 07–08/2026 trên Lenovo 82RD, Ryzen 7 6800H, RAM 16 GB, với
+input 50.000 máy (20.000 server / 30.000 client), một DOCX và template bắt buộc:
 
 | Phép thử | Kết quả đã xác nhận |
 |---|---|
 | Import + parse + data-quality 50.000 dòng | Hoàn tất, đủ 50.000 tài sản, khoảng 20 giây |
 | DOCX chi tiết 1.000 máy | Hoàn tất, 93,8 giây, peak RSS 848 MB |
-| DOCX chi tiết 3.000 máy | Hoàn tất, 375,2 giây, peak RSS 2.433 MB |
+| Full DOCX 3.000 máy, 10 fresh run | Pass 10/10; P50 229,6 giây, P95 236,9 giây; product peak RSS P95 2.457 MiB |
 | DOCX chi tiết 3.750 máy | Hoàn tất, 414,1 giây, peak RSS 2.928 MB |
 | DOCX chi tiết 4.000–5.000 máy | Chủ động dừng khi vượt watchdog RAM 3 GB |
 | Soak test job nền 120 phút | Pass, 83 job, 0 lỗi ngoài dự kiến |
 
 Hai năng lực cần được hiểu riêng: pipeline có thể đọc/kiểm tra 50.000 máy, nhưng
-engine hiện chưa đóng gói chi tiết 50.000 máy vào **một** DOCX. Mốc một file đã
-xác nhận dưới giới hạn RAM 3 GB là 3.750 máy; workload lớn hơn cần chia volume
-hoặc tiếp tục tối ưu engine.
+engine hiện chưa đóng gói chi tiết 50.000 máy vào **một** DOCX. Gate ổn định hiện
+là 3.000 máy/Full DOCX; mốc 3.750 máy mới hoàn tất một lượt thăm dò, chưa phải SLA.
+Workload lớn hơn cần chia volume hoặc tiếp tục tối ưu engine.
 
 Xem [báo cáo benchmark, môi trường và phương pháp đo](docs/BENCHMARKS.md).
 

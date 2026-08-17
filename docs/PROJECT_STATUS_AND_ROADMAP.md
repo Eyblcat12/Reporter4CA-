@@ -206,15 +206,13 @@ Phạm vi test hiện đã bao phủ các regression có giá trị cao: import 
 | Mức | Hạn chế | Tác động |
 |---|---|---|
 | Cao | Không có xác thực/phân quyền | Không phù hợp mở API ra mạng hoặc dùng chung nhiều người |
-| Cao | Restore backup đã có dry-run/checksum/rollback | Đã xử lý; tiếp tục kiểm tra định kỳ trên backup release thật |
 | Cao | Plugin được nạp như Python code trực tiếp | Plugin không tin cậy có toàn quyền trong process backend |
 | Cao | Custom template/plugin path vẫn dành cho local mode | Đường dẫn template do database quản lý đã được chặn khỏi thao tác ngoài thư mục; cần policy riêng trước server mode |
 | Trung bình | Coverage frontend mới tập trung workflow lõi | Cần mở rộng dần khi thêm component và trạng thái UI mới |
-| Trung bình | Dependency Python đã lock toàn bộ cây và hash | Đã xử lý; mọi cập nhật phải regenerate và review lockfile |
-| Trung bình | Migration schema v3 chưa có downgrade/restore workflow | Cần quy trình rollback trước các migration lớn hơn |
+| Trung bình | Plugin ngoài vẫn là extension point mở | Chưa bật mặc định; cần isolation/signing trước enterprise/server mode |
 | Thấp | Job report chỉ tồn tại trong phiên backend | Khi ứng dụng bị dừng cưỡng bức, job đang chạy không thể tiếp tục sau lần khởi động kế tiếp |
-| Thấp | Bản desktop artifact chưa được build lại theo baseline 2.0.0 | Source và binary bàn giao có thể chưa cùng revision |
-| Thấp | Release automation chưa tạo changelog/checksum tự động | Release hiện vẫn cần bước rà soát thủ công |
+| Thấp | Prebuilt bundle chưa phải installer offline hoàn toàn | Máy đích không cần Node/npm nhưng vẫn cần cài dependency Python đã lock |
+| Thấp | Release notes vẫn cần bước rà soát nội dung thủ công | Artifact, manifest và checksum đã tự động hóa |
 
 Ngoài ra, Elasticsearch là tích hợp tùy chọn nhưng dependency và quy trình cấu hình/chẩn đoán kết nối chưa được đóng gói đầy đủ. Các script `test_integration.py` và `test_excel.py` hiện thiên về kiểm tra thủ công hơn là test suite có assertion và fixture chuẩn.
 
@@ -236,8 +234,8 @@ Ngoài ra, Elasticsearch là tích hợp tùy chọn nhưng dependency và quy t
 ### 6.3. Rủi ro vận hành
 
 - Word field update phụ thuộc nền tảng Windows và Microsoft Word.
-- Chưa có pipeline đóng gói desktop từ source với checksum và provenance.
-- Bản desktop hiện là artifact được bảo toàn, nhưng repository chưa có pipeline tạo installer mới từ đầu.
+- Release workflow tạo source ZIP/TAR, Windows prebuilt bundle, manifest gắn exact
+  Git commit và SHA-256; installer offline hoàn toàn vẫn là hạng mục tương lai.
 
 ## 7. Kế hoạch phát triển đề xuất
 
@@ -246,8 +244,8 @@ Ngoài ra, Elasticsearch là tích hợp tùy chọn nhưng dependency và quy t
 **Mục tiêu:** tạo một phiên bản có thể tái lập, kiểm tra và phát hành nhất quán.
 
 - Hoàn tất review và commit cấu trúc monorepo.
-- Semantic version, changelog, release note, checksum workflow và baseline v2.1.0
-  đã hoàn thành; desktop installer vẫn là bước đóng gói riêng tiếp theo.
+- Semantic version, changelog, release note, checksum workflow, source artifact và
+  Windows prebuilt bundle đã hoàn thành; installer offline là bước đóng gói tương lai.
 - GitHub Actions và quality gate local cho backend/frontend đã hoàn thành.
 - Chuẩn hóa formatter/linter: Ruff cho Python, ESLint/Prettier cho frontend.
 - Dependency Python trực tiếp/gián tiếp và SHA-256 đã khóa trong hai lockfile;
@@ -268,11 +266,13 @@ Ngoài ra, Elasticsearch là tích hợp tùy chọn nhưng dependency và quy t
 - Chuẩn hóa error envelope và logging có request ID.
 - Đã khóa thao tác đọc/xóa template do database quản lý trong template root; custom template/plugin path cần policy theo local/server mode.
 - Thêm giới hạn kích thước file, số row và thời gian xử lý.
-- Thêm backup theo lịch, database migration framework và integrity check.
+- Backup theo lịch, retention, database migration checkpoint/transaction/rollback và
+  integrity check đã hoàn thành.
 - Tác vụ tạo DOCX nền đã hoàn thành: 1 job chạy + 2 job chờ, chống request trùng, progress/cancel, panel thu gọn và dọn file tạm khi lỗi/hủy. Endpoint đồng bộ cũ được giữ để tương thích ngược.
 - Thêm test API integration bằng FastAPI TestClient.
 - Component test, API integration và E2E workflow import → configure → preview → export đã hoàn thành và chạy trong CI.
-- Tạo installer, checksum và quy trình nâng cấp/rollback.
+- Prebuilt bundle/checksum/rollback flag đã hoàn thành; installer offline được hoãn
+  vì bản local/team ưu tiên tính tái lập và dễ bảo trì hơn kích thước đóng gói.
 
 **Điều kiện hoàn thành:** không mất dữ liệu khi nâng cấp, có thể chẩn đoán lỗi từ log, và mọi đường dẫn/tệp người dùng đều được kiểm soát.
 

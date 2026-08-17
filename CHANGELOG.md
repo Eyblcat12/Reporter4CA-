@@ -36,6 +36,8 @@ Mọi thay đổi đáng chú ý của Reporter Pro được ghi tại đây. D�
   pending migration chạy trong một transaction và tự phục hồi checkpoint nếu lỗi.
 - Compact table prototype được bật mặc định sau gate Full 3.000 asset giữ nguyên
   integrity/output và giảm product peak RSS; flag `0` vẫn rollback về legacy path.
+- Stability gate Full 3.000 asset đạt 10/10 fresh process: không thiếu asset/finding,
+  product latency P50/P95 229,6/236,9 giây và product peak RSS P95 2.457,5 MiB.
 
 ## [2.1.2] - 2026-08-03
 

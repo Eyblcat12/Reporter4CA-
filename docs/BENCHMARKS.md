@@ -197,11 +197,11 @@ Mốc Full 3.000 máy cũng hoàn tất: 376,6 giây, peak RSS 2.258,0 MB, file
   số object Word giữ đồng thời trong RAM. Không nên tăng giới hạn một cách mù
   quáng vì có thể làm máy cá nhân mất phản hồi.
 
-## Full 3.000 máy — phân tách product/audit RSS
+## Full 3.000 máy — stability gate 10/10
 
 Ngày 17/08/2026, fixture tổng hợp `mixed-3000` gồm 1.200 server, 1.800 client
 và 2.500 finding dự kiến được chạy trong fresh process với template Full mặc định.
-Kết quả một lượt A/B có integrity đầy đủ:
+Một lượt A/B ban đầu xác nhận compact path giữ nguyên output/integrity:
 
 | Cấu hình | Product latency | Product peak RSS | Peak gồm reopen audit | Output | Asset |
 |---|---:|---:|---:|---:|---:|
@@ -214,9 +214,29 @@ DOCX đã save và trước audit; đây là peak gần với workflow Generate 
 để kiểm tra semantic integrity, nên cao hơn nhưng không phải RAM của Generate.
 
 Compact prototype giữ nguyên số byte output ở A/B này, vượt structural golden cho
-sáu report type và đưa product peak dưới gate 2.765 MiB. Flag được bật mặc định cho
-local/team với rollback `AUTO_REPORT_COMPACT_PROTOTYPE=0`. Kết quả trên mới là một
-trial xác nhận instrumentation; bảng stability P50/P95 chỉ công bố sau 10 fresh run.
+sáu report type và đưa product peak dưới gate 2.765 MiB. Sau đó cùng cấu hình được
+chạy 10 lần, mỗi lần trong một process mới:
+
+| Chỉ số stability | Kết quả |
+|---|---:|
+| Trial đạt | **10/10** |
+| Product latency P50 / P95 | **229,6 / 236,9 giây** |
+| Audit latency P50 / P95 | 42,3 / 43,5 giây |
+| Product peak RSS P50 / P95 / max | **2.455,3 / 2.457,5 / 2.457,5 MiB** |
+| Peak RSS gồm reopen audit P95 | 3.917,2 MiB |
+| Asset được kiểm tra | **3.000/3.000 ở cả 10 lượt** |
+| Finding bị thiếu | **0** |
+| Worker lỗi / temp DOCX còn sót | **0 / 0** |
+
+`productPeakRssMiB` là số dùng cho release gate vì phản ánh Generate thực tế.
+Audit peak cao hơn do benchmark cố ý mở lại DOCX để kiểm tra semantic integrity khi
+object tài liệu gốc vẫn còn trong process; đây không phải peak của người dùng khi
+Generate. Compact path được bật mặc định cho local/team và có thể rollback tức thời
+bằng `AUTO_REPORT_COMPACT_PROTOTYPE=0`.
+
+Kết luận: mốc **Full 3.000 máy** đã đủ điều kiện gọi là stable baseline trên máy
+benchmark này. Kết quả không được suy rộng thành cam kết cho mọi cấu hình máy;
+resource monitor vẫn cần được theo dõi với template và dữ liệu khách hàng thực tế.
 
 ## Soak test job nền
 
