@@ -13,6 +13,8 @@ Mọi thay đổi đáng chú ý của Reporter Pro được ghi tại đây. D�
   của tag, bảo đảm provenance khớp source và GitHub Actions `head_sha`.
 - E2E dùng một worker nhất quán trên Windows/Linux, ghi lỗi vào GitHub annotations
   và lưu Playwright diagnostics khi CI lỗi, giúp chẩn đoán tái lập.
+- Workflow E2E chờ Preview request phát sinh thay vì assert ngay khi modal vừa mở,
+  loại bỏ timing race trên runner chậm mà không nới lỏng điều kiện nghiệp vụ.
 
 ## [2.2.0] - 2026-08-17
 

@@ -242,7 +242,7 @@ test('import sample → configure → preview → generate', async ({ page }) =>
   await page.locator('.sidebar__nav-item').filter({ hasText: 'Xuất báo cáo' }).click();
   await page.getByRole('button', { name: /Xem trước báo cáo/i }).click();
   await expect(page.locator('.docx-modal')).toBeVisible();
-  expect(previewRequested).toBe(true);
+  await expect.poll(() => previewRequested).toBe(true);
 
   const downloadResponse = page.waitForResponse(
     (response) => response.url().endsWith('/api/report-jobs/e2e-job/download') && response.ok(),
