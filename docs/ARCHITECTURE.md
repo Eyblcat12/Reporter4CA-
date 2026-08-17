@@ -38,6 +38,8 @@ khi generate để tránh âm thầm xuất tài liệu thiếu section.
   khi bật, job hủy hợp tác tại checkpoint, dọn tệp tạm và ghi termination reason.
 - Scheduler local tạo workspace backup nguyên tử theo chu kỳ, giữ số phiên bản hữu
   hạn và không xóa archive thủ công hoặc generated report.
+- Trước khi nâng schema của database đã tồn tại, backend tạo SQLite checkpoint kèm
+  SHA-256; pending migrations là một transaction và rollback checkpoint khi lỗi.
 - Custom runtime path bị tắt mặc định.
 - `.env`, database, log, build và output nằm ngoài source control.
 - Plugin kết nối ngoài là opt-in và dependency được cài riêng.

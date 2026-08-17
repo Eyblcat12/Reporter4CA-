@@ -403,26 +403,66 @@ class Database:
 
     def initialize(self) -> None:
         """Create tables and apply every pending schema migration in order."""
+        database_existed = self._path.is_file() and self._path.stat().st_size > 0
         conn = self._get_conn()
         conn.executescript(_SCHEMA_SQL)
         applied = {
             int(row[0]) for row in conn.execute("SELECT version FROM schema_migrations").fetchall()
         }
-        for version, name, migrate in _MIGRATIONS:
-            if version in applied:
-                continue
+        pending = [migration for migration in _MIGRATIONS if migration[0] not in applied]
+        checkpoint = None
+        if pending and database_existed:
+            checkpoint = self._create_migration_checkpoint(
+                max(applied, default=0),
+                max(version for version, _name, _migrate in pending),
+            )
+        try:
             with conn:
-                migrate(conn)
-                conn.execute(
-                    "INSERT INTO schema_migrations(version, name, applied_at) VALUES(?,?,?)",
-                    (version, name, _now_iso()),
-                )
+                for version, name, migrate in pending:
+                    migrate(conn)
+                    conn.execute(
+                        "INSERT INTO schema_migrations(version, name, applied_at) VALUES(?,?,?)",
+                        (version, name, _now_iso()),
+                    )
+        except Exception:
+            if checkpoint is not None:
+                self.restore_from(checkpoint)
+            raise
         with conn:
             conn.execute(
                 "UPDATE report_history SET status = 'failed', error_code = 'PROCESS_INTERRUPTED', "
                 "updated_at = ? WHERE status IN ('queued', 'running')",
                 (_now_iso(),),
             )
+
+    def _create_migration_checkpoint(self, source_version: int, target_version: int) -> Path:
+        """Persist a bounded pre-migration SQLite snapshot for manual rollback."""
+
+        checkpoint_dir = self._path.parent / "migration-backups"
+        checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S-%f")
+        checkpoint = checkpoint_dir / (
+            f"reporter-pre-v{source_version}-to-v{target_version}-{timestamp}.db"
+        )
+        self.backup_to(checkpoint)
+        digest = file_sha256(checkpoint)
+        checkpoint.with_suffix(".db.sha256").write_text(
+            f"{digest}  {checkpoint.name}\n",
+            encoding="ascii",
+        )
+        self._prune_migration_checkpoints(checkpoint_dir, retain=3)
+        return checkpoint
+
+    @staticmethod
+    def _prune_migration_checkpoints(checkpoint_dir: Path, *, retain: int) -> None:
+        checkpoints = sorted(
+            (path for path in checkpoint_dir.glob("reporter-pre-v*-to-v*-*.db") if path.is_file()),
+            key=lambda path: (path.stat().st_mtime, path.name),
+            reverse=True,
+        )
+        for path in checkpoints[retain:]:
+            path.unlink(missing_ok=True)
+            path.with_suffix(".db.sha256").unlink(missing_ok=True)
 
     @property
     def schema_version(self) -> int:

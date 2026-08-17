@@ -60,6 +60,7 @@ suite chủ động đóng server sau khi hoàn tất để không để lại p
 ## Nhóm kiểm thử backend
 
 - API import/validate/generate/template/preset/history/backup.
+- Database migration transaction, pre-migration checkpoint và rollback khi lỗi.
 - Data quality, rule engine, incident validation và threat intelligence.
 - Report job progress/cancel/cleanup.
 - Template category/schema và golden DOCX structure.

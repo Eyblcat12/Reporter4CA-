@@ -30,6 +30,8 @@ Mọi thay đổi đáng chú ý của Reporter Pro được ghi tại đây. D�
   với Git commit; hỗ trợ setup production không cần Node/npm và được đưa vào checksum.
 - Automatic workspace backup theo chu kỳ, retention giới hạn và namespace an toàn;
   archive vẫn dùng manifest/checksum và restore dry-run/rollback hiện có.
+- Pre-migration SQLite checkpoint có SHA-256 và retention ba phiên bản; toàn bộ
+  pending migration chạy trong một transaction và tự phục hồi checkpoint nếu lỗi.
 
 ## [2.1.2] - 2026-08-03
 

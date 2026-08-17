@@ -32,6 +32,7 @@ if (-not $SkipBackend) {
         tests.test_api_errors `
         tests.test_dashboard_summary `
         tests.test_data_quality `
+        tests.test_database_migrations `
         tests.test_docx_field_updater `
         tests.test_docx_golden `
         tests.test_fast_cell_path `
