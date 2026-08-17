@@ -184,6 +184,7 @@ function ActivityChart({ values, labels, emptyLabel }) {
 
 export default function DashboardHome({ onOpenImport }) {
   const fileRef = useRef(null);
+  const fileReaderRef = useRef(null);
   const recentRef = useRef(null);
   const [period, setPeriod] = useState(90);
   const [launcherOpen, setLauncherOpen] = useState(false);
@@ -196,6 +197,9 @@ export default function DashboardHome({ onOpenImport }) {
   });
   const {
     importFile,
+    importProgress,
+    setImportProgress,
+    clearImportedFile,
     loadSample,
     reportHistory,
     dashboardSummary,
@@ -318,16 +322,49 @@ export default function DashboardHome({ onOpenImport }) {
   const handleFile = (file) => {
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => importFile(file.name, reader.result, file.size);
+    fileReaderRef.current = reader;
+    setImportProgress({
+      status: 'running',
+      phase: 'reading',
+      progress: 0,
+      message: t('import.progress.reading'),
+      filename: file.name,
+      rowCount: 0,
+      columnCount: 0,
+    });
+    reader.onprogress = (event) => {
+      if (!event.lengthComputable) return;
+      setImportProgress({ progress: Math.min(20, Math.round((event.loaded / event.total) * 20)) });
+    };
+    reader.onload = () => {
+      fileReaderRef.current = null;
+      setImportProgress({ progress: 20, message: t('import.progress.uploading') });
+      importFile(file.name, reader.result, file.size);
+    };
+    reader.onerror = () => {
+      fileReaderRef.current = null;
+      setImportProgress({
+        status: 'failed',
+        phase: 'failed',
+        message: t('import.progress.readError'),
+      });
+    };
     reader.readAsDataURL(file);
   };
 
+  const cancelFileImport = () => {
+    fileReaderRef.current?.abort();
+    fileReaderRef.current = null;
+    if (fileRef.current) fileRef.current.value = '';
+    clearImportedFile();
+  };
+
   const continueWithSource = () => {
-    setLauncherOpen(false);
     if (source === 'file') {
       fileRef.current?.click();
       return;
     }
+    setLauncherOpen(false);
     if (source === 'text') {
       onOpenImport?.('text');
       return;
@@ -353,6 +390,24 @@ export default function DashboardHome({ onOpenImport }) {
     text: t('dashboard.source.textDesc'),
     sample: t('dashboard.source.sampleDesc'),
   };
+  const importProgressMessages = {
+    reading: t('import.progress.reading'),
+    analyzing: t('import.progress.analyzing'),
+    mapping: `${t('import.progress.detected')} ${importProgress?.columnCount || 0}`,
+    importing: t('import.progress.importing'),
+    validating: t('import.progress.validating'),
+    'mapping-required': t('import.progress.mappingRequired'),
+    completed:
+      importProgress?.rowCount > 0
+        ? `${t('import.progress.completed')} · ${importProgress.rowCount} ${t('import.progress.rowsReady')}`
+        : t('import.progress.completedEmpty'),
+  };
+  const importProgressText =
+    importProgress?.status === 'failed'
+      ? importProgress.message || t('import.progress.failed')
+      : importProgressMessages[importProgress?.phase] ||
+        importProgress?.message ||
+        t('import.progress.preparing');
   const isInitialLoading =
     dashboardState.status === 'loading' && !dashboardSummary && !(reportHistory || []).length;
   const updatedAt = dashboardState.updatedAt ? new Date(dashboardState.updatedAt) : null;
@@ -455,6 +510,45 @@ export default function DashboardHome({ onOpenImport }) {
                 <ArrowRight size={15} />
               </button>
             </div>
+            {source === 'file' && importProgress?.status !== 'idle' && (
+              <div
+                className={`dashboard-home__import-progress dashboard-home__import-progress--${importProgress.status}`}
+                role="status"
+                aria-live="polite"
+              >
+                <div className="dashboard-home__import-progress-head">
+                  <span>{importProgressText}</span>
+                  <strong>{Math.min(100, Math.max(0, importProgress.progress || 0))}%</strong>
+                  {importProgress.status === 'running' && (
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-icon"
+                      onClick={cancelFileImport}
+                      aria-label={t('import.progress.cancel')}
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+                <div
+                  className="dashboard-home__import-progress-track"
+                  role="progressbar"
+                  aria-label={t('import.progress.label')}
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                  aria-valuenow={Math.min(100, Math.max(0, importProgress.progress || 0))}
+                >
+                  <motion.div
+                    className="dashboard-home__import-progress-fill"
+                    animate={{
+                      width: `${Math.min(100, Math.max(0, importProgress.progress || 0))}%`,
+                    }}
+                    transition={{ duration: 0.3, ease: 'easeOut' }}
+                  />
+                </div>
+                <small>{importProgress.filename}</small>
+              </div>
+            )}
           </motion.section>
         )}
       </AnimatePresence>

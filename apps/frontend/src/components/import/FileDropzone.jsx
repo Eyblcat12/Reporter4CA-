@@ -3,7 +3,17 @@
    ═══════════════════════════════════════════════════════════ */
 import { useCallback, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UploadCloud, FileSpreadsheet, FileCode, FileText, X, FlaskConical } from 'lucide-react';
+import {
+  UploadCloud,
+  FileSpreadsheet,
+  FileCode,
+  FileText,
+  X,
+  FlaskConical,
+  Check,
+  LoaderCircle,
+  AlertCircle,
+} from 'lucide-react';
 import { useReporterContext } from '../../hooks/useReporter';
 import { useI18n } from '../../i18n';
 import './FileDropzone.css';
@@ -33,30 +43,88 @@ function formatSize(bytes) {
 export default function FileDropzone() {
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef(null);
-  const { importedFile, importFile, loadSample, loading, clearImportedFile } = useReporterContext();
+  const readerRef = useRef(null);
+  const {
+    importedFile,
+    importFile,
+    importProgress,
+    setImportProgress,
+    loadSample,
+    loading,
+    clearImportedFile,
+  } = useReporterContext();
   const { t } = useI18n();
+  const progress = Math.min(100, Math.max(0, importProgress?.progress || 0));
+  const importBusy = importProgress?.status === 'running';
+  const progressMessages = {
+    reading: t('import.progress.reading'),
+    analyzing: t('import.progress.analyzing'),
+    mapping: `${t('import.progress.detected')} ${importProgress?.columnCount || 0}`,
+    importing: t('import.progress.importing'),
+    validating: t('import.progress.validating'),
+    'mapping-required': t('import.progress.mappingRequired'),
+    completed:
+      importProgress?.rowCount > 0
+        ? `${t('import.progress.completed')} · ${importProgress.rowCount} ${t('import.progress.rowsReady')}`
+        : t('import.progress.completedEmpty'),
+  };
+  const progressMessage =
+    importProgress?.status === 'failed'
+      ? importProgress.message || t('import.progress.failed')
+      : progressMessages[importProgress?.phase] ||
+        importProgress?.message ||
+        t('import.progress.preparing');
 
   const handleFile = useCallback(
     (file) => {
       if (!file) return;
       const reader = new FileReader();
+      readerRef.current = reader;
+      setImportProgress({
+        status: 'running',
+        phase: 'reading',
+        progress: 0,
+        message: t('import.progress.reading'),
+        filename: file.name,
+        rowCount: 0,
+      });
+      reader.onprogress = (event) => {
+        if (!event.lengthComputable) return;
+        setImportProgress({
+          progress: Math.min(20, Math.round((event.loaded / event.total) * 20)),
+        });
+      };
       reader.onload = () => {
+        readerRef.current = null;
+        setImportProgress({ progress: 20, message: t('import.progress.uploading') });
         const base64 = reader.result;
         importFile(file.name, base64, file.size);
       };
+      reader.onerror = () => {
+        readerRef.current = null;
+        setImportProgress({
+          status: 'failed',
+          phase: 'failed',
+          message: t('import.progress.readError'),
+        });
+      };
+      reader.onabort = () => {
+        readerRef.current = null;
+      };
       reader.readAsDataURL(file);
     },
-    [importFile],
+    [importFile, setImportProgress, t],
   );
 
   const onDrop = useCallback(
     (e) => {
       e.preventDefault();
       setDragOver(false);
+      if (importBusy) return;
       const file = e.dataTransfer?.files?.[0];
       handleFile(file);
     },
-    [handleFile],
+    [handleFile, importBusy],
   );
 
   const onDragOver = (e) => {
@@ -64,11 +132,15 @@ export default function FileDropzone() {
     setDragOver(true);
   };
   const onDragLeave = () => setDragOver(false);
-  const onBrowse = () => fileRef.current?.click();
+  const onBrowse = () => {
+    if (!importBusy) fileRef.current?.click();
+  };
   const onFileChange = (e) => handleFile(e.target.files?.[0]);
 
   const clearFile = (e) => {
     e?.stopPropagation();
+    readerRef.current?.abort();
+    readerRef.current = null;
     if (fileRef.current) fileRef.current.value = '';
     clearImportedFile();
   };
@@ -90,7 +162,7 @@ export default function FileDropzone() {
           /* ─── Uploaded state ─── */
           <motion.div
             key="uploaded"
-            className="dropzone dropzone--has-file"
+            className={`dropzone dropzone--has-file ${importBusy ? 'dropzone--busy' : ''}`}
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.96 }}
@@ -108,38 +180,24 @@ export default function FileDropzone() {
                 <span className="dropzone__filesize">{formatSize(importedFile.size)}</span>
               </div>
               <span className="dropzone__format-badge">{getFileExt(importedFile.name)}</span>
-              <button
-                type="button"
-                className="dropzone__remove"
-                onClick={clearFile}
-                title={t('common.delete')}
-                aria-label={`Xóa file ${importedFile.name}`}
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            {/* Loading overlay */}
-            <AnimatePresence>
-              {loading && (
-                <motion.div
-                  className="dropzone__loading-overlay"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
+              {!importBusy && (
+                <button
+                  type="button"
+                  className="dropzone__remove"
+                  onClick={clearFile}
+                  title={t('common.delete')}
+                  aria-label={`${t('common.delete')} ${importedFile.name}`}
                 >
-                  <div className="dropzone__progress-bar">
-                    <div className="dropzone__progress-fill" />
-                  </div>
-                </motion.div>
+                  <X size={16} />
+                </button>
               )}
-            </AnimatePresence>
+            </div>
           </motion.div>
         ) : (
           /* ─── Empty / Drag state ─── */
           <motion.div
             key="empty"
-            className={`dropzone ${dragOver ? 'dropzone--over' : ''}`}
+            className={`dropzone ${dragOver ? 'dropzone--over' : ''} ${importBusy ? 'dropzone--busy' : ''}`}
             onDrop={onDrop}
             onDragOver={onDragOver}
             onDragLeave={onDragLeave}
@@ -160,33 +218,100 @@ export default function FileDropzone() {
               <p className="dropzone__text">{t('import.dropzone')}</p>
               <p className="dropzone__hint">.xlsx · .xls · .csv · .json · .txt · .tsv</p>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-            {/* Loading overlay */}
-            <AnimatePresence>
-              {loading && (
-                <motion.div
-                  className="dropzone__loading-overlay"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
+      <AnimatePresence>
+        {importProgress?.status !== 'idle' && (
+          <motion.div
+            className={`dropzone-progress dropzone-progress--${importProgress.status}`}
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            role="status"
+            aria-live="polite"
+          >
+            <div className="dropzone-progress__header">
+              <span className="dropzone-progress__state-icon" aria-hidden="true">
+                {importProgress.status === 'completed' ? (
+                  <Check size={16} />
+                ) : importProgress.status === 'failed' ? (
+                  <AlertCircle size={16} />
+                ) : (
+                  <LoaderCircle size={16} className="dropzone-progress__spinner" />
+                )}
+              </span>
+              <div className="dropzone-progress__copy">
+                <strong>{progressMessage}</strong>
+                <span>{importProgress.filename}</span>
+              </div>
+              <strong className="dropzone-progress__percent">{progress}%</strong>
+              {importBusy && (
+                <button
+                  type="button"
+                  className="dropzone-progress__cancel"
+                  onClick={clearFile}
+                  title={t('import.progress.cancel')}
+                  aria-label={`${t('import.progress.cancel')} ${importProgress.filename}`}
                 >
-                  <div className="dropzone__progress-bar">
-                    <div className="dropzone__progress-fill" />
-                  </div>
-                </motion.div>
+                  <X size={14} />
+                </button>
               )}
-            </AnimatePresence>
+            </div>
+            <div
+              className="dropzone-progress__track"
+              role="progressbar"
+              aria-label={t('import.progress.label')}
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow={progress}
+            >
+              <motion.div
+                className="dropzone-progress__fill"
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 0.3, ease: 'easeOut' }}
+              />
+            </div>
+            <div className="dropzone-progress__steps" aria-hidden="true">
+              {[
+                ['reading', 1, t('import.progress.step.read')],
+                ['analyzing', 24, t('import.progress.step.analyze')],
+                ['importing', 68, t('import.progress.step.import')],
+                ['completed', 100, t('import.progress.step.ready')],
+              ].map(([phase, threshold, label]) => {
+                const active =
+                  importProgress.status === 'running' &&
+                  (importProgress.phase === phase ||
+                    (phase === 'analyzing' && importProgress.phase === 'mapping') ||
+                    (phase === 'importing' && importProgress.phase === 'validating'));
+                const complete =
+                  progress >= threshold &&
+                  !active &&
+                  !(phase === 'importing' && importProgress.phase === 'mapping-required') &&
+                  (phase !== 'completed' || importProgress.phase === 'completed');
+                return (
+                  <span
+                    key={phase}
+                    className={`dropzone-progress__step ${complete ? 'is-complete' : ''} ${active ? 'is-active' : ''}`}
+                  >
+                    <i>{complete ? <Check size={10} /> : null}</i>
+                    {label}
+                  </span>
+                );
+              })}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* ─── Action buttons ─── */}
       <div className="dropzone__actions">
-        <button className="btn btn--primary" onClick={onBrowse} disabled={loading}>
+        <button className="btn btn--primary" onClick={onBrowse} disabled={loading || importBusy}>
           <UploadCloud size={16} />
           {t('import.browse')}
         </button>
-        <button className="btn btn--ghost" onClick={loadSample} disabled={loading}>
+        <button className="btn btn--ghost" onClick={loadSample} disabled={loading || importBusy}>
           <FlaskConical size={16} />
           {t('import.sample')}
         </button>

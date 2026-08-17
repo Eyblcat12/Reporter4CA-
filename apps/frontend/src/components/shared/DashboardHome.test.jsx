@@ -95,6 +95,17 @@ const summary = (overrides = {}) => ({
 beforeEach(() => {
   reporter = {
     importFile: vi.fn(),
+    importProgress: {
+      status: 'idle',
+      phase: 'idle',
+      progress: 0,
+      message: '',
+      filename: '',
+      rowCount: 0,
+      columnCount: 0,
+    },
+    setImportProgress: vi.fn(),
+    clearImportedFile: vi.fn(),
     loadSample: vi.fn(),
     reportHistory: [],
     dashboardSummary: null,
@@ -110,6 +121,28 @@ describe('DashboardHome', () => {
     render(<DashboardHome />);
     expect(screen.getByText('No reports yet')).toBeInTheDocument();
     expect(screen.getByText('No activity')).toBeInTheDocument();
+  });
+
+  it('shows file loading percentage in the initial dashboard launcher', async () => {
+    reporter.importProgress = {
+      status: 'running',
+      phase: 'analyzing',
+      progress: 24,
+      message: '',
+      filename: 'Tracking_2.csv',
+      rowCount: 0,
+      columnCount: 0,
+    };
+    const user = userEvent.setup();
+    render(<DashboardHome />);
+
+    await user.click(screen.getByRole('button', { name: 'New report' }));
+    expect(screen.getByRole('progressbar', { name: 'import.progress.label' })).toHaveAttribute(
+      'aria-valuenow',
+      '24',
+    );
+    expect(screen.getByText('24%')).toBeInTheDocument();
+    expect(screen.getByText('Tracking_2.csv')).toBeInTheDocument();
   });
 
   it('renders populated server metrics and recent reports', () => {

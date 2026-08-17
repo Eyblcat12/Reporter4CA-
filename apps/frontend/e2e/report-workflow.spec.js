@@ -20,6 +20,70 @@ const sampleRows = [
   },
 ];
 
+test('file import exposes determinate progress before rows are ready', async ({ page }) => {
+  await page.route('**/api/**', async (route) => {
+    const url = new URL(route.request().url());
+    const pathname = url.pathname;
+    if (pathname === '/api/column-preview') {
+      await new Promise((resolve) => setTimeout(resolve, 350));
+      return route.fulfill({
+        json: {
+          columns: ['Hostname', 'IP', 'OS', 'Result'],
+          suggestedMapping: {
+            Hostname: 'hostname',
+            IP: 'ip',
+            OS: 'os',
+            Result: 'result',
+          },
+          sheets: [],
+          headerRow: 0,
+        },
+      });
+    }
+    if (pathname === '/api/import-file') {
+      await new Promise((resolve) => setTimeout(resolve, 350));
+      return route.fulfill({
+        json: {
+          rows: sampleRows,
+          payload: {},
+          counts: { servers: 1, clients: 1, total: 2 },
+          previewText: 'file import',
+        },
+      });
+    }
+    if (pathname === '/api/reports/history') return route.fulfill({ json: { reports: [] } });
+    if (pathname === '/api/dashboard/summary') {
+      return route.fulfill({ json: { days: 90, metrics: {}, series: [], recent: [] } });
+    }
+    if (pathname === '/api/templates') return route.fulfill({ json: { templates: [] } });
+    if (pathname === '/api/presets') return route.fulfill({ json: { presets: [] } });
+    return route.fulfill({ status: 404, json: { detail: 'Not mocked' } });
+  });
+
+  await page.goto('/');
+  await page.getByRole('button', { name: /Tạo báo cáo/i }).click();
+
+  const chooserPromise = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: 'Tiếp tục' }).click();
+  const chooser = await chooserPromise;
+  await chooser.setFiles({
+    name: 'tracking-e2e.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from(
+      'Hostname,IP,OS,Result\nsrv-e2e-01,10.0.0.10,Linux,Clean\nws-e2e-01,10.0.0.20,Windows,Reviewed\n',
+    ),
+  });
+
+  const progress = page.getByRole('progressbar', { name: 'Tiến độ tải file' });
+  await expect(progress).toHaveAttribute('aria-valuenow', '24');
+  await expect(page.getByText('Đang tải và phân tích cấu trúc file')).toBeVisible();
+  await expect(page.getByText('Hoàn tất · 2 dòng sẵn sàng')).toBeVisible();
+  await expect(page.getByRole('progressbar', { name: 'Tiến độ tải file' })).toHaveAttribute(
+    'aria-valuenow',
+    '100',
+  );
+});
+
 test('import sample → configure → preview → generate', async ({ page }) => {
   const docxPath = path.resolve('../backend/templates/report_template.docx');
   let previewRequested = false;

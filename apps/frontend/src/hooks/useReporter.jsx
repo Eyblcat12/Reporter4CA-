@@ -44,6 +44,15 @@ const initialState = {
   logs: [],
   loading: false,
   error: null,
+  importProgress: {
+    status: 'idle',
+    phase: 'idle',
+    progress: 0,
+    message: '',
+    filename: '',
+    rowCount: 0,
+    columnCount: 0,
+  },
   templates: [],
   presets: [],
   previewBlob: null,
@@ -256,6 +265,8 @@ function reducer(state, action) {
       return { ...state, loading: action.payload };
     case 'SET_ERROR':
       return { ...state, error: action.payload };
+    case 'SET_IMPORT_PROGRESS':
+      return { ...state, importProgress: { ...state.importProgress, ...action.payload } };
     case 'SET_ROWS': {
       const rows = action.payload;
       return withDocumentChange(state, { rows, counts: recountRows(rows) });
@@ -376,6 +387,10 @@ export function ReporterProvider({ children }) {
     dispatch({ type: 'SET_COLUMN_MAPPING', payload: mapping });
   }, []);
 
+  const setImportProgress = useCallback((progress) => {
+    dispatch({ type: 'SET_IMPORT_PROGRESS', payload: progress });
+  }, []);
+
   const addRow = useCallback((type = 'server') => {
     dispatch({
       type: 'ADD_ROW',
@@ -441,6 +456,18 @@ export function ReporterProvider({ children }) {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'SET_IMPORTED_FILE', payload: { name: filename, size: fileSize } });
       dispatch({ type: 'SET_IMPORTED_FILE_DATA', payload: dataUrl });
+      dispatch({
+        type: 'SET_IMPORT_PROGRESS',
+        payload: {
+          status: 'running',
+          phase: 'analyzing',
+          progress: 24,
+          message: 'Đang tải và phân tích cấu trúc file',
+          filename,
+          rowCount: 0,
+          columnCount: 0,
+        },
+      });
       addLog(`Uploading: ${filename}`);
 
       try {
@@ -459,6 +486,15 @@ export function ReporterProvider({ children }) {
 
         const preview = await previewRes.json();
         if (requestId !== importRequestRef.current.id) return;
+        dispatch({
+          type: 'SET_IMPORT_PROGRESS',
+          payload: {
+            phase: 'mapping',
+            progress: 55,
+            message: `Đã nhận diện ${(preview.columns || []).length} cột`,
+            columnCount: (preview.columns || []).length,
+          },
+        });
         dispatch({ type: 'SET_COLUMN_PREVIEW', payload: preview });
         dispatch({ type: 'SET_COLUMN_MAPPING', payload: preview.suggestedMapping || {} });
         addLog(`Detected ${(preview.columns || []).length} columns`);
@@ -470,6 +506,14 @@ export function ReporterProvider({ children }) {
         );
 
         if (hasHostname) {
+          dispatch({
+            type: 'SET_IMPORT_PROGRESS',
+            payload: {
+              phase: 'importing',
+              progress: 68,
+              message: 'Đang chuẩn hóa và nhập dữ liệu',
+            },
+          });
           const importRes = await fetch(`${API_BASE}/import-file`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -490,6 +534,14 @@ export function ReporterProvider({ children }) {
           }
           const data = await importRes.json();
           if (requestId !== importRequestRef.current.id) return;
+          dispatch({
+            type: 'SET_IMPORT_PROGRESS',
+            payload: {
+              phase: 'validating',
+              progress: 92,
+              message: 'Đang hoàn thiện bảng dữ liệu',
+            },
+          });
           if (data.rows && data.rows.length > 0) {
             dispatch({ type: 'SET_ROWS', payload: data.rows });
             dispatch({ type: 'SET_PAYLOAD', payload: data.payload || data });
@@ -497,15 +549,51 @@ export function ReporterProvider({ children }) {
             addLog(
               `Import thành công: ${data.rows.length} dòng (${data.counts?.servers || 0} server, ${data.counts?.clients || 0} client)`,
             );
+            dispatch({
+              type: 'SET_IMPORT_PROGRESS',
+              payload: {
+                status: 'completed',
+                phase: 'completed',
+                progress: 100,
+                message: `Hoàn tất · ${data.rows.length} dòng sẵn sàng`,
+                rowCount: data.rows.length,
+              },
+            });
           } else {
             addLog('Cảnh báo: Không có dữ liệu sau import. Hãy kiểm tra ánh xạ cột.');
+            dispatch({
+              type: 'SET_IMPORT_PROGRESS',
+              payload: {
+                status: 'completed',
+                phase: 'completed',
+                progress: 100,
+                message: 'Hoàn tất nhưng chưa có dòng dữ liệu',
+              },
+            });
           }
         } else {
           addLog('Hãy ánh xạ cột Hostname ở bước ② rồi nhấn "Áp dụng"');
+          dispatch({
+            type: 'SET_IMPORT_PROGRESS',
+            payload: {
+              status: 'completed',
+              phase: 'mapping-required',
+              progress: 100,
+              message: 'Đã đọc file · cần xác nhận ánh xạ cột',
+            },
+          });
         }
       } catch (err) {
         if (err.name === 'AbortError') return;
         dispatch({ type: 'SET_ERROR', payload: err.message });
+        dispatch({
+          type: 'SET_IMPORT_PROGRESS',
+          payload: {
+            status: 'failed',
+            phase: 'failed',
+            message: err.message,
+          },
+        });
         addLog(`Error: ${err.message}`);
       } finally {
         if (requestId === importRequestRef.current.id) {
@@ -523,6 +611,15 @@ export function ReporterProvider({ children }) {
       return;
     }
     dispatch({ type: 'SET_LOADING', payload: true });
+    dispatch({
+      type: 'SET_IMPORT_PROGRESS',
+      payload: {
+        status: 'running',
+        phase: 'importing',
+        progress: 68,
+        message: 'Đang áp dụng ánh xạ và nhập dữ liệu',
+      },
+    });
     addLog('Đang áp dụng ánh xạ cột...');
 
     try {
@@ -552,11 +649,34 @@ export function ReporterProvider({ children }) {
         addLog(
           `Ánh xạ thành công! ${data.rows.length} dòng dữ liệu (${data.counts?.servers || 0} server, ${data.counts?.clients || 0} client)`,
         );
+        dispatch({
+          type: 'SET_IMPORT_PROGRESS',
+          payload: {
+            status: 'completed',
+            phase: 'completed',
+            progress: 100,
+            message: `Hoàn tất · ${data.rows.length} dòng sẵn sàng`,
+            rowCount: data.rows.length,
+          },
+        });
       } else {
         addLog('Cảnh báo: Không có dữ liệu nào sau khi ánh xạ. Kiểm tra lại mapping cột.');
+        dispatch({
+          type: 'SET_IMPORT_PROGRESS',
+          payload: {
+            status: 'completed',
+            phase: 'completed',
+            progress: 100,
+            message: 'Hoàn tất nhưng chưa có dòng dữ liệu',
+          },
+        });
       }
     } catch (err) {
       dispatch({ type: 'SET_ERROR', payload: err.message });
+      dispatch({
+        type: 'SET_IMPORT_PROGRESS',
+        payload: { status: 'failed', phase: 'failed', message: err.message },
+      });
       addLog(`Lỗi ánh xạ: ${err.message}`);
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
@@ -1578,6 +1698,18 @@ export function ReporterProvider({ children }) {
     dispatch({ type: 'SET_PREVIEW_TEXT', payload: '' });
     dispatch({ type: 'SET_ERROR', payload: null });
     dispatch({ type: 'SET_LOADING', payload: false });
+    dispatch({
+      type: 'SET_IMPORT_PROGRESS',
+      payload: {
+        status: 'idle',
+        phase: 'idle',
+        progress: 0,
+        message: '',
+        filename: '',
+        rowCount: 0,
+        columnCount: 0,
+      },
+    });
     addLog('Đã xóa file import. Bạn có thể chọn file mới.');
   }, [addLog]);
 
@@ -1586,6 +1718,7 @@ export function ReporterProvider({ children }) {
     setStep,
     setReportSettings,
     setColumnMapping,
+    setImportProgress,
     addRow,
     removeRow,
     updateRow,

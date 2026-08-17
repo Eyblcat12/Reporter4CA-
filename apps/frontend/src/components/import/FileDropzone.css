@@ -89,6 +89,12 @@
   display: none;
 }
 
+.dropzone--busy {
+  border-color: rgba(var(--accent-rgb), 0.55);
+  cursor: wait;
+  box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), 0.08);
+}
+
 /* ─── Icon ring ─── */
 .dropzone__icon-ring {
   display: flex;
@@ -226,46 +232,195 @@
   border-color: rgba(var(--accent-rgb), 0.1);
 }
 
-/* ─── Loading overlay with shimmer progress ─── */
-.dropzone__loading-overlay {
-  position: absolute;
-  inset: 0;
+/* ─── Import progress ─── */
+.dropzone-progress {
   display: flex;
-  align-items: flex-end;
-  padding: 0;
-  background: rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(6px);
-  border-radius: var(--radius-lg);
-  z-index: 2;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid rgba(var(--accent-rgb), 0.24);
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.08), var(--surface));
+  box-shadow: var(--shadow-sm);
 }
 
-.dropzone__progress-bar {
-  width: 100%;
-  height: 3px;
-  background: var(--border);
+.dropzone-progress--completed {
+  border-color: color-mix(in srgb, var(--success) 38%, var(--border));
+  background: color-mix(in srgb, var(--success-muted) 58%, var(--surface));
+}
+
+.dropzone-progress--failed {
+  border-color: color-mix(in srgb, var(--error) 38%, var(--border));
+  background: color-mix(in srgb, var(--error-muted) 52%, var(--surface));
+}
+
+.dropzone-progress__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.dropzone-progress__state-icon {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  color: var(--accent);
+  background: var(--accent-muted);
+}
+
+.dropzone-progress--completed .dropzone-progress__state-icon {
+  color: var(--success);
+  background: var(--success-muted);
+}
+
+.dropzone-progress--failed .dropzone-progress__state-icon {
+  color: var(--error);
+  background: var(--error-muted);
+}
+
+.dropzone-progress__spinner {
+  animation: dropzoneSpin 0.9s linear infinite;
+}
+
+@keyframes dropzoneSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.dropzone-progress__copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dropzone-progress__copy strong {
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-weight: 650;
+}
+
+.dropzone-progress__copy span {
   overflow: hidden;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.dropzone__progress-fill {
+.dropzone-progress__percent {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: var(--text-md);
+  font-variant-numeric: tabular-nums;
+}
+
+.dropzone-progress__cancel {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  background: var(--surface);
+  cursor: pointer;
+  transition: 0.18s ease;
+}
+
+.dropzone-progress__cancel:hover {
+  border-color: color-mix(in srgb, var(--error) 45%, var(--border));
+  color: var(--error);
+  background: var(--error-muted);
+}
+
+.dropzone-progress--completed .dropzone-progress__percent {
+  color: var(--success);
+}
+
+.dropzone-progress--failed .dropzone-progress__percent {
+  color: var(--error);
+}
+
+.dropzone-progress__track {
+  width: 100%;
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-elevated);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.dropzone-progress__fill {
   height: 100%;
-  width: 40%;
+  min-width: 0;
+  border-radius: inherit;
   background: var(--accent-gradient);
-  border-radius: 2px;
-  animation: shimmerSlide 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.24);
 }
 
-@keyframes shimmerSlide {
-  0% {
-    transform: translateX(-120%);
-    width: 30%;
-  }
-  50% {
-    width: 60%;
-  }
-  100% {
-    transform: translateX(400%);
-    width: 30%;
-  }
+.dropzone-progress--completed .dropzone-progress__fill {
+  background: var(--success);
+  box-shadow: none;
+}
+
+.dropzone-progress--failed .dropzone-progress__fill {
+  background: var(--error);
+  box-shadow: none;
+}
+
+.dropzone-progress__steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.dropzone-progress__step {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.dropzone-progress__step i {
+  display: grid;
+  width: 14px;
+  height: 14px;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  background: var(--surface);
+}
+
+.dropzone-progress__step.is-active {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.dropzone-progress__step.is-active i {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12);
+}
+
+.dropzone-progress__step.is-complete {
+  color: var(--text-secondary);
+}
+
+.dropzone-progress__step.is-complete i {
+  border-color: var(--success);
+  color: var(--surface);
+  background: var(--success);
 }
 
 /* ─── Action buttons ─── */
@@ -276,4 +431,10 @@
 
 .dropzone__actions .btn {
   flex: 1;
+}
+
+@media (max-width: 720px) {
+  .dropzone-progress__steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

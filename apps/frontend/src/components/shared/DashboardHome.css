@@ -120,6 +120,83 @@
   margin-left: auto;
 }
 
+.dashboard-home__import-progress {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid rgba(var(--accent-rgb), 0.24);
+  border-radius: var(--radius-md);
+  background: rgba(var(--accent-rgb), 0.06);
+}
+
+.dashboard-home__import-progress--completed {
+  border-color: color-mix(in srgb, var(--success) 38%, var(--border));
+  background: var(--success-muted);
+}
+
+.dashboard-home__import-progress--failed {
+  border-color: color-mix(in srgb, var(--error) 38%, var(--border));
+  background: var(--error-muted);
+}
+
+.dashboard-home__import-progress-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.dashboard-home__import-progress-head > span {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-home__import-progress-head > strong {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.dashboard-home__import-progress-track {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-elevated);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.dashboard-home__import-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent-gradient);
+  box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.24);
+}
+
+.dashboard-home__import-progress--completed .dashboard-home__import-progress-fill {
+  background: var(--success);
+  box-shadow: none;
+}
+
+.dashboard-home__import-progress--failed .dashboard-home__import-progress-fill {
+  background: var(--error);
+  box-shadow: none;
+}
+
+.dashboard-home__import-progress > small {
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .dashboard-home__kpis {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

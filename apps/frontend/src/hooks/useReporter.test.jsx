@@ -66,6 +66,14 @@ describe('ReporterProvider API workflow', () => {
     await act(() => result.current.importFile('assets.csv', 'data:text/csv;base64,QQ==', 10));
     expect(result.current.columnMapping).toEqual({ Host: 'hostname', IP: 'ip' });
     expect(result.current.rows[0].hostname).toBe('srv-01');
+    expect(result.current.importProgress).toEqual(
+      expect.objectContaining({
+        status: 'completed',
+        phase: 'completed',
+        progress: 100,
+        rowCount: 1,
+      }),
+    );
     expect(fetch.mock.calls[1][0]).toBe('/api/import-file');
   });
 
@@ -184,6 +192,9 @@ describe('ReporterProvider API workflow', () => {
     await act(() => result.current.importFile('offline.csv', 'data:text/csv;base64,QQ==', 10));
     expect(result.current.loading).toBe(false);
     expect(result.current.error).toMatch(/Failed to fetch/);
+    expect(result.current.importProgress).toEqual(
+      expect.objectContaining({ status: 'failed', phase: 'failed', progress: 24 }),
+    );
     expect(result.current.rows).toEqual([]);
   });
 
