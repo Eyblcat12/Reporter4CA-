@@ -30,7 +30,7 @@ $FrontendIndex = Join-Path $FrontendDist "index.html"
 if (-not (Test-Path -LiteralPath $FrontendIndex)) {
     throw "Frontend production build is missing. Run npm run build before creating release artifacts."
 }
-$Commit = (& git -C $Root rev-parse $Ref).Trim()
+$Commit = (& git -C $Root rev-list -n 1 $Ref).Trim()
 if ($LASTEXITCODE -ne 0 -or $Commit -notmatch '^[0-9a-f]{40}$') {
     throw "Could not resolve release ref $Ref to one Git commit."
 }

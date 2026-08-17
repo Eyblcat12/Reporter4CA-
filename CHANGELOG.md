@@ -5,6 +5,11 @@ Mọi thay đổi đáng chú ý của Reporter Pro được ghi tại đây. D�
 
 ## [Unreleased]
 
+### Fixed
+
+- Release bundle manifest peel annotated tags về commit thật thay vì ghi object ID
+  của tag, bảo đảm provenance khớp source và GitHub Actions `head_sha`.
+
 ## [2.2.0] - 2026-08-17
 
 ### Fixed
