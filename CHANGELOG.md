@@ -5,6 +5,8 @@ Mọi thay đổi đáng chú ý của Reporter Pro được ghi tại đây. D�
 
 ## [Unreleased]
 
+## [2.2.1] - 2026-08-17
+
 ### Fixed
 
 - Release bundle manifest peel annotated tags về commit thật thay vì ghi object ID
@@ -97,4 +99,5 @@ Mọi thay đổi đáng chú ý của Reporter Pro được ghi tại đây. D�
 [2.1.1]: https://github.com/Eyblcat12/Reporter4CA-/releases/tag/v2.1.1
 [2.1.2]: https://github.com/Eyblcat12/Reporter4CA-/releases/tag/v2.1.2
 [2.2.0]: https://github.com/Eyblcat12/Reporter4CA-/releases/tag/v2.2.0
-[Unreleased]: https://github.com/Eyblcat12/Reporter4CA-/compare/v2.2.0...HEAD
+[2.2.1]: https://github.com/Eyblcat12/Reporter4CA-/releases/tag/v2.2.1
+[Unreleased]: https://github.com/Eyblcat12/Reporter4CA-/compare/v2.2.1...HEAD

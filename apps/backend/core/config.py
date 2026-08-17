@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 
 APP_NAME = "Reporter Pro"
-APP_VERSION = "2.2.0"
+APP_VERSION = "2.2.1"
 DEFAULT_CORS_ORIGINS = (
     "http://127.0.0.1:5173",
     "http://localhost:5173",
