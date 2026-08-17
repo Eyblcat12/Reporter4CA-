@@ -10,6 +10,10 @@ Mọi thay đổi đáng chú ý của Reporter Pro được ghi tại đây. D�
 - Đồng bộ E2E rule-builder với response contract và nhãn UI hiện tại; kiểm tra
   download qua HTTP response ổn định thay vì phụ thuộc sự kiện blob của trình duyệt.
 - Sửa script tạo Python lockfile truyền sai đường dẫn output cho `pip-compile`.
+- Preview polling và tải artifact tự phục hồi sau lỗi mạng/408/429/5xx tạm thời,
+  giữ nguyên dữ liệu import và trả lỗi rõ ràng sau ba lần thử lại.
+- E2E server trên Windows tự shutdown sau suite thay vì để lại Node/Vite process;
+  workflow chính cũng đợi download hoàn tất trước khi kết thúc test.
 
 ### Added
 

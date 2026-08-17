@@ -4,6 +4,28 @@
 import { createContext, useContext, useReducer, useCallback, useEffect, useRef } from 'react';
 
 const ReporterContext = createContext(null);
+const TRANSIENT_API_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504]);
+
+async function fetchPreviewResourceWithRetry(url, options, addLog, label) {
+  let failures = 0;
+  while (true) {
+    try {
+      const response = await fetch(url, options);
+      if (response.ok || !TRANSIENT_API_STATUSES.has(response.status)) return response;
+      throw new Error(`${label}: ${response.status}`);
+    } catch (error) {
+      if (error.name === 'AbortError') throw error;
+      failures += 1;
+      if (failures > 3) {
+        throw new Error(`${label} không khả dụng sau 3 lần thử lại: ${error.message}`, {
+          cause: error,
+        });
+      }
+      addLog(`Mất kết nối ${label}, đang thử lại (${failures}/3)...`);
+      await new Promise((resolve) => window.setTimeout(resolve, 750));
+    }
+  }
+}
 
 const initialState = {
   currentStep: 1,
@@ -1415,9 +1437,12 @@ export function ReporterProvider({ children }) {
           break;
         await new Promise((resolve) => window.setTimeout(resolve, 500));
         if (previewRequestRef.current?.sequence !== sequence) return;
-        const statusResponse = await fetch(`${API_BASE}/preview-jobs/${previewId}`, {
-          signal: controller.signal,
-        });
+        const statusResponse = await fetchPreviewResourceWithRetry(
+          `${API_BASE}/preview-jobs/${previewId}`,
+          { signal: controller.signal },
+          addLog,
+          'tiến độ Preview',
+        );
         if (!statusResponse.ok) throw new Error(`Preview status error: ${statusResponse.status}`);
         statePayload = await statusResponse.json();
         dispatch({
@@ -1459,9 +1484,12 @@ export function ReporterProvider({ children }) {
         throw new Error(statePayload.errorMessage || 'Preview job failed');
       }
 
-      const content = await fetch(`${API_BASE}/preview-jobs/${previewId}/content`, {
-        signal: controller.signal,
-      });
+      const content = await fetchPreviewResourceWithRetry(
+        `${API_BASE}/preview-jobs/${previewId}/content`,
+        { signal: controller.signal },
+        addLog,
+        'nội dung Preview',
+      );
       if (!content.ok) throw new Error(`Preview content error: ${content.status}`);
       const blob = await content.blob();
       if (previewRequestRef.current?.sequence !== sequence) return;

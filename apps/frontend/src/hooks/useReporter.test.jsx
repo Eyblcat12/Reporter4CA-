@@ -495,4 +495,83 @@ describe('ReporterProvider API workflow', () => {
       timeout.mockRestore();
     }
   });
+
+  it('recovers Preview polling after transient network and API failures', async () => {
+    const timeout = vi.spyOn(window, 'setTimeout').mockImplementation((callback) => {
+      callback();
+      return 1;
+    });
+    try {
+      fetch
+        .mockResolvedValueOnce(
+          jsonResponse({ rows: [{ type: 'server', hostname: 'srv-preview-retry' }], payload: {} }),
+        )
+        .mockResolvedValueOnce(
+          jsonResponse({
+            previewId: 'preview-retry',
+            jobId: 'preview-job-retry',
+            status: 'running',
+            progress: 25,
+            phase: 'generating',
+          }),
+        )
+        .mockRejectedValueOnce(new TypeError('Preview connection interrupted'))
+        .mockResolvedValueOnce(statusResponse(503))
+        .mockResolvedValueOnce(
+          jsonResponse({
+            previewId: 'preview-retry',
+            status: 'ready',
+            progress: 100,
+            phase: 'completed',
+            signature: 'preview-retry-signature',
+            cacheMode: 'deterministic',
+          }),
+        )
+        .mockResolvedValueOnce(statusResponse(200));
+      const { result } = renderHook(() => useReporter(), { wrapper });
+      await act(() => result.current.loadSample());
+      await act(() => result.current.previewDocx());
+      expect(result.current.previewState.status).toBe('current');
+      expect(result.current.previewState.previewId).toBe('preview-retry');
+      expect(result.current.error).toBeNull();
+      expect(result.current.logs.filter((line) => line.includes('đang thử lại'))).toHaveLength(2);
+    } finally {
+      timeout.mockRestore();
+    }
+  });
+
+  it('keeps imported rows after Preview polling retry exhaustion', async () => {
+    const timeout = vi.spyOn(window, 'setTimeout').mockImplementation((callback) => {
+      callback();
+      return 1;
+    });
+    try {
+      fetch
+        .mockResolvedValueOnce(
+          jsonResponse({ rows: [{ type: 'client', hostname: 'pc-preview-lost' }], payload: {} }),
+        )
+        .mockResolvedValueOnce(
+          jsonResponse({
+            previewId: 'preview-lost',
+            jobId: 'preview-job-lost',
+            status: 'running',
+            progress: 40,
+            phase: 'generating',
+          }),
+        )
+        .mockRejectedValueOnce(new TypeError('Offline 1'))
+        .mockRejectedValueOnce(new TypeError('Offline 2'))
+        .mockRejectedValueOnce(new TypeError('Offline 3'))
+        .mockRejectedValueOnce(new TypeError('Offline 4'));
+      const { result } = renderHook(() => useReporter(), { wrapper });
+      await act(() => result.current.loadSample());
+      await act(() => result.current.previewDocx());
+      expect(result.current.previewState.status).toBe('failed');
+      expect(result.current.previewState.errorMessage).toMatch(/sau 3 lần thử lại/i);
+      expect(result.current.rows[0].hostname).toBe('pc-preview-lost');
+      expect(result.current.loading).toBe(false);
+    } finally {
+      timeout.mockRestore();
+    }
+  });
 });

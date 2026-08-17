@@ -30,6 +30,14 @@ jobs:
       - name: Run backend quality gate (including DOCX integrity)
         shell: pwsh
         run: ./scripts/check.ps1 -SkipFrontend
+      - name: Upload Golden DOCX diff on regression
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: golden-docx-diff
+          path: artifacts/golden-docx/
+          if-no-files-found: ignore
+          retention-days: 7
 
   frontend:
     name: Frontend test and build

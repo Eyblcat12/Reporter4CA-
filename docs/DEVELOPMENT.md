@@ -54,7 +54,8 @@ npm run test:e2e
 ```
 
 Playwright khởi chạy test server riêng và kiểm tra workflow import → configure →
-preview → generate.
+preview → generate. Test server có endpoint teardown chỉ tồn tại trong E2E runtime;
+suite chủ động đóng server sau khi hoàn tất để không để lại process/cổng 4173 trên Windows.
 
 ## Nhóm kiểm thử backend
 

@@ -254,4 +254,5 @@ test('import sample → configure → preview → generate', async ({ page }) =>
   const response = await downloadResponse;
   expect(response.headers()['content-disposition']).toContain('e2e-report.docx');
   expect(generateRequested).toBe(true);
+  await expect(page.getByRole('button', { name: /Tải lại/i })).toBeVisible();
 });
