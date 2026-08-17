@@ -90,6 +90,9 @@ Backend tự động đọc `.env` ở thư mục gốc.
 | `AUTO_REPORT_JOB_MEMORY_LIMIT_MB` | 0 | Ngưỡng RAM backend/job; 0 chỉ theo dõi, không tự hủy |
 | `AUTO_REPORT_JOB_TIMEOUT_SECONDS` | 0 | Timeout Preview/Generate; 0 không tự giới hạn |
 | `AUTO_REPORT_JOB_RESOURCE_POLL_MS` | 500 | Chu kỳ đo RAM/thời gian, 100–5000 ms |
+| `AUTO_REPORT_AUTO_BACKUP` | 1 | Tạo snapshot workspace tự động trong runtime local |
+| `AUTO_REPORT_AUTO_BACKUP_INTERVAL_HOURS` | 24 | Khoảng cách backup, 1–720 giờ |
+| `AUTO_REPORT_AUTO_BACKUP_RETENTION` | 7 | Số automatic backup giữ lại, 1–90 |
 | `AUTO_REPORT_ALLOW_CUSTOM_PATHS` | 0 | Cho phép đường dẫn runtime tùy chỉnh |
 | `AUTO_REPORT_PREVIEW_JOBS` | 1 | Bật Preview Job API; đặt 0 để rollback workflow cũ |
 | `AUTO_REPORT_PREVIEW_CACHE` | 1 | Cho phép Generate dùng lại Preview đã xác minh |
@@ -104,6 +107,11 @@ Hai flag Preview đã vượt release gate local/team và được bật mặc �
 fallback về endpoint tương thích cũ khi đặt flag về 0. Resource limit không được suy
 ra từ số dòng: hãy benchmark đúng template khách hàng trước khi đặt ngưỡng RAM hoặc
 timeout, vì Full/Server/Client có mức sử dụng bộ nhớ khác nhau.
+
+Automatic backup được lưu trong `apps/backend/data/backups`, chỉ gồm SQLite và
+template DOCX được quản lý. Generated report và `.env` không nằm trong archive.
+Scheduler chỉ xóa file có prefix `reporter-pro-auto-`; backup tải thủ công không bị
+retention policy tác động.
 
 ## Xử lý lỗi thường gặp
 

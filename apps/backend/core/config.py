@@ -18,6 +18,8 @@ DEFAULT_PREVIEW_ARTIFACT_TTL_SECONDS = 15 * 60
 DEFAULT_PREVIEW_ARTIFACT_CACHE_MB = 512
 DEFAULT_PREVIEW_ARTIFACT_CACHE_ENTRIES = 20
 DEFAULT_JOB_RESOURCE_POLL_MS = 500
+DEFAULT_AUTO_BACKUP_INTERVAL_HOURS = 24
+DEFAULT_AUTO_BACKUP_RETENTION = 7
 _TRUTHY = {"1", "true", "yes", "on"}
 
 
@@ -88,6 +90,33 @@ def job_resource_poll_seconds() -> float:
     except ValueError:
         value = DEFAULT_JOB_RESOURCE_POLL_MS
     return min(max(value, 100), 5_000) / 1_000
+
+
+def automatic_backup_enabled() -> bool:
+    """Return whether the local workspace backup scheduler is enabled."""
+
+    return os.getenv("AUTO_REPORT_AUTO_BACKUP", "1").strip().lower() in _TRUTHY
+
+
+def automatic_backup_interval_hours() -> int:
+    raw = os.getenv(
+        "AUTO_REPORT_AUTO_BACKUP_INTERVAL_HOURS",
+        str(DEFAULT_AUTO_BACKUP_INTERVAL_HOURS),
+    )
+    try:
+        value = int(raw)
+    except ValueError:
+        value = DEFAULT_AUTO_BACKUP_INTERVAL_HOURS
+    return min(max(value, 1), 24 * 30)
+
+
+def automatic_backup_retention() -> int:
+    raw = os.getenv("AUTO_REPORT_AUTO_BACKUP_RETENTION", str(DEFAULT_AUTO_BACKUP_RETENTION))
+    try:
+        value = int(raw)
+    except ValueError:
+        value = DEFAULT_AUTO_BACKUP_RETENTION
+    return min(max(value, 1), 90)
 
 
 def allow_custom_runtime_paths() -> bool:

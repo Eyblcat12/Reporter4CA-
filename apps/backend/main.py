@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 import signal
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -17,16 +18,34 @@ load_dotenv(REPOSITORY_ROOT / ".env")
 from api.errors import install_error_handling
 from api.routes import router as api_router
 from api.routes import shutdown_report_scheduler
-from core.config import APP_NAME, APP_VERSION, cors_origins
-from core.database import close_db
+from core.config import (
+    APP_NAME,
+    APP_VERSION,
+    automatic_backup_enabled,
+    automatic_backup_interval_hours,
+    automatic_backup_retention,
+    cors_origins,
+)
+from core.database import close_db, get_db
 from core.logging_config import configure_logging
 from core.runtime_lifecycle import runtime_lifecycle
+from core.scheduled_backup import ScheduledBackupManager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 FRONTEND_DIST = PROJECT_ROOT.parent / "frontend" / "dist"
 configure_logging(PROJECT_ROOT / "data")
+LOGGER = logging.getLogger("reporter.backup")
+AUTO_BACKUP_DIR = PROJECT_ROOT / "data" / "backups"
+_auto_backups = ScheduledBackupManager(
+    get_db,
+    PROJECT_ROOT / "templates",
+    AUTO_BACKUP_DIR,
+    interval_hours=automatic_backup_interval_hours(),
+    retention=automatic_backup_retention(),
+    enabled=automatic_backup_enabled(),
+)
 
 
 @asynccontextmanager
@@ -50,11 +69,33 @@ async def lifespan(app: FastAPI):
                 os.kill(os.getpid(), signal.SIGTERM)
                 return
 
+    async def monitor_backups() -> None:
+        # Keep startup responsive and avoid creating snapshots in short-lived probes.
+        await asyncio.sleep(60)
+        while True:
+            try:
+                result = await asyncio.to_thread(_auto_backups.run_if_due)
+                if result.get("created"):
+                    LOGGER.info(
+                        "automatic_workspace_backup filename=%s removed=%s",
+                        result.get("filename"),
+                        len(result.get("removed") or []),
+                    )
+            except Exception:
+                LOGGER.exception("automatic_workspace_backup_failed")
+            await asyncio.sleep(60 * 60)
+
     monitor_task = asyncio.create_task(monitor_launcher())
+    backup_task = asyncio.create_task(monitor_backups())
     try:
         yield
     finally:
         monitor_task.cancel()
+        backup_task.cancel()
+        with suppress(asyncio.CancelledError):
+            await monitor_task
+        with suppress(asyncio.CancelledError):
+            await backup_task
         shutdown_report_scheduler(wait=True)
         close_db()
         runtime_lifecycle.reset()

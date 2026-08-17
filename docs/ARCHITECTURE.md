@@ -36,6 +36,8 @@ khi generate để tránh âm thầm xuất tài liệu thiếu section.
 - File import và số dòng có giới hạn cấu hình.
 - Preview/Generate luôn đo elapsed time và backend RSS. Trần RAM/timeout là opt-in;
   khi bật, job hủy hợp tác tại checkpoint, dọn tệp tạm và ghi termination reason.
+- Scheduler local tạo workspace backup nguyên tử theo chu kỳ, giữ số phiên bản hữu
+  hạn và không xóa archive thủ công hoặc generated report.
 - Custom runtime path bị tắt mặc định.
 - `.env`, database, log, build và output nằm ngoài source control.
 - Plugin kết nối ngoài là opt-in và dependency được cài riêng.

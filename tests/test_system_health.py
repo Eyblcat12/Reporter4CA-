@@ -14,7 +14,14 @@ sys.path.insert(0, str(BACKEND))
 
 from api.routes import health  # noqa: E402
 from core import database as database_module  # noqa: E402
-from core.config import APP_VERSION, DEFAULT_CORS_ORIGINS, cors_origins  # noqa: E402
+from core.config import (  # noqa: E402
+    APP_VERSION,
+    DEFAULT_CORS_ORIGINS,
+    automatic_backup_enabled,
+    automatic_backup_interval_hours,
+    automatic_backup_retention,
+    cors_origins,
+)
 from core.database import LATEST_SCHEMA_VERSION, Database, close_db  # noqa: E402
 
 
@@ -51,6 +58,24 @@ class SystemHealthTests(unittest.TestCase):
             clear=True,
         ):
             self.assertEqual(cors_origins(), ["http://team.local:5173"])
+
+    def test_automatic_backup_settings_are_bounded_and_can_be_disabled(self) -> None:
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertTrue(automatic_backup_enabled())
+            self.assertEqual(automatic_backup_interval_hours(), 24)
+            self.assertEqual(automatic_backup_retention(), 7)
+        with patch.dict(
+            os.environ,
+            {
+                "AUTO_REPORT_AUTO_BACKUP": "0",
+                "AUTO_REPORT_AUTO_BACKUP_INTERVAL_HOURS": "9999",
+                "AUTO_REPORT_AUTO_BACKUP_RETENTION": "0",
+            },
+            clear=True,
+        ):
+            self.assertFalse(automatic_backup_enabled())
+            self.assertEqual(automatic_backup_interval_hours(), 24 * 30)
+            self.assertEqual(automatic_backup_retention(), 1)
 
 
 if __name__ == "__main__":

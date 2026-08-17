@@ -47,6 +47,7 @@ if (-not $SkipBackend) {
         tests.test_report_snapshot `
         tests.test_rule_engine `
         tests.test_runtime_lifecycle `
+        tests.test_scheduled_backup `
         tests.test_system_health `
         tests.test_soak_harness `
         tests.test_template_categories `

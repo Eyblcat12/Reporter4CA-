@@ -28,6 +28,8 @@ Mọi thay đổi đáng chú ý của Reporter Pro được ghi tại đây. D�
   reason rõ ràng mà không áp giới hạn cứng lên template khách hàng theo mặc định.
 - Windows prebuilt release bundle chứa production frontend và manifest gắn version
   với Git commit; hỗ trợ setup production không cần Node/npm và được đưa vào checksum.
+- Automatic workspace backup theo chu kỳ, retention giới hạn và namespace an toàn;
+  archive vẫn dùng manifest/checksum và restore dry-run/rollback hiện có.
 
 ## [2.1.2] - 2026-08-03
 
