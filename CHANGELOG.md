@@ -5,6 +5,8 @@ Mọi thay đổi đáng chú ý của Reporter Pro được ghi tại đây. D�
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-08-17
+
 ### Fixed
 
 - Đồng bộ E2E rule-builder với response contract và nhãn UI hiện tại; kiểm tra
@@ -87,4 +89,5 @@ Mọi thay đổi đáng chú ý của Reporter Pro được ghi tại đây. D�
 [2.1.0]: https://github.com/Eyblcat12/Reporter4CA-/releases/tag/v2.1.0
 [2.1.1]: https://github.com/Eyblcat12/Reporter4CA-/releases/tag/v2.1.1
 [2.1.2]: https://github.com/Eyblcat12/Reporter4CA-/releases/tag/v2.1.2
-[Unreleased]: https://github.com/Eyblcat12/Reporter4CA-/compare/v2.1.2...HEAD
+[2.2.0]: https://github.com/Eyblcat12/Reporter4CA-/releases/tag/v2.2.0
+[Unreleased]: https://github.com/Eyblcat12/Reporter4CA-/compare/v2.2.0...HEAD
