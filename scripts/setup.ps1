@@ -1,7 +1,8 @@
 param(
     [switch]$Development,
     [switch]$SkipFrontendBuild,
-    [switch]$UsePrebuiltFrontend
+    [switch]$UsePrebuiltFrontend,
+    [string]$PythonExecutable = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -24,7 +25,15 @@ function Require-Command([string]$Name, [string]$InstallHint) {
     return $Command.Source
 }
 
-$Python = Require-Command "python.exe" "Install Python 3.12 and enable 'Add Python to PATH'."
+$Python = if ($PythonExecutable) {
+    $ResolvedPython = [System.IO.Path]::GetFullPath($PythonExecutable)
+    if (-not (Test-Path -LiteralPath $ResolvedPython -PathType Leaf)) {
+        throw "Python executable was not found: $ResolvedPython"
+    }
+    $ResolvedPython
+} else {
+    Require-Command "python.exe" "Install Python 3.12 and enable 'Add Python to PATH'."
+}
 $Npm = $null
 $Node = $null
 if (-not $UsePrebuiltFrontend) {
@@ -35,6 +44,10 @@ if (-not $UsePrebuiltFrontend) {
 $PythonVersion = & $Python -c "import sys; print('.'.join(map(str, sys.version_info[:2])))"
 if ($LASTEXITCODE -ne 0 -or [version]$PythonVersion -lt [version]"3.12") {
     throw "Python 3.12 or newer is required; found $PythonVersion."
+}
+$PythonVenvScripts = (& $Python -c "import sysconfig; print(sysconfig.get_path('scripts'))").Trim()
+if ($LASTEXITCODE -ne 0 -or (Split-Path -Leaf $PythonVenvScripts) -ne "Scripts") {
+    throw "Reporter Pro on Windows requires a native python.org-style Python that creates .venv\Scripts. The selected interpreter appears to use '$PythonVenvScripts'. Install native Python 3.12+ or rerun setup with -PythonExecutable <path-to-python.exe>."
 }
 
 if (-not $UsePrebuiltFrontend) {

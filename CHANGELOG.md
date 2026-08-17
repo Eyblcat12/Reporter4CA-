@@ -9,6 +9,8 @@ Mọi thay đổi đáng chú ý của Reporter Pro được ghi tại đây. D�
 
 ### Fixed
 
+- Setup phát hiện sớm Python MSYS2/Cygwin có layout venv không tương thích và hỗ
+  trợ chọn rõ interpreter Windows bằng `-PythonExecutable`.
 - Đồng bộ E2E rule-builder với response contract và nhãn UI hiện tại; kiểm tra
   download qua HTTP response ổn định thay vì phụ thuộc sự kiện blob của trình duyệt.
 - Sửa script tạo Python lockfile truyền sai đường dẫn output cho `pip-compile`.

@@ -90,6 +90,13 @@ lỗi môi trường.
 API tương tác và schema có sẵn tại
 [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) khi ứng dụng đang chạy.
 
+Nếu máy có nhiều Python và `python.exe` trong PATH là bản MSYS2/Cygwin, hãy chỉ
+định bản Python Windows chuẩn khi setup:
+
+```powershell
+.\scripts\setup.ps1 -PythonExecutable "C:\Path\To\Python312\python.exe"
+```
+
 ## Benchmark thực tế
 
 ![Reporter Pro benchmark](docs/images/benchmark-large-workload.svg)
