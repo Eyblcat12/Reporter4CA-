@@ -11,8 +11,8 @@ Mọi thay đổi đáng chú ý của Reporter Pro được ghi tại đây. D�
 
 - Release bundle manifest peel annotated tags về commit thật thay vì ghi object ID
   của tag, bảo đảm provenance khớp source và GitHub Actions `head_sha`.
-- E2E dùng một worker nhất quán trên Windows/Linux và lưu Playwright diagnostics khi
-  CI lỗi, tránh timing race trên test server dùng chung và giúp chẩn đoán tái lập.
+- E2E dùng một worker nhất quán trên Windows/Linux, ghi lỗi vào GitHub annotations
+  và lưu Playwright diagnostics khi CI lỗi, giúp chẩn đoán tái lập.
 
 ## [2.2.0] - 2026-08-17
 
