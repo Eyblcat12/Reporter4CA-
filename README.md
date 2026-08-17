@@ -58,6 +58,10 @@ cáo DOCX có cấu trúc nhất quán.
 
 Yêu cầu: **Windows**, **Python 3.12+**, **Node.js 20–25** và **npm 10+**.
 
+Người dùng tải Windows prebuilt bundle từ trang Release không cần Node/npm: giải
+nén, chạy `setup-prebuilt.bat`, sau đó chạy `start.bat`. Source clone vẫn dùng
+`setup.bat` để build frontend tái lập từ lockfile.
+
 ```powershell
 git clone https://github.com/Eyblcat12/Reporter4CA-.git
 cd Reporter4CA-

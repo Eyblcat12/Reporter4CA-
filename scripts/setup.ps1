@@ -1,6 +1,7 @@
 param(
     [switch]$Development,
-    [switch]$SkipFrontendBuild
+    [switch]$SkipFrontendBuild,
+    [switch]$UsePrebuiltFrontend
 )
 
 $ErrorActionPreference = "Stop"
@@ -24,17 +25,28 @@ function Require-Command([string]$Name, [string]$InstallHint) {
 }
 
 $Python = Require-Command "python.exe" "Install Python 3.12 and enable 'Add Python to PATH'."
-$Npm = Require-Command "npm.cmd" "Install Node.js 20 LTS (npm 10 or newer)."
-$Node = Require-Command "node.exe" "Install Node.js 20 LTS."
+$Npm = $null
+$Node = $null
+if (-not $UsePrebuiltFrontend) {
+    $Npm = Require-Command "npm.cmd" "Install Node.js 20 LTS (npm 10 or newer)."
+    $Node = Require-Command "node.exe" "Install Node.js 20 LTS."
+}
 
 $PythonVersion = & $Python -c "import sys; print('.'.join(map(str, sys.version_info[:2])))"
 if ($LASTEXITCODE -ne 0 -or [version]$PythonVersion -lt [version]"3.12") {
     throw "Python 3.12 or newer is required; found $PythonVersion."
 }
 
-$NodeVersion = [version]((& $Node -p "process.versions.node").Trim())
-if ($LASTEXITCODE -ne 0 -or $NodeVersion -lt [version]"20.19.0" -or $NodeVersion -ge [version]"26.0.0") {
-    throw "Node.js 20.19-25.x is required; found $(& $Node --version)."
+if (-not $UsePrebuiltFrontend) {
+    $NodeVersion = [version]((& $Node -p "process.versions.node").Trim())
+    if ($LASTEXITCODE -ne 0 -or $NodeVersion -lt [version]"20.19.0" -or $NodeVersion -ge [version]"26.0.0") {
+        throw "Node.js 20.19-25.x is required; found $(& $Node --version)."
+    }
+} else {
+    $PrebuiltIndex = Join-Path $Frontend "dist\index.html"
+    if (-not (Test-Path -LiteralPath $PrebuiltIndex)) {
+        throw "Prebuilt frontend is missing from this bundle: $PrebuiltIndex"
+    }
 }
 
 if (-not (Test-Path -LiteralPath $VenvPython)) {
@@ -58,18 +70,22 @@ if (-not (Test-Path -LiteralPath (Join-Path $Root ".env"))) {
     Write-Step "Created local .env from .env.example."
 }
 
-Write-Step "Installing locked frontend dependencies..."
-Push-Location $Frontend
-try {
-    & $Npm ci
-    if ($LASTEXITCODE -ne 0) { throw "Frontend dependency installation failed." }
-    if (-not $SkipFrontendBuild) {
-        Write-Step "Building the production frontend..."
-        & $Npm run build
-        if ($LASTEXITCODE -ne 0) { throw "Frontend production build failed." }
+if ($UsePrebuiltFrontend) {
+    Write-Step "Using the verified prebuilt production frontend from this release bundle."
+} else {
+    Write-Step "Installing locked frontend dependencies..."
+    Push-Location $Frontend
+    try {
+        & $Npm ci
+        if ($LASTEXITCODE -ne 0) { throw "Frontend dependency installation failed." }
+        if (-not $SkipFrontendBuild) {
+            Write-Step "Building the production frontend..."
+            & $Npm run build
+            if ($LASTEXITCODE -ne 0) { throw "Frontend production build failed." }
+        }
+    } finally {
+        Pop-Location
     }
-} finally {
-    Pop-Location
 }
 
 Write-Host ""

@@ -26,6 +26,8 @@ Mọi thay đổi đáng chú ý của Reporter Pro được ghi tại đây. D�
 - Resource monitor cho Preview/Generate: đo elapsed time và backend RSS ngay trong
   panel tiến độ; hỗ trợ ngưỡng RAM/timeout opt-in, hủy hợp tác, cleanup và termination
   reason rõ ràng mà không áp giới hạn cứng lên template khách hàng theo mặc định.
+- Windows prebuilt release bundle chứa production frontend và manifest gắn version
+  với Git commit; hỗ trợ setup production không cần Node/npm và được đưa vào checksum.
 
 ## [2.1.2] - 2026-08-03
 

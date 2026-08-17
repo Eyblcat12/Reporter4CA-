@@ -31,6 +31,12 @@ Script setup thực hiện:
 
 Script không ghi đè `.env` đã tồn tại.
 
+Nếu tải gói `reporter-pro-vX.Y.Z-windows-prebuilt.zip` từ GitHub Release, giải nén
+và chạy `setup-prebuilt.bat`. Gói này đã chứa production frontend được build từ đúng
+commit trong `BUNDLE-MANIFEST.json`, nên máy chạy chỉ cần Python 3.12+; backend
+dependency vẫn được cài từ lockfile có SHA-256 và cần kết nối tới package index.
+Đây không phải gói cài đặt offline.
+
 ## Dừng ứng dụng
 
 Launcher và giao diện trình duyệt được đồng bộ theo một phiên chạy cục bộ:
