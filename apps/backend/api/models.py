@@ -174,6 +174,7 @@ class DetectionRuleRequest(BaseModel):
     version: str = "1"
     severity: str = "medium"
     classification: str = "needs_review"
+    category: Literal["general", "malware"] = "general"
     remediation: str = ""
     enabled: bool = True
     conditions: dict[str, Any] = Field(default_factory=dict)

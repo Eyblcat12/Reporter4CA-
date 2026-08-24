@@ -11,6 +11,7 @@ const context = {
       name: 'Proxy tool',
       severity: 'medium',
       classification: 'needs_review',
+      category: 'general',
       remediation: 'Verify usage',
       source: 'custom',
       editable: true,
@@ -86,6 +87,7 @@ describe('RuleManager', () => {
     render(<RuleManager />);
     fireEvent.click(screen.getByRole('button', { name: /thêm rule/i }));
     fireEvent.change(screen.getByLabelText(/tên rule/i), { target: { value: 'Proxy nội bộ' } });
+    fireEvent.change(screen.getByLabelText(/nhóm phát hiện/i), { target: { value: 'malware' } });
     fireEvent.change(screen.getByLabelText(/từ khóa cần khớp/i), {
       target: { value: 'Acme Relay' },
     });
@@ -95,6 +97,7 @@ describe('RuleManager', () => {
     expect(context.evaluateDetectionRule).toHaveBeenCalledWith(
       expect.objectContaining({
         name: 'Proxy nội bộ',
+        category: 'malware',
         conditions: expect.objectContaining({ containsAny: ['Acme Relay'] }),
       }),
     );

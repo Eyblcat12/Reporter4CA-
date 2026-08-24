@@ -435,6 +435,62 @@ class ApiIntegrationTests(unittest.TestCase):
         self.assertEqual(history[0]["source_artifact_id"], preview_id)
         self.assertEqual(history[0]["cache_status"], "preview_cache_hit")
 
+    def test_report_job_falls_back_when_preview_signature_changed(self) -> None:
+        document = Document()
+        document.add_heading("Fresh fallback", level=1)
+        document._reporter_manifest = {}
+        document._reporter_integrity = {"valid": True, "verifiedAssets": 1}
+
+        def save_document(current, path, **_kwargs):
+            output = Path(path)
+            current.save(output)
+            return output, Mock(engine="deferred")
+
+        request = {
+            "rows": [{"type": "server", "hostname": "srv-fallback", "result": "Clean"}],
+            "reportType": "full",
+            "disablePlugins": True,
+            "metadata": {"dataQuality": {"totalRows": 1}},
+        }
+        with (
+            patch("api.routes.generate_report", return_value=document),
+            patch("api.routes._apply_document_plugins", side_effect=lambda current, *_: current),
+            patch("api.routes._save_finalized_report", side_effect=save_document),
+        ):
+            created = self.client.post("/api/preview-jobs", json=request)
+            preview_id = created.json()["previewId"]
+            deadline = time.time() + 5
+            while time.time() < deadline:
+                preview = self.client.get(f"/api/preview-jobs/{preview_id}").json()
+                if preview.get("status") == "ready":
+                    break
+                time.sleep(0.02)
+
+            submitted = self.client.post(
+                "/api/report-jobs",
+                json={
+                    **request,
+                    "previewId": preview_id,
+                    "metadata": {"dataQuality": {"totalRows": 1, "validRows": 1}},
+                },
+            )
+            self.assertEqual(submitted.status_code, 202)
+            submitted_job = submitted.json()["job"]
+            self.assertEqual(submitted_job["previewId"], "")
+            self.assertEqual(submitted_job["fallbackReason"], "ARTIFACT_STALE")
+            job_id = submitted_job["id"]
+            deadline = time.time() + 5
+            while time.time() < deadline:
+                job = self.client.get(f"/api/report-jobs/{job_id}").json()["job"]
+                if job["status"] in {"completed", "failed", "cancelled"}:
+                    break
+                time.sleep(0.02)
+
+        self.assertEqual(job["status"], "completed")
+        history = self.database.list_reports(None)
+        self.assertEqual(history[0]["source_artifact_id"], "")
+        self.assertEqual(history[0]["cache_status"], "cold_generate")
+
     def test_generate_failure_removes_temporary_docx(self) -> None:
         created_paths: list[Path] = []
         real_named_temporary_file = tempfile.NamedTemporaryFile

@@ -11,6 +11,7 @@ from typing import Any
 DEFAULT_RULES_PATH = Path(__file__).resolve().parent.parent / "config" / "detection_rules.json"
 ALLOWED_SEVERITIES = {"informational", "low", "medium", "high", "critical"}
 ALLOWED_CLASSIFICATIONS = {"informational", "insufficient_data", "needs_review", "anomaly"}
+ALLOWED_RULE_CATEGORIES = {"general", "malware"}
 STANDARD_ASSESSMENTS = {
     "clean": "Không phát hiện dấu hiệu bất thường",
     "insufficient_data": "Không đủ dữ liệu để kết luận",
@@ -27,10 +28,13 @@ def validate_rule(rule: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("Tên rule không được để trống")
     severity = str(normalized.get("severity", "medium"))
     classification = str(normalized.get("classification", "needs_review"))
+    category = str(normalized.get("category", "general")).strip().lower()
     if severity not in ALLOWED_SEVERITIES:
         raise ValueError("Mức độ rule không hợp lệ")
     if classification not in ALLOWED_CLASSIFICATIONS:
         raise ValueError("Phân loại rule không hợp lệ")
+    if category not in ALLOWED_RULE_CATEGORIES:
+        raise ValueError("Nhóm rule không hợp lệ")
     conditions = normalized.get("conditions")
     if not isinstance(conditions, dict):
         raise ValueError("Rule phải có conditions")
@@ -66,6 +70,7 @@ def validate_rule(rule: dict[str, Any]) -> dict[str, Any]:
             "version": str(normalized.get("version", "1")),
             "severity": severity,
             "classification": classification,
+            "category": category,
             "enabled": bool(normalized.get("enabled", True)),
         }
     )
@@ -105,6 +110,8 @@ def load_rule_pack(path: str | Path | None = None) -> dict[str, Any]:
             raise ValueError(f"Invalid severity for rule {rule_id}")
         if rule.get("classification") not in ALLOWED_CLASSIFICATIONS:
             raise ValueError(f"Invalid classification for rule {rule_id}")
+        if str(rule.get("category", "general")).lower() not in ALLOWED_RULE_CATEGORIES:
+            raise ValueError(f"Invalid category for rule {rule_id}")
     return payload
 
 
@@ -134,6 +141,7 @@ def evaluate_asset(
                 "name": str(rule.get("name", rule_id)),
                 "severity": rule["severity"],
                 "classification": rule["classification"],
+                "category": str(rule.get("category", "general")).strip().lower(),
                 "evidence": evidence,
                 "remediation": str(rule.get("remediation", "")),
                 "mitre": deepcopy(rule.get("mitre", [])),
@@ -242,6 +250,77 @@ def assess_asset(findings: list[dict[str, Any]] | None) -> dict[str, str]:
 def assessment_text(findings: list[dict[str, Any]] | None) -> str:
     """Return a conservative, standardized Vietnamese report conclusion."""
     return assess_asset(findings)["label"]
+
+
+_MALWARE_EVIDENCE_TERMS = {
+    "malware",
+    "mã độc",
+    "trojan",
+    "ransomware",
+    "webshell",
+    "backdoor",
+    "plugx",
+    "shadowpad",
+    "emotet",
+    "mimikatz",
+    "dropper",
+    "keylogger",
+}
+_NEGATED_MALWARE_TERMS = {
+    "no malware",
+    "không phát hiện mã độc",
+    "không ghi nhận mã độc",
+}
+
+
+def is_confirmed_anomaly(asset: dict[str, Any] | None) -> bool:
+    """Return True only for evidence-backed anomaly findings."""
+    if not asset:
+        return False
+    findings = asset.get("findings")
+    if not isinstance(findings, list):
+        return False
+    return any(
+        isinstance(finding, dict)
+        and finding.get("classification") == "anomaly"
+        and bool(finding.get("evidence"))
+        for finding in findings
+    )
+
+
+def is_malware_remediation_candidate(asset: dict[str, Any] | None) -> bool:
+    """Return True only when a confirmed finding is explicitly malware-related.
+
+    The category is authoritative for new/custom rules. The rule id/name and
+    matched evidence remain as a compatibility path for findings produced
+    before rule categories were introduced.
+    """
+    if not is_confirmed_anomaly(asset):
+        return False
+    for finding in asset.get("findings", []):
+        if not isinstance(finding, dict):
+            continue
+        if finding.get("classification") != "anomaly" or not finding.get("evidence"):
+            continue
+        category = str(finding.get("category", "general")).strip().lower()
+        if category == "malware":
+            return True
+        searchable = " ".join(
+            [
+                str(finding.get("ruleId", "")),
+                str(finding.get("name", "")),
+                *[
+                    f"{item.get('matched', '')} {item.get('value', '')}"
+                    for item in finding.get("evidence", [])
+                    if isinstance(item, dict)
+                ],
+            ]
+        ).casefold()
+        if not any(term in searchable for term in _NEGATED_MALWARE_TERMS) and any(
+            term in searchable for term in _MALWARE_EVIDENCE_TERMS
+        ):
+            return True
+    return False
 
 
 def find_rule_conflicts(rules: list[dict[str, Any]]) -> list[dict[str, Any]]:

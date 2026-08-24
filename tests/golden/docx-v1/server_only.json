@@ -1,7 +1,7 @@
 {
   "snapshotSchemaVersion": 3,
   "paragraphCount": 51,
-  "paragraphDigest": "fa2e87b7a8c9015b1d6174cc01f3b5a02c6205381fe2912a7ceb50ffab5d8cc5",
+  "paragraphDigest": "025c78740ebeadc092665167785998a7c2b5213d63aec1e463e0f4c8edad743a",
   "headings": [
     {
       "style": "Heading 1",
@@ -38,6 +38,10 @@
     {
       "style": "Heading 2",
       "text": "Phân tích điều tra máy chủ"
+    },
+    {
+      "style": "Heading 3",
+      "text": "SRV-GOLDEN-01"
     },
     {
       "style": "Heading 1",
@@ -122,6 +126,23 @@
     },
     {
       "rows": 2,
+      "columns": 4,
+      "header": [
+        "STT",
+        "Máy chủ",
+        "Địa chỉ IP",
+        "Trạng thái"
+      ],
+      "nonEmptyCells": 8,
+      "contentDigest": "db67302a13607a52e2bc19d4d60663010c5565a51b3f43f7cd95c58b870bb84f",
+      "rowDigests": [
+        "e084df3706fc5eeba05fe455c55b2d391693268d221f624bc74456145dd6affa",
+        "70034937c1130ff37e1b94f21bc4f17bcb8b66ef57846deaaf7fafcf484e792c"
+      ],
+      "formatDigest": "5b78dd081230a1898e066927ac05c6615b6fdaaded32ec3256907208c69398f0"
+    },
+    {
+      "rows": 2,
       "columns": 3,
       "header": [
         "STT",
@@ -137,7 +158,7 @@
       "formatDigest": "cb383581330d1ecfc64ae1346dea8ca6b2f0be06ec63ded91f109d45c68a1cde"
     }
   ],
-  "numberedParagraphs": 43,
+  "numberedParagraphs": 44,
   "remainingTokens": [],
   "sectionCount": 2,
   "sections": [
@@ -169,9 +190,11 @@
         "default"
       ],
       "footerTypes": [
-        "default"
+        "default",
+        "even",
+        "first"
       ],
-      "propertiesDigest": "0ca3fc118e764788c60be2363a51f6bcf4c3d78251a1d77df2eed00298096635"
+      "propertiesDigest": "d23f9093782ca34dd9632278212f61baf9de54abdad2910962efd32ea4ba800b"
     },
     {
       "type": {},
@@ -227,8 +250,31 @@
       "tableCount": 0,
       "tableCellDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
       "fieldInstructions": [
-        "PAGE  \\* Arabic  \\* MERGEFORMAT"
+        "PAGE  \\* Arabic  \\* MERGEFORMAT",
+        "NUMPAGES \\* Arabic \\* MERGEFORMAT"
       ]
+    },
+    {
+      "part": "word/footer3.xml",
+      "kind": "footer",
+      "paragraphs": [
+        ""
+      ],
+      "paragraphDigest": "055539df4a0b804c58caf46c0cd2941af10d64c1395ddd8e50b5f55d945841e6",
+      "tableCount": 0,
+      "tableCellDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "fieldInstructions": []
+    },
+    {
+      "part": "word/footer4.xml",
+      "kind": "footer",
+      "paragraphs": [
+        ""
+      ],
+      "paragraphDigest": "055539df4a0b804c58caf46c0cd2941af10d64c1395ddd8e50b5f55d945841e6",
+      "tableCount": 0,
+      "tableCellDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "fieldInstructions": []
     },
     {
       "part": "word/header1.xml",
@@ -284,6 +330,18 @@
       "source": "word/document.xml",
       "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer",
       "target": "footer2.xml",
+      "targetMode": "Internal"
+    },
+    {
+      "source": "word/document.xml",
+      "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer",
+      "target": "footer3.xml",
+      "targetMode": "Internal"
+    },
+    {
+      "source": "word/document.xml",
+      "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer",
+      "target": "footer4.xml",
       "targetMode": "Internal"
     },
     {

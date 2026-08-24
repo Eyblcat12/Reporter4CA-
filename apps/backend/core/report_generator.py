@@ -26,7 +26,12 @@ from core.prepared_template import (
     PreparedTemplateError,
 )
 from core.report_integrity import build_report_manifest, verify_report_document
-from core.rule_engine import assessment_text, evaluate_payload
+from core.rule_engine import (
+    assessment_text,
+    evaluate_payload,
+    is_confirmed_anomaly,
+    is_malware_remediation_candidate,
+)
 from core.template_blueprint import (
     BLUEPRINT_SCHEMA_VERSION,
     TableBlueprint,
@@ -316,6 +321,8 @@ class ReportBuilder:
             _CURRENT_BUILD_TRACKER.reset(tracker_token)
             _CURRENT_PERFORMANCE_METRICS.reset(metrics_token)
 
+        _replace_literal_footer_page_totals(document)
+
         with _performance_phase(self.metrics, "manifestBuild"):
             manifest = build_report_manifest(data, self.report_type.value)
         with _performance_phase(self.metrics, "integrityVerify"):
@@ -352,6 +359,7 @@ class ReportBuilder:
         )
         _add_investigation_section(
             document,
+            data,
             include_servers=include_servers,
             include_clients=include_clients,
         )
@@ -1220,6 +1228,57 @@ def _iter_table_paragraphs(table: Any) -> list[Any]:
     return paragraphs
 
 
+def _replace_literal_footer_page_totals(document: Any) -> int:
+    """Replace template totals such as ``Trang PAGE / 308`` with NUMPAGES.
+
+    Customer templates remain untouched; only the generated in-memory copy is
+    normalized. The existing Word field-refresh stage calculates the real
+    total before preview/download.
+    """
+    modules = _docx_modules()
+    OxmlElement = modules["OxmlElement"]
+    qn = modules["qn"]
+    replaced = 0
+    seen_footer_parts: set[int] = set()
+
+    for section in document.sections:
+        for footer in (section.footer, section.first_page_footer, section.even_page_footer):
+            part_key = id(footer.part)
+            if part_key in seen_footer_parts:
+                continue
+            seen_footer_parts.add(part_key)
+            paragraphs = list(footer.paragraphs)
+            for table in footer.tables:
+                paragraphs.extend(_iter_table_paragraphs(table))
+
+            for paragraph in paragraphs:
+                preceding = ""
+                for run in paragraph.runs:
+                    value = run.text
+                    if value.strip().isdigit() and preceding.rstrip().endswith("/"):
+                        cached_value = value.strip()
+                        for child in list(run._r):
+                            if child.tag != qn("w:rPr"):
+                                run._r.remove(child)
+
+                        begin = OxmlElement("w:fldChar")
+                        begin.set(qn("w:fldCharType"), "begin")
+                        begin.set(qn("w:dirty"), "true")
+                        instruction = OxmlElement("w:instrText")
+                        instruction.set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
+                        instruction.text = " NUMPAGES \\* Arabic \\* MERGEFORMAT "
+                        separate = OxmlElement("w:fldChar")
+                        separate.set(qn("w:fldCharType"), "separate")
+                        cached = OxmlElement("w:t")
+                        cached.text = cached_value
+                        end = OxmlElement("w:fldChar")
+                        end.set(qn("w:fldCharType"), "end")
+                        run._r.extend((begin, instruction, separate, cached, end))
+                        replaced += 1
+                    preceding += value
+    return replaced
+
+
 def _replace_tokens_in_paragraph(paragraph: Any, token_map: dict[str, str]) -> bool:
     if not paragraph.runs:
         return False
@@ -1779,20 +1838,38 @@ def _add_results_section(
 
 def _add_investigation_section(
     document: Any,
+    data: dict[str, Any],
     *,
     include_servers: bool = True,
     include_clients: bool = True,
 ) -> None:
+    servers, clients = _report_assets(data)
     _add_heading(document, "Phân tích điều tra", level=1)
     if include_servers:
         _add_heading(document, "Phân tích điều tra máy chủ", level=2)
-        _add_body_paragraph(
-            document, "Chưa ghi nhận nội dung cần bổ sung cho mục phân tích điều tra máy chủ."
-        )
+        _add_investigation_assets(document, servers, "máy chủ")
     if include_clients:
         _add_heading(document, "Phân tích điều tra máy trạm", level=2)
+        _add_investigation_assets(document, clients, "máy trạm")
+
+
+def _add_investigation_assets(
+    document: Any,
+    assets: list[dict[str, Any]],
+    scope_label: str,
+) -> None:
+    anomalous_assets = [asset for asset in assets if _has_confirmed_anomaly(asset)]
+    if not anomalous_assets:
         _add_body_paragraph(
-            document, "Chưa ghi nhận nội dung cần bổ sung cho mục phân tích điều tra máy trạm."
+            document,
+            f"Không ghi nhận {scope_label} có dấu hiệu bất thường cần phân tích điều tra.",
+        )
+        return
+    for asset in anomalous_assets:
+        _add_heading(document, str(asset.get("hostname") or DEFAULT_TEXT_VALUE), level=3)
+        _add_body_paragraph(
+            document,
+            "Nội dung phân tích điều tra do người thực hiện bổ sung.",
         )
 
 
@@ -1803,38 +1880,42 @@ def _add_remediation_section(
     include_servers: bool = True,
     include_clients: bool = True,
 ) -> None:
+    servers, clients = _report_assets(data)
     _add_heading(document, "Gỡ bỏ mã độc", level=1)
     if include_servers:
         _add_heading(document, "Gỡ bỏ mã độc trên máy chủ", level=2)
+        _add_malware_remediation_table(document, servers, "Máy chủ")
+    if include_clients:
+        _add_heading(document, "Gỡ bỏ mã độc trên máy trạm", level=2)
+        _add_malware_remediation_table(document, clients, "Máy trạm")
+
+
+def _add_malware_remediation_table(
+    document: Any,
+    assets: list[dict[str, Any]],
+    asset_label: str,
+) -> None:
+    malware_assets = [asset for asset in assets if is_malware_remediation_candidate(asset)]
+    if not malware_assets:
         _add_body_paragraph(
             document,
-            "Chưa có thao tác gỡ bỏ mã độc bổ sung cần ghi nhận cho các máy chủ trong phạm vi.",
-        )
-    if not include_clients:
-        return
-    _add_heading(document, "Gỡ bỏ mã độc trên máy trạm", level=2)
-    clients = data.get("clients", [])
-    if not clients:
-        _add_body_paragraph(
-            document,
-            "Chưa có thao tác gỡ bỏ mã độc bổ sung cần ghi nhận cho các máy trạm trong phạm vi.",
+            f"Không ghi nhận {asset_label.lower()} có mã độc cần thực hiện gỡ bỏ.",
         )
         return
 
-    rows = []
-    for index, asset in enumerate(clients, start=1):
-        rows.append(
-            [
-                str(index),
-                asset.get("hostname", DEFAULT_TEXT_VALUE),
-                asset.get("ip", DEFAULT_TEXT_VALUE),
-                "Chưa ghi nhận mã độc cần gỡ bỏ.",
-            ]
-        )
+    rows = [
+        [
+            str(index),
+            str(asset.get("hostname") or DEFAULT_TEXT_VALUE),
+            str(asset.get("ip") or DEFAULT_TEXT_VALUE),
+            "Chưa cập nhật trạng thái gỡ bỏ.",
+        ]
+        for index, asset in enumerate(malware_assets, start=1)
+    ]
 
     table = _create_table(
         document,
-        ["STT", "Máy trạm", "Địa chỉ IP", "Trạng thái"],
+        ["STT", asset_label, "Địa chỉ IP", "Trạng thái"],
         rows,
         prototype_key="remediation_client",
         column_widths_mm=[12, 50, 34, 64],
@@ -1971,12 +2052,7 @@ def _has_confirmed_anomaly(asset: dict[str, Any] | None) -> bool:
         return False
     findings = asset.get("findings")
     if isinstance(findings, list):
-        return any(
-            isinstance(finding, dict)
-            and finding.get("classification") == "anomaly"
-            and bool(finding.get("evidence"))
-            for finding in findings
-        )
+        return is_confirmed_anomaly(asset)
     return _is_anomalous_asset(asset)
 
 
@@ -2073,7 +2149,15 @@ def _finding_categories(asset: dict[str, Any]) -> set[str]:
     if isinstance(findings, list):
         for finding in findings:
             if isinstance(finding, dict) and finding.get("category"):
-                categories.add(str(finding["category"]).strip().lower())
+                category = str(finding["category"]).strip().lower()
+                # Rule categories drive report workflow, while technical
+                # categories drive checklist taxonomy. Malware belongs to the
+                # existing suspicious-file technical group rather than
+                # creating a new, inconsistent Heading 3.
+                if category == "malware":
+                    categories.add("suspicious_file")
+                elif category in _FINDING_CATEGORY_RULES:
+                    categories.add(category)
 
     evidence = f"{asset.get('result', '')} {asset.get('notes', '')}".lower()
     for category, keywords in _FINDING_CATEGORY_RULES.items():

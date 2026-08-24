@@ -109,10 +109,14 @@ class TrackingImportTests(unittest.TestCase):
         self.assertEqual(manifest["findingCount"], 8)
         self.assertEqual(manifest["evidenceCount"], 12)
         self.assertEqual(manifest["ruleCounts"], {"MALWARE_EVIDENCE": 8})
+        self.assertEqual(manifest["investigationAssetCount"], 8)
+        self.assertEqual(manifest["malwareRemediationAssetCount"], 8)
         self.assertEqual(integrity["actualAssets"], 30)
         self.assertEqual(integrity["verifiedAssets"], 30)
         self.assertEqual(integrity["actualAssetTypes"], {"client": 10, "server": 20})
         self.assertEqual(integrity["verifiedAssetTypes"], {"client": 10, "server": 20})
+        self.assertEqual(integrity["actualInvestigationAssets"], 8)
+        self.assertEqual(integrity["actualMalwareRemediationAssets"], 8)
         self.assertFalse(integrity["findingVerificationApplicable"])
         self.assertEqual(
             integrity["verifiedSections"],
@@ -208,10 +212,14 @@ class TrackingImportTests(unittest.TestCase):
                 "PROXY_TOOL_REVIEW": 4,
             },
         )
+        self.assertEqual(manifest["investigationAssetCount"], 20)
+        self.assertEqual(manifest["malwareRemediationAssetCount"], 10)
         self.assertEqual(integrity["actualAssets"], 50)
         self.assertEqual(integrity["verifiedAssets"], 50)
         self.assertEqual(integrity["actualAssetTypes"], {"client": 28, "server": 22})
         self.assertEqual(integrity["verifiedAssetTypes"], {"client": 28, "server": 22})
+        self.assertEqual(integrity["actualInvestigationAssets"], 20)
+        self.assertEqual(integrity["actualMalwareRemediationAssets"], 10)
         self.assertFalse(integrity["findingVerificationApplicable"])
         self.assertEqual(
             integrity["verifiedSections"],

@@ -173,9 +173,11 @@
         "default"
       ],
       "footerTypes": [
-        "default"
+        "default",
+        "even",
+        "first"
       ],
-      "propertiesDigest": "0ca3fc118e764788c60be2363a51f6bcf4c3d78251a1d77df2eed00298096635"
+      "propertiesDigest": "d23f9093782ca34dd9632278212f61baf9de54abdad2910962efd32ea4ba800b"
     },
     {
       "type": {},
@@ -231,8 +233,31 @@
       "tableCount": 0,
       "tableCellDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
       "fieldInstructions": [
-        "PAGE  \\* Arabic  \\* MERGEFORMAT"
+        "PAGE  \\* Arabic  \\* MERGEFORMAT",
+        "NUMPAGES \\* Arabic \\* MERGEFORMAT"
       ]
+    },
+    {
+      "part": "word/footer3.xml",
+      "kind": "footer",
+      "paragraphs": [
+        ""
+      ],
+      "paragraphDigest": "055539df4a0b804c58caf46c0cd2941af10d64c1395ddd8e50b5f55d945841e6",
+      "tableCount": 0,
+      "tableCellDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "fieldInstructions": []
+    },
+    {
+      "part": "word/footer4.xml",
+      "kind": "footer",
+      "paragraphs": [
+        ""
+      ],
+      "paragraphDigest": "055539df4a0b804c58caf46c0cd2941af10d64c1395ddd8e50b5f55d945841e6",
+      "tableCount": 0,
+      "tableCellDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "fieldInstructions": []
     },
     {
       "part": "word/header1.xml",
@@ -288,6 +313,18 @@
       "source": "word/document.xml",
       "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer",
       "target": "footer2.xml",
+      "targetMode": "Internal"
+    },
+    {
+      "source": "word/document.xml",
+      "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer",
+      "target": "footer3.xml",
+      "targetMode": "Internal"
+    },
+    {
+      "source": "word/document.xml",
+      "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer",
+      "target": "footer4.xml",
       "targetMode": "Internal"
     },
     {

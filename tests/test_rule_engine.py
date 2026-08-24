@@ -13,6 +13,7 @@ from core.rule_engine import (
     evaluate_asset,
     evaluate_payload,
     find_rule_conflicts,
+    is_malware_remediation_candidate,
     load_rule_pack,
     validate_rule,
 )
@@ -135,6 +136,37 @@ class RuleEngineTests(unittest.TestCase):
         )
         self.assertEqual(evaluate_asset({"notes": "Approved proxy for business"}, [rule]), [])
         self.assertEqual(assessment_text([]), "Không phát hiện dấu hiệu bất thường")
+
+    def test_rule_category_controls_malware_remediation_eligibility(self) -> None:
+        malware_rule = validate_rule(
+            {
+                "id": "CUSTOM_ACME_MALWARE",
+                "name": "Acme malware",
+                "severity": "high",
+                "classification": "anomaly",
+                "category": "malware",
+                "conditions": {"fields": ["notes"], "containsAny": ["Acme payload"]},
+            }
+        )
+        general_rule = validate_rule(
+            {
+                "id": "CUSTOM_ACME_PROXY",
+                "name": "Acme proxy",
+                "severity": "high",
+                "classification": "anomaly",
+                "category": "general",
+                "conditions": {"fields": ["notes"], "containsAny": ["Acme relay"]},
+            }
+        )
+        malware_asset = {
+            "findings": evaluate_asset({"notes": "Acme payload detected"}, [malware_rule])
+        }
+        general_asset = {
+            "findings": evaluate_asset({"notes": "Acme relay detected"}, [general_rule])
+        }
+
+        self.assertTrue(is_malware_remediation_candidate(malware_asset))
+        self.assertFalse(is_malware_remediation_candidate(general_asset))
 
     def test_conflicts_require_shared_field_and_keyword(self) -> None:
         conflicts = find_rule_conflicts(

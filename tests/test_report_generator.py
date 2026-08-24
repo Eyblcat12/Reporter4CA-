@@ -312,6 +312,118 @@ class ReportGeneratorTests(unittest.TestCase):
             "Phát hiện", _get_anomaly_text("Xác định, phân tích các tệp tin bất thường", asset)
         )
 
+    def test_standard_report_adds_investigation_headings_and_strict_malware_tables(self) -> None:
+        data = {
+            "servers": [self.data["servers"][0]],
+            "clients": [
+                {
+                    "hostname": "PC-PROXY",
+                    "ip": "10.0.0.20",
+                    "os": "Windows 11",
+                    "result": "Không phát hiện",
+                    "notes": "Acme Relay detected",
+                }
+            ],
+            "metadata": {
+                "ruleSettings": {
+                    "customRules": [
+                        {
+                            "id": "CUSTOM_ACME_PROXY",
+                            "name": "Acme proxy anomaly",
+                            "severity": "high",
+                            "classification": "anomaly",
+                            "category": "general",
+                            "conditions": {
+                                "fields": ["notes"],
+                                "containsAny": ["Acme Relay"],
+                            },
+                        }
+                    ]
+                }
+            },
+        }
+        document = generate_report(
+            data,
+            title="Investigation and remediation test",
+            organization="Test organization",
+            template_path=self.template,
+            report_type=ReportType.FULL,
+        )
+        investigation_headings = [
+            paragraph.text
+            for paragraph in document.paragraphs
+            if paragraph.style.name == "Heading 3" and paragraph.text in {"SRV-01", "PC-PROXY"}
+        ]
+        self.assertEqual(investigation_headings, ["SRV-01", "PC-PROXY"])
+
+        remediation_tables = [
+            table
+            for table in document.tables
+            if [cell.text for cell in table.rows[0].cells[:4]]
+            in (
+                ["STT", "Máy chủ", "Địa chỉ IP", "Trạng thái"],
+                ["STT", "Máy trạm", "Địa chỉ IP", "Trạng thái"],
+            )
+        ]
+        self.assertEqual(len(remediation_tables), 1)
+        self.assertEqual(remediation_tables[0].rows[1].cells[1].text, "SRV-01")
+        self.assertEqual(
+            remediation_tables[0].rows[1].cells[3].text,
+            "Chưa cập nhật trạng thái gỡ bỏ.",
+        )
+        self.assertNotIn(
+            "PC-PROXY",
+            "\n".join(
+                cell.text
+                for table in remediation_tables
+                for row in table.rows
+                for cell in row.cells
+            ),
+        )
+
+        integrity = document._reporter_integrity
+        self.assertEqual(integrity["expectedInvestigationAssets"], 2)
+        self.assertEqual(integrity["actualInvestigationAssets"], 2)
+        self.assertEqual(integrity["expectedMalwareRemediationAssets"], 1)
+        self.assertEqual(integrity["actualMalwareRemediationAssets"], 1)
+
+    def test_server_and_client_reports_keep_remediation_scope_separate(self) -> None:
+        both_malware = {
+            "servers": [self.data["servers"][0]],
+            "clients": [
+                {
+                    "hostname": "PC-MALWARE",
+                    "ip": "10.0.0.21",
+                    "os": "Windows 11",
+                    "result": "Phát hiện mã độc",
+                    "notes": "Mimikatz được xác nhận từ EDR",
+                }
+            ],
+            "metadata": {},
+        }
+        for report_type, expected_header, expected_host, excluded_host in (
+            (ReportType.SERVER_ONLY, "Máy chủ", "SRV-01", "PC-MALWARE"),
+            (ReportType.CLIENT_ONLY, "Máy trạm", "PC-MALWARE", "SRV-01"),
+        ):
+            with self.subTest(report_type=report_type.value):
+                document = generate_report(
+                    both_malware,
+                    title="Scoped remediation test",
+                    organization="Test organization",
+                    template_path=self.template,
+                    report_type=report_type,
+                )
+                tables = [
+                    table
+                    for table in document.tables
+                    if [cell.text for cell in table.rows[0].cells[:4]]
+                    == ["STT", expected_header, "Địa chỉ IP", "Trạng thái"]
+                ]
+                self.assertEqual(len(tables), 1)
+                table_text = "\n".join(cell.text for row in tables[0].rows for cell in row.cells)
+                self.assertIn(expected_host, table_text)
+                self.assertNotIn(excluded_host, table_text)
+
     def test_incident_response_has_dedicated_sections(self) -> None:
         self.data["metadata"] = {
             "incident_id": "IR-001",

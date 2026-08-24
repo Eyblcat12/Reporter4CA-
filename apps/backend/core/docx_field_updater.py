@@ -139,7 +139,8 @@ def _run_word_update(
 def _word_update_script() -> str:
     # Native late-bound COM avoids pywin32 and .NET Office Interop conflicts.
     return r"""Option Explicit
-Dim wordApp, document, toc, documentPath
+Dim wordApp, document, toc, documentPath, storyRange, currentStory
+Dim sectionItem, headerFooter, fieldItem, calculatedResult
 Dim operationError, operationDescription
 
 If WScript.Arguments.Count <> 1 Then
@@ -174,6 +175,39 @@ Else
 
     document.Repaginate
     document.Fields.Update
+    ' Document.Fields does not reliably include header/footer stories. Update
+    ' every linked story so PAGE/NUMPAGES and other footer fields cannot retain
+    ' cached values from the template.
+    For Each storyRange In document.StoryRanges
+        Set currentStory = storyRange
+        Do While Not currentStory Is Nothing
+            currentStory.Fields.Update
+            Set currentStory = currentStory.NextStoryRange
+        Loop
+    Next
+    ' StoryRanges can omit an unlinked first/even-page footer in some Word
+    ' documents. Walk every section explicitly so browser previews do not see
+    ' a stale cached NUMPAGES value inherited from the source template.
+    For Each sectionItem In document.Sections
+        For Each headerFooter In sectionItem.Headers
+            If headerFooter.Exists Then headerFooter.Range.Fields.Update
+        Next
+        For Each headerFooter In sectionItem.Footers
+            If headerFooter.Exists Then
+                headerFooter.Range.Fields.Update
+                ' Word can calculate NUMPAGES for rendering without serializing
+                ' its new cached result. Touch the result text so docx-preview
+                ' receives the same value that desktop Word displays.
+                For Each fieldItem In headerFooter.Range.Fields
+                    If fieldItem.Type = 26 Then
+                        calculatedResult = fieldItem.Result.Text
+                        fieldItem.Result.Text = calculatedResult & " "
+                        fieldItem.Result.Text = calculatedResult
+                    End If
+                Next
+            End If
+        Next
+    Next
     For Each toc In document.TablesOfContents
         toc.UpdatePageNumbers
     Next

@@ -17,10 +17,31 @@ BACKEND = ROOT / "apps" / "backend"
 sys.path.insert(0, str(BACKEND))
 
 from core.docx_field_updater import refresh_docx_fields  # noqa: E402
-from core.report_generator import _enable_field_updates  # noqa: E402
+from core.report_generator import (  # noqa: E402
+    _enable_field_updates,
+    _replace_literal_footer_page_totals,
+)
 
 
 class DocxFieldUpdaterTests(unittest.TestCase):
+    def test_literal_footer_total_is_replaced_with_dynamic_numpages_field(self) -> None:
+        document = Document()
+        paragraph = document.sections[0].footer.paragraphs[0]
+        paragraph.add_run("Trang ")
+        paragraph.add_run("3")
+        paragraph.add_run(" / ")
+        paragraph.add_run("308")
+
+        self.assertEqual(_replace_literal_footer_page_totals(document), 1)
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            path = Path(tmp_dir) / "dynamic-footer.docx"
+            document.save(path)
+            with zipfile.ZipFile(path) as archive:
+                footer_xml = archive.read("word/footer1.xml").decode("utf-8")
+        self.assertIn("NUMPAGES", footer_xml)
+        self.assertIn('w:dirty="true"', footer_xml)
+
     def test_enable_field_updates_marks_fields_dirty(self) -> None:
         document = Document()
         paragraph = document.add_paragraph()

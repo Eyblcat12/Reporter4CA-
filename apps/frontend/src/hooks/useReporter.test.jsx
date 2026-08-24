@@ -157,7 +157,9 @@ describe('ReporterProvider API workflow', () => {
       .mockResolvedValueOnce(
         jsonResponse({ rows: [{ type: 'client', hostname: 'pc-01' }], payload: {} }),
       )
-      .mockResolvedValueOnce(jsonResponse({ valid: true, issues: [], summary: { totalRows: 1 } }))
+      .mockResolvedValueOnce(
+        jsonResponse({ valid: true, issues: [], summary: { totalRows: 1, validRows: 1 } }),
+      )
       .mockResolvedValueOnce(
         jsonResponse({ job: { id: 'job-fail', status: 'queued' }, deduplicated: false }),
       )
@@ -263,7 +265,9 @@ describe('ReporterProvider API workflow', () => {
       .mockResolvedValueOnce(
         jsonResponse({ rows: [{ type: 'client', hostname: 'pc-preview' }], payload: {} }),
       )
+      .mockResolvedValueOnce(jsonResponse({ valid: true, issues: [], summary: { totalRows: 1 } }))
       .mockResolvedValueOnce(statusResponse(500))
+      .mockResolvedValueOnce(jsonResponse({ valid: true, issues: [], summary: { totalRows: 1 } }))
       .mockResolvedValueOnce(statusResponse(404))
       .mockResolvedValueOnce(statusResponse(200));
     const { result } = renderHook(() => useReporter(), { wrapper });
@@ -284,6 +288,9 @@ describe('ReporterProvider API workflow', () => {
         jsonResponse({ rows: [{ type: 'server', hostname: 'srv-preview-job' }], payload: {} }),
       )
       .mockResolvedValueOnce(
+        jsonResponse({ valid: true, issues: [], summary: { totalRows: 1, validRows: 1 } }),
+      )
+      .mockResolvedValueOnce(
         jsonResponse({
           previewId: 'preview-1',
           jobId: 'preview-job-1',
@@ -295,7 +302,9 @@ describe('ReporterProvider API workflow', () => {
         }),
       )
       .mockResolvedValueOnce(statusResponse(200))
-      .mockResolvedValueOnce(jsonResponse({ valid: true, issues: [], summary: { totalRows: 1 } }))
+      .mockResolvedValueOnce(
+        jsonResponse({ valid: true, issues: [], summary: { totalRows: 1, validRows: 1 } }),
+      )
       .mockResolvedValueOnce(
         jsonResponse({
           job: { id: 'report-from-preview', status: 'cancelled' },
@@ -314,8 +323,12 @@ describe('ReporterProvider API workflow', () => {
     expect(result.current.previewState.previewId).toBe('preview-1');
 
     await act(() => result.current.generateReport());
+    const previewRequest = fetch.mock.calls.find(([url]) => url === '/api/preview-jobs');
     const queued = fetch.mock.calls.find(([url]) => url === '/api/report-jobs');
-    expect(JSON.parse(queued[1].body).previewId).toBe('preview-1');
+    const previewBody = JSON.parse(previewRequest[1].body);
+    const queuedBody = JSON.parse(queued[1].body);
+    expect(queuedBody.previewId).toBe('preview-1');
+    expect(queuedBody.metadata).toEqual(previewBody.metadata);
   });
 
   it('marks a completed Preview stale when report settings changed during generation', async () => {
@@ -327,6 +340,7 @@ describe('ReporterProvider API workflow', () => {
       .mockResolvedValueOnce(
         jsonResponse({ rows: [{ type: 'client', hostname: 'pc-race' }], payload: {} }),
       )
+      .mockResolvedValueOnce(jsonResponse({ valid: true, issues: [], summary: { totalRows: 1 } }))
       .mockResolvedValueOnce(
         jsonResponse({
           previewId: 'preview-race',
@@ -364,6 +378,7 @@ describe('ReporterProvider API workflow', () => {
       .mockResolvedValueOnce(
         jsonResponse({ rows: [{ type: 'client', hostname: 'pc-cancel-preview' }], payload: {} }),
       )
+      .mockResolvedValueOnce(jsonResponse({ valid: true, issues: [], summary: { totalRows: 1 } }))
       .mockResolvedValueOnce(
         jsonResponse({
           previewId: 'preview-cancel',
@@ -506,6 +521,7 @@ describe('ReporterProvider API workflow', () => {
         .mockResolvedValueOnce(
           jsonResponse({ rows: [{ type: 'server', hostname: 'srv-preview-retry' }], payload: {} }),
         )
+        .mockResolvedValueOnce(jsonResponse({ valid: true, issues: [], summary: { totalRows: 1 } }))
         .mockResolvedValueOnce(
           jsonResponse({
             previewId: 'preview-retry',
@@ -550,6 +566,7 @@ describe('ReporterProvider API workflow', () => {
         .mockResolvedValueOnce(
           jsonResponse({ rows: [{ type: 'client', hostname: 'pc-preview-lost' }], payload: {} }),
         )
+        .mockResolvedValueOnce(jsonResponse({ valid: true, issues: [], summary: { totalRows: 1 } }))
         .mockResolvedValueOnce(
           jsonResponse({
             previewId: 'preview-lost',

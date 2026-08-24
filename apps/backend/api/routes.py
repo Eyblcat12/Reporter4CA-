@@ -1978,7 +1978,11 @@ async def create_report_job(req: GenerateRequest):
                     if artifact.cache_mode == "no_store":
                         raise ArtifactStale("This Preview plugin policy does not allow promotion.")
             except PreviewArtifactError as exc:
-                raise _preview_error(exc) from exc
+                # Preview promotion is an optimization, not a requirement for
+                # generating a report. Fall back to a fresh build when the
+                # artifact changed, expired, or cannot be promoted.
+                promotion_id = ""
+                fallback_reason = exc.code
         job_context = {
             "accepted": accepted,
             "plugins": plugins,

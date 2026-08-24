@@ -943,7 +943,9 @@ export function ReporterProvider({ children }) {
       const job = data.job;
       dispatch({ type: 'SET_ACTIVE_REPORT_JOB', payload: job });
       dispatch({ type: 'SET_LOADING', payload: false });
-      if (body.previewId) addLog('Reusing verified Preview artifact');
+      if (job.previewId) addLog('Reusing verified Preview artifact');
+      else if (body.previewId && job.fallbackReason)
+        addLog('Preview changed or expired; generating a fresh report');
       else addLog(data.deduplicated ? 'Reopened existing report job' : 'Generating fresh report');
       return await monitorReportJob(job.id);
     } catch (err) {
@@ -1349,6 +1351,10 @@ export function ReporterProvider({ children }) {
     });
     addLog('Queueing Preview job...');
     try {
+      const quality = await validateRows(state.rows);
+      if (quality && !quality.valid) {
+        throw new Error('Dữ liệu còn lỗi nghiêm trọng. Hãy sửa trước khi tạo Preview.');
+      }
       const incidentMetadata =
         state.reportSettings.reportType === 'incident_response'
           ? normalizeIncidentMetadata(state.reportSettings.incidentMetadata)
@@ -1374,6 +1380,7 @@ export function ReporterProvider({ children }) {
         metadata: {
           ...incidentMetadata,
           ruleSettings: state.reportSettings.ruleSettings,
+          dataQuality: quality?.summary || state.dataQuality.summary,
         },
       };
       let res = await fetch(`${API_BASE}/preview-jobs`, {
@@ -1527,7 +1534,7 @@ export function ReporterProvider({ children }) {
         dispatch({ type: 'SET_LOADING', payload: false });
       }
     }
-  }, [state.rows, state.reportSettings, addLog]);
+  }, [state.rows, state.reportSettings, state.dataQuality.summary, addLog, validateRows]);
 
   const closePreview = useCallback(() => {
     dispatch({ type: 'SET_SHOW_PREVIEW', payload: false });

@@ -22,6 +22,7 @@ const EMPTY_RULE = {
   description: '',
   severity: 'medium',
   classification: 'needs_review',
+  category: 'general',
   remediation: '',
   enabled: true,
   conditions: {
@@ -373,6 +374,17 @@ export default function RuleManager() {
                 <option value="high">Cao</option>
                 <option value="critical">Nghiêm trọng</option>
               </select>
+            </label>
+            <label>
+              Nhóm phát hiện
+              <select
+                value={draft.category}
+                onChange={(e) => setDraft({ ...draft, category: e.target.value })}
+              >
+                <option value="general">Bất thường chung</option>
+                <option value="malware">Mã độc cần theo dõi gỡ bỏ</option>
+              </select>
+              <small>Chỉ nhóm Mã độc mới được đưa vào bảng gỡ bỏ mã độc.</small>
             </label>
           </div>
           <fieldset className="rule-builder__fields">

@@ -7,6 +7,7 @@
       "enabled": true,
       "severity": "high",
       "classification": "anomaly",
+      "category": "malware",
       "conditions": {
         "fields": ["result", "notes", "process", "software"],
         "containsAny": ["phát hiện mã độc", "malware", "trojan", "ransomware", "webshell", "backdoor", "plugx", "mimikatz"],
@@ -21,6 +22,7 @@
       "enabled": true,
       "severity": "high",
       "classification": "anomaly",
+      "category": "general",
       "conditions": {
         "fields": ["result"],
         "containsAny": ["ghi nhận dấu hiệu bất thường", "phát hiện dấu hiệu bất thường"],
@@ -35,6 +37,7 @@
       "enabled": true,
       "severity": "informational",
       "classification": "insufficient_data",
+      "category": "general",
       "conditions": {
         "fields": ["result", "notes"],
         "containsAny": ["chưa kết luận", "không đủ dữ liệu"],
@@ -49,6 +52,7 @@
       "enabled": true,
       "severity": "medium",
       "classification": "needs_review",
+      "category": "general",
       "conditions": {
         "fields": ["result"],
         "containsAny": ["cần xác minh", "cần kiểm tra thêm"],
@@ -63,6 +67,7 @@
       "enabled": true,
       "severity": "medium",
       "classification": "needs_review",
+      "category": "general",
       "conditions": {
         "fields": ["result", "notes", "process", "software", "installed_software"],
         "containsAny": ["proxifier", "tor browser", "psiphon", "ultrasurf"],

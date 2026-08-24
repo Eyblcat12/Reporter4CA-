@@ -26,8 +26,9 @@ Reporter Pro chỉ kết luận một máy có dấu hiệu bất thường khi 
 2. Mở **Rule Manager**, chọn **Thêm rule**.
 3. Đặt tên dễ truy vết, ví dụ `Malware tools from tracking note`.
 4. Chọn **Phân loại: Bất thường**. Đây là lựa chọn làm đầu ra của máy khớp rule trở thành **Ghi nhận dấu hiệu bất thường**.
-5. Trong **Tìm trong trường**, chọn **Ghi chú**. Chỉ chọn thêm **Kết quả** hoặc **Phần mềm** khi dữ liệu thực tế có bằng chứng ở các trường đó.
-6. Nhập các tên mới vào **Từ khóa cần khớp**, ngăn cách bằng dấu phẩy hoặc xuống dòng. Ví dụ:
+5. Chọn **Nhóm phát hiện: Mã độc cần theo dõi gỡ bỏ** nếu rule xác nhận malware. Khi đó máy khớp rule vừa có Heading con trong **Phân tích điều tra**, vừa xuất hiện trong bảng **Gỡ bỏ mã độc**. Với proxy/tool cần xác minh hoặc bất thường không phải malware, giữ **Bất thường chung** để tránh đưa nhầm vào bảng gỡ bỏ.
+6. Trong **Tìm trong trường**, chọn **Ghi chú**. Chỉ chọn thêm **Kết quả** hoặc **Phần mềm** khi dữ liệu thực tế có bằng chứng ở các trường đó.
+7. Nhập các tên mới vào **Từ khóa cần khớp**, ngăn cách bằng dấu phẩy hoặc xuống dòng. Ví dụ:
 
    ```text
    cobalt strike
@@ -36,7 +37,7 @@ Reporter Pro chỉ kết luận một máy có dấu hiệu bất thường khi 
    hawkeye
    ```
 
-7. Nhập cụm từ phủ định hoặc trường hợp đã được phê duyệt vào **Loại trừ khi có**, ví dụ:
+8. Nhập cụm từ phủ định hoặc trường hợp đã được phê duyệt vào **Loại trừ khi có**, ví dụ:
 
    ```text
    false positive
@@ -45,9 +46,9 @@ Reporter Pro chỉ kết luận một máy có dấu hiệu bất thường khi 
    authorized
    ```
 
-8. Chọn **Thử trên dữ liệu hiện tại**. Kiểm tra số dòng khớp, số dòng đổi kết
+9. Chọn **Thử trên dữ liệu hiện tại**. Kiểm tra số dòng khớp, số dòng đổi kết
    luận, hostname, kết luận trước/sau, trường bằng chứng và từ khóa khớp.
-9. Chỉ chọn **Lưu & áp dụng** khi danh sách máy khớp đúng với kết quả mong muốn;
+10. Chỉ chọn **Lưu & áp dụng** khi danh sách máy khớp đúng với kết quả mong muốn;
    sau đó chạy Preview trước khi Generate.
 
 Rule không phân biệt chữ hoa/chữ thường và chỉ cần khớp một từ khóa trong danh sách. `Note` gốc vẫn được giữ trong report làm bằng chứng; rule không tự suy diễn khi không có chuỗi khớp.
@@ -69,6 +70,7 @@ Nếu chỉ cần phát hiện vài từ khóa mới, tạo một rule nhỏ ch�
 - Số máy **Ghi nhận dấu hiệu bất thường** phải bằng số máy có evidence khớp rule, không phải số lần từ khóa xuất hiện.
 - Một máy có nhiều từ khóa vẫn chỉ được tính là một máy bất thường trong thống kê tài sản.
 - Dùng **Cần xác minh** thay vì **Bất thường** nếu tên công cụ chưa đủ để kết luận.
+- Chỉ chọn nhóm **Mã độc cần theo dõi gỡ bỏ** khi bằng chứng thực sự yêu cầu xử lý malware; nhóm này quyết định tài sản có vào bảng gỡ bỏ hay không.
 - Luôn thêm cụm phủ định phù hợp để tránh các note như “không phát hiện”, “false positive” hoặc “được phê duyệt”.
 - Preview và đối chiếu bảng tổng hợp với file tracking trước khi tạo bản chính thức.
 

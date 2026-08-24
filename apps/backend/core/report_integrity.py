@@ -7,7 +7,7 @@ import unicodedata
 from collections import Counter
 from typing import Any
 
-from core.rule_engine import assess_asset
+from core.rule_engine import assess_asset, is_confirmed_anomaly, is_malware_remediation_candidate
 
 
 class ReportIntegrityError(RuntimeError):
@@ -76,6 +76,7 @@ _REQUIRED_SECTIONS_BY_REPORT_TYPE = {
     ),
 }
 _FINDING_REPORT_TYPES = frozenset({"technical", "incident_response"})
+_STANDARD_REPORT_TYPES = frozenset({"full", "server_only", "client_only"})
 _NUMBERED_HEADING_PREFIX = re.compile(r"^\s*\d+(?:\.\d+)*\.?\s+")
 
 
@@ -119,12 +120,15 @@ def build_report_manifest(data: dict[str, Any], report_type: str) -> dict[str, A
                     "assetId": str(assessment.get("assetId") or f"{section}:{index}"),
                     "assetType": "server" if section == "servers" else "client",
                     "hostname": str(asset.get("hostname", "")).strip(),
+                    "ip": str(asset.get("ip", "")).strip(),
                     "assessment": str(assessment.get("classification", "clean")),
                     "assessmentLabel": str(assessment.get("label", "")),
                     "findingIds": [str(item.get("ruleId", "")).strip() for item in findings],
                     "findingCount": len(findings),
                     "evidenceCount": sum(len(item.get("evidence", [])) for item in findings),
                     "findings": finding_entries,
+                    "requiresInvestigation": is_confirmed_anomaly(asset),
+                    "requiresMalwareRemediation": is_malware_remediation_candidate(asset),
                 }
             )
 
@@ -140,6 +144,8 @@ def build_report_manifest(data: dict[str, Any], report_type: str) -> dict[str, A
         "assetTypeCounts": dict(asset_type_counts),
         "assessmentCounts": dict(assessment_counts),
         "ruleCounts": dict(rule_counts),
+        "investigationAssetCount": sum(item["requiresInvestigation"] for item in entries),
+        "malwareRemediationAssetCount": sum(item["requiresMalwareRemediation"] for item in entries),
         "requiredSections": list(_REQUIRED_SECTIONS_BY_REPORT_TYPE.get(report_type, ())),
         "assets": entries,
     }
@@ -166,6 +172,7 @@ def _index_document(document: Any) -> dict[str, Any]:
     summary_rows: Counter[tuple[str, str, str]] = Counter()
     incident_assets: Counter[str] = Counter()
     finding_rows: Counter[tuple[str, str, str]] = Counter()
+    remediation_rows: Counter[tuple[str, str, str]] = Counter()
 
     for table in document.tables:
         row_iterator = iter(table.rows)
@@ -184,6 +191,11 @@ def _index_document(document: Any) -> dict[str, Any]:
             summary_asset_type = "server" if header[1] == "Máy chủ" else "client"
 
         is_incident_asset_table = header[:4] == ("STT", "Tài sản", "Địa chỉ IP", "Kết quả")
+        remediation_asset_type = None
+        if header[:4] == ("STT", "Máy chủ", "Địa chỉ IP", "Trạng thái"):
+            remediation_asset_type = "server"
+        elif header[:4] == ("STT", "Máy trạm", "Địa chỉ IP", "Trạng thái"):
+            remediation_asset_type = "client"
         evidence_column = None
         if header[:5] == ("Tài sản", "Rule", "Mức độ", "Phân loại", "Bằng chứng"):
             evidence_column = 4
@@ -198,17 +210,45 @@ def _index_document(document: Any) -> dict[str, Any]:
                 incident_assets[values[1]] += 1
             if evidence_column is not None and len(values) > evidence_column and values[0]:
                 finding_rows[(values[0], values[1], values[evidence_column])] += 1
+            if remediation_asset_type and len(values) >= 4 and values[1]:
+                remediation_rows[(remediation_asset_type, values[1], values[2])] += 1
 
-    headings = {
+    headings = Counter(
         _normalize_heading(paragraph.text)
         for paragraph in document.paragraphs
         if _is_heading(paragraph) and _normalize_text(paragraph.text)
-    }
+    )
+    investigation_headings: Counter[tuple[str, str]] = Counter()
+    semantic_structure_indexed = False
+    iter_inner_content = getattr(document, "iter_inner_content", None)
+    if callable(iter_inner_content):
+        semantic_structure_indexed = True
+        current_level_1 = ""
+        current_level_2 = ""
+        for item in iter_inner_content():
+            if not hasattr(item, "text") or not _is_heading(item):
+                continue
+            style = getattr(item, "style", None)
+            style_key = _normalize_text(getattr(style, "name", "")).replace(" ", "").casefold()
+            heading = _normalize_heading(item.text)
+            if style_key == "heading1":
+                current_level_1 = heading
+                current_level_2 = ""
+            elif style_key == "heading2":
+                current_level_2 = heading
+            elif style_key == "heading3" and current_level_1 == "phân tích điều tra":
+                if current_level_2 == "phân tích điều tra máy chủ":
+                    investigation_headings[("server", _normalize_text(item.text))] += 1
+                elif current_level_2 == "phân tích điều tra máy trạm":
+                    investigation_headings[("client", _normalize_text(item.text))] += 1
     return {
         "summaryRows": summary_rows,
         "incidentAssets": incident_assets,
         "findingRows": finding_rows,
+        "remediationRows": remediation_rows,
         "headings": headings,
+        "investigationHeadings": investigation_headings,
+        "semanticStructureIndexed": semantic_structure_indexed,
     }
 
 
@@ -380,6 +420,49 @@ def verify_report_document(document: Any, manifest: dict[str, Any]) -> dict[str,
             }
         )
 
+    expected_investigation = Counter(
+        (
+            _normalize_text(asset.get("assetType", "")),
+            _normalize_text(asset.get("hostname", "")),
+        )
+        for asset in assets
+        if asset.get("requiresInvestigation")
+    )
+    actual_investigation = Counter(index["investigationHeadings"])
+    investigation_verification_applicable = report_type in _STANDARD_REPORT_TYPES and bool(
+        index["semanticStructureIndexed"]
+    )
+    if investigation_verification_applicable and actual_investigation != expected_investigation:
+        errors.append(
+            {
+                "code": "INVESTIGATION_ASSET_MISMATCH",
+                "message": "investigation asset headings do not match the manifest",
+                "expected": _counter_dict(expected_investigation),
+                "actual": _counter_dict(actual_investigation),
+            }
+        )
+
+    expected_remediation = Counter(
+        (
+            _normalize_text(asset.get("assetType", "")),
+            _normalize_text(asset.get("hostname", "")),
+            _normalize_text(asset.get("ip", "")),
+        )
+        for asset in assets
+        if asset.get("requiresMalwareRemediation")
+    )
+    actual_remediation = Counter(index["remediationRows"])
+    remediation_verification_applicable = report_type in _STANDARD_REPORT_TYPES
+    if remediation_verification_applicable and actual_remediation != expected_remediation:
+        errors.append(
+            {
+                "code": "MALWARE_REMEDIATION_ASSET_MISMATCH",
+                "message": "malware remediation rows do not match the manifest",
+                "expected": _counter_dict(expected_remediation),
+                "actual": _counter_dict(actual_remediation),
+            }
+        )
+
     finding_verification_applicable = report_type in _FINDING_REPORT_TYPES
     evidence_verification_applicable = finding_verification_applicable and all(
         isinstance(asset.get("findings"), list) for asset in assets
@@ -507,6 +590,12 @@ def verify_report_document(document: Any, manifest: dict[str, Any]) -> dict[str,
         "verifiedSections": len(required_sections) - len(missing_sections),
         "missingSections": missing_sections,
         "missingAssets": missing_assets,
+        "expectedInvestigationAssets": sum(expected_investigation.values()),
+        "actualInvestigationAssets": sum(actual_investigation.values()),
+        "investigationVerificationApplicable": investigation_verification_applicable,
+        "expectedMalwareRemediationAssets": sum(expected_remediation.values()),
+        "actualMalwareRemediationAssets": sum(actual_remediation.values()),
+        "malwareRemediationVerificationApplicable": remediation_verification_applicable,
         "missingFindings": missing_findings,
         "missingEvidence": missing_evidence,
         "errors": errors,
