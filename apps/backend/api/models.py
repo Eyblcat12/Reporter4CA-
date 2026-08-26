@@ -252,6 +252,70 @@ class TemplateVersionRequest(BaseModel):
     model_config = {"populate_by_name": True}
 
 
+class TemplatePackInspectRequest(BaseModel):
+    """Read-only inspection request for an experimental Template Pack."""
+
+    filename: str = ""
+    content_base64: str = Field(alias="contentBase64", default="")
+    require_publishable: bool = Field(alias="requirePublishable", default=False)
+
+    model_config = {"populate_by_name": True}
+
+
+class TemplatePackInstallRequest(BaseModel):
+    """Install one immutable, publication-ready pack into Template Studio."""
+
+    filename: str = ""
+    content_base64: str = Field(alias="contentBase64", default="")
+    expected_revision: int = Field(alias="expectedRevision", ge=0)
+
+    model_config = {"populate_by_name": True}
+
+
+class TemplatePackSelectRequest(BaseModel):
+    """Revision-safe activation or rollback inside the isolated pack catalog."""
+
+    version: str = Field(min_length=1, max_length=64)
+    expected_revision: int = Field(alias="expectedRevision", ge=0)
+
+    model_config = {"populate_by_name": True}
+
+
+class TemplateProfileAnalyzeRequest(BaseModel):
+    """Read-only DOCX analysis request for experimental Template Studio."""
+
+    filename: str = ""
+    content_base64: str = Field(alias="contentBase64", default="")
+    report_type: ReportType = Field(alias="reportType", default=ReportType.FULL)
+
+    model_config = {"populate_by_name": True}
+
+
+class TemplateWorkspaceCreateRequest(BaseModel):
+    filename: str = ""
+    content_base64: str = Field(alias="contentBase64", default="")
+    report_type: ReportType = Field(alias="reportType", default=ReportType.FULL)
+    profile_id: str = Field(alias="profileId", min_length=2, max_length=128)
+    display_name: str = Field(alias="displayName", min_length=1, max_length=200)
+    version: str = Field(default="0.1.0", min_length=1, max_length=64)
+
+    model_config = {"populate_by_name": True}
+
+
+class TemplateWorkspaceMappingRequest(BaseModel):
+    anchor: dict[str, str] = Field(default_factory=dict)
+    fields: list[dict[str, str]] = Field(default_factory=list)
+    expected_revision: int = Field(alias="expectedRevision", ge=1)
+
+    model_config = {"populate_by_name": True}
+
+
+class TemplateWorkspaceRevisionRequest(BaseModel):
+    expected_revision: int = Field(alias="expectedRevision", ge=1)
+
+    model_config = {"populate_by_name": True}
+
+
 class TemplateAnalysis(BaseModel):
     """Detailed template analysis result."""
 

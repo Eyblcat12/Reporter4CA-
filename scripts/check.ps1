@@ -53,6 +53,10 @@ if (-not $SkipBackend) {
         tests.test_soak_harness `
         tests.test_template_categories `
         tests.test_template_blueprint `
+        tests.test_template_mapping_workspace `
+        tests.test_template_pack_catalog `
+        tests.test_template_packs `
+        tests.test_template_studio_prototype `
         tests.test_compact_prototype_integration `
         tests.test_template_schema `
         tests.test_threat_intelligence `

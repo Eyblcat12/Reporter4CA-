@@ -21,6 +21,8 @@ from api.routes import router  # noqa: E402
 from core.database import Database  # noqa: E402
 from core.preview_artifacts import PreviewArtifactRegistry  # noqa: E402
 from core.report_jobs import ReportJobManager  # noqa: E402
+from core.template_mapping_workspace import TemplateStudioService  # noqa: E402
+from core.template_pack_catalog import TemplatePackCatalog  # noqa: E402
 
 
 class ApiIntegrationTests(unittest.TestCase):
@@ -40,6 +42,11 @@ class ApiIntegrationTests(unittest.TestCase):
             patch("api.routes._preview_artifacts", self.preview_registry),
             patch("api.routes.preview_jobs_enabled", return_value=True),
             patch("api.routes.GENERATED_REPORTS_DIR", self.root / "generated"),
+            patch("api.routes._template_studio", TemplateStudioService(self.root / "studio")),
+            patch(
+                "api.routes._template_pack_catalog",
+                TemplatePackCatalog(self.root / "studio" / "catalog"),
+            ),
         ]
         for active in self.patches:
             active.start()
@@ -78,6 +85,120 @@ class ApiIntegrationTests(unittest.TestCase):
         rules = self.client.get("/api/rules")
         self.assertEqual(rules.status_code, 200)
         self.assertTrue(any(rule["id"] == "PROXY_TOOL_REVIEW" for rule in rules.json()["rules"]))
+
+    def test_template_pack_inspection_is_hidden_by_default(self) -> None:
+        encoded = base64.b64encode(b"not-a-template-pack").decode()
+
+        with patch("api.routes.template_packs_enabled", return_value=False):
+            response = self.client.post(
+                "/api/template-packs/inspect",
+                json={"filename": "draft.rptpack", "contentBase64": encoded},
+            )
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_enabled_template_pack_inspection_remains_read_only_validation(self) -> None:
+        encoded = base64.b64encode(b"not-a-template-pack").decode()
+
+        with patch("api.routes.template_packs_enabled", return_value=True):
+            response = self.client.post(
+                "/api/template-packs/inspect",
+                json={"filename": "draft.rptpack", "contentBase64": encoded},
+            )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("not a ZIP", response.json()["detail"])
+
+    def test_template_pack_catalog_is_isolated_and_feature_gated(self) -> None:
+        with patch("api.routes.template_packs_enabled", return_value=True):
+            catalog = self.client.get("/api/template-packs/catalog")
+            invalid_install = self.client.post(
+                "/api/template-packs/catalog/install",
+                json={
+                    "filename": "customer.rptpack",
+                    "contentBase64": base64.b64encode(b"invalid").decode(),
+                    "expectedRevision": 0,
+                },
+            )
+
+        self.assertEqual(catalog.status_code, 200)
+        self.assertEqual(catalog.json()["revision"], 0)
+        self.assertFalse(catalog.json()["selectionIntegrated"])
+        self.assertTrue(catalog.json()["legacyRendererUnchanged"])
+        self.assertEqual(invalid_install.status_code, 400)
+
+        with patch("api.routes.template_packs_enabled", return_value=False):
+            hidden = self.client.get("/api/template-packs/catalog")
+        self.assertEqual(hidden.status_code, 404)
+
+    def test_profile_template_analysis_starts_with_zero_approved_mapping(self) -> None:
+        document = Document()
+        document.add_heading("Customer layout", level=1)
+        output = io.BytesIO()
+        document.save(output)
+
+        with patch("api.routes.template_packs_enabled", return_value=True):
+            response = self.client.post(
+                "/api/template-packs/analyze-template",
+                json={
+                    "filename": "customer.docx",
+                    "contentBase64": base64.b64encode(output.getvalue()).decode(),
+                    "reportType": "server_only",
+                },
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["mapping"]["coveragePercent"], 0.0)
+        self.assertEqual(response.json()["mapping"]["approvedCount"], 0)
+        self.assertEqual(response.json()["profileSeed"]["status"], "analyzed")
+
+    def test_template_mapping_workspace_revision_contract(self) -> None:
+        document = Document()
+        document.add_paragraph("{{REPORT_TITLE}}")
+        document.add_paragraph("{{OVERVIEW}}")
+        output = io.BytesIO()
+        document.save(output)
+        encoded = base64.b64encode(output.getvalue()).decode()
+
+        with patch("api.routes.template_packs_enabled", return_value=True):
+            created = self.client.post(
+                "/api/template-packs/workspaces",
+                json={
+                    "filename": "customer.docx",
+                    "contentBase64": encoded,
+                    "reportType": "server_only",
+                    "profileId": "customer-server",
+                    "displayName": "Customer Server",
+                },
+            )
+            self.assertEqual(created.status_code, 201)
+            workspace = created.json()
+            self.assertEqual(workspace["coveragePercent"], 0.0)
+
+            approved = self.client.put(
+                f"/api/template-packs/workspaces/{workspace['workspaceId']}/mappings/report.title",
+                json={
+                    "anchor": {"kind": "token", "value": "{{REPORT_TITLE}}"},
+                    "fields": [],
+                    "expectedRevision": workspace["revision"],
+                },
+            )
+            self.assertEqual(approved.status_code, 200)
+            self.assertEqual(approved.json()["revision"], 2)
+
+            stale = self.client.put(
+                f"/api/template-packs/workspaces/{workspace['workspaceId']}/mappings/overview",
+                json={
+                    "anchor": {"kind": "token", "value": "{{OVERVIEW}}"},
+                    "fields": [],
+                    "expectedRevision": workspace["revision"],
+                },
+            )
+            self.assertEqual(stale.status_code, 409)
+
+            loaded = self.client.get(f"/api/template-packs/workspaces/{workspace['workspaceId']}")
+            self.assertEqual(loaded.status_code, 200)
+            self.assertEqual(loaded.json()["revision"], 2)
 
     def test_workspace_backup_dry_run_and_confirmed_restore_contract(self) -> None:
         template_path = self.template_root / "summary" / "summary.docx"

@@ -220,3 +220,14 @@ def prepared_template_cache_bytes() -> int:
     except ValueError:
         megabytes = DEFAULT_PREPARED_TEMPLATE_CACHE_MB
     return min(max(megabytes, 16), 4096) * 1024 * 1024
+
+
+def template_packs_enabled() -> bool:
+    """Expose the experimental Template Pack subsystem.
+
+    This flag is deliberately disabled by default.  Template Packs are developed
+    beside the production Legacy Renderer and must never alter its behaviour just
+    because a pack exists on disk.
+    """
+
+    return os.getenv("AUTO_REPORT_TEMPLATE_PACKS", "0").strip().lower() in _TRUTHY
