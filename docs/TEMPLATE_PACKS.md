@@ -1,5 +1,9 @@
 # Template Packs (experimental architecture)
 
+> Trạng thái triển khai, commit hiện tại, backlog và checklist bàn giao được cập
+> nhật tại [TEMPLATE_STUDIO_STATUS.md](TEMPLATE_STUDIO_STATUS.md). Đọc tài liệu đó
+> trước khi tiếp tục sửa subsystem này.
+
 Template Packs are the planned extension point for supporting customer Word
 templates whose structure differs from the templates shipped with Reporter Pro.
 They are developed **beside** the current renderer, not as a replacement for it.

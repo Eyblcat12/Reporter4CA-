@@ -1,5 +1,11 @@
 # Báo cáo hiện trạng và kế hoạch phát triển Reporter Pro
 
+> **Cập nhật 27/08/2026:** tài liệu này là báo cáo tổng quan lịch sử lập ngày
+> 21/07/2026; các số lượng endpoint/test trong phần dưới không còn là số mới nhất.
+> Trạng thái đang triển khai, commit, quality gate, backlog và ranh giới an toàn của
+> chương trình Template Studio được quản lý tại
+> [TEMPLATE_STUDIO_STATUS.md](TEMPLATE_STUDIO_STATUS.md).
+
 **Ngày cập nhật:** 21/07/2026
 **Phạm vi:** mã nguồn, cấu trúc dữ liệu, giao diện, API, kiểm thử và quy trình chạy trong workspace hiện tại.
 
