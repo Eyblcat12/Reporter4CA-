@@ -379,8 +379,11 @@ class TemplatePackArchitectureTests(unittest.TestCase):
         forbidden = {
             "core.template_pack",
             "core.template_pack_catalog",
+            "core.template_mapping_workspace",
             "core.template_profile_analyzer",
             "core.template_profiles",
+            "core.template_workspace_retention",
+            "core.template_workspace_transfer",
         }
         legacy_modules = (
             ROOT / "apps" / "backend" / "core" / "report_generator.py",

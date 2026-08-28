@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import hashlib
 import json
 import os
 import re
@@ -77,8 +78,13 @@ from core.template_analyzer import (
     validate_docx_bytes,
 )
 from core.template_mapping_workspace import (
+    WORKSPACE_CURSOR_MAX_LENGTH,
+    WORKSPACE_LIST_DEFAULT_LIMIT,
+    WORKSPACE_LIST_MAX_LIMIT,
+    WORKSPACE_QUERY_MAX_LENGTH,
     TemplateMappingRevisionConflict,
     TemplateMappingWorkspaceError,
+    TemplateMappingWorkspaceIndexChanged,
     TemplateStudioService,
 )
 from core.template_pack import MAX_PACK_SIZE, TemplatePackError, inspect_template_pack
@@ -89,6 +95,18 @@ from core.template_pack_catalog import (
 )
 from core.template_profile_analyzer import analyze_profile_template
 from core.template_schema import compare_template_analysis
+from core.template_workspace_retention import (
+    MAX_RETENTION_DAYS,
+    MIN_RETENTION_DAYS,
+    TemplateWorkspaceRetention,
+    TemplateWorkspaceRetentionError,
+)
+from core.template_workspace_transfer import (
+    MAX_DRAFT_ARCHIVE_SIZE,
+    TemplateWorkspaceTransferError,
+    export_template_workspace,
+    inspect_template_workspace_archive,
+)
 from core.workspace_backup import (
     MAX_BACKUP_BYTES,
     WorkspaceBackupError,
@@ -96,7 +114,7 @@ from core.workspace_backup import (
     inspect_workspace_backup,
     restore_workspace_backup,
 )
-from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from starlette.background import BackgroundTask
@@ -122,8 +140,13 @@ from api.models import (
     TemplatePackSelectRequest,
     TemplateProfileAnalyzeRequest,
     TemplateVersionRequest,
+    TemplateWorkspaceArchiveRequest,
+    TemplateWorkspaceCloneRequest,
     TemplateWorkspaceCreateRequest,
+    TemplateWorkspaceImportRequest,
     TemplateWorkspaceMappingRequest,
+    TemplateWorkspaceRenameRequest,
+    TemplateWorkspaceRetentionApplyRequest,
     TemplateWorkspaceRevisionRequest,
     UpdateTemplateRequest,
     UploadTemplateRequest,
@@ -160,6 +183,7 @@ _preview_artifacts = PreviewArtifactRegistry(
 )
 _template_studio = TemplateStudioService(PROJECT_ROOT / "data" / "template_studio")
 _template_pack_catalog = TemplatePackCatalog(PROJECT_ROOT / "data" / "template_studio" / "catalog")
+_template_workspace_retention = TemplateWorkspaceRetention(_template_studio)
 _REPORT_TYPES = {item.value for item in ReportType}
 _PERFORMANCE_FEATURE_FLAGS = (
     "AUTO_REPORT_PERF_METRICS",
@@ -169,6 +193,22 @@ _PERFORMANCE_FEATURE_FLAGS = (
     "AUTO_REPORT_UNIFIED_SCHEDULER",
     "AUTO_REPORT_PREVIEW_JOBS",
     "AUTO_REPORT_PREVIEW_CACHE",
+)
+_TEMPLATE_WORKSPACE_SUMMARY_FIELDS = (
+    "workspaceId",
+    "profileId",
+    "displayName",
+    "version",
+    "reportType",
+    "status",
+    "archived",
+    "revision",
+    "coveragePercent",
+    "mappedCount",
+    "requiredCount",
+    "missingCount",
+    "createdAt",
+    "updatedAt",
 )
 
 
@@ -2253,6 +2293,238 @@ async def create_template_mapping_workspace(req: TemplateWorkspaceCreateRequest)
         )
     except TemplateMappingWorkspaceError as exc:
         raise HTTPException(400, str(exc)) from exc
+
+
+@router.post("/template-packs/workspaces/import", status_code=201)
+async def import_template_mapping_workspace(req: TemplateWorkspaceImportRequest):
+    """Import a data-only portable draft under a new workspace identity."""
+
+    if not template_packs_enabled():
+        raise HTTPException(404, "Template Pack API is not enabled.")
+    if not req.filename.lower().endswith(".rptdraft") or not req.content_base64:
+        raise HTTPException(400, "A .rptdraft filename and content are required.")
+    decoded = _decode_base64(req.content_base64, max_bytes=MAX_DRAFT_ARCHIVE_SIZE)
+    try:
+        inspected = inspect_template_workspace_archive(decoded)
+        saved = _template_studio.import_draft(
+            inspected.workspace,
+            inspected.template_bytes,
+        )
+    except (TemplateWorkspaceTransferError, TemplateMappingWorkspaceError) as exc:
+        raise HTTPException(400, str(exc)) from exc
+    return {
+        **saved,
+        "transfer": {
+            "archiveSha256": inspected.archive_sha256,
+            "legacyRendererUnchanged": True,
+        },
+    }
+
+
+@router.get("/template-packs/workspaces")
+async def list_template_mapping_workspaces(
+    status: str | None = None,
+    report_type: ReportType | None = Query(default=None, alias="reportType"),
+    archived: bool | None = None,
+    q: str | None = Query(default=None, max_length=WORKSPACE_QUERY_MAX_LENGTH),
+    cursor: str | None = Query(default=None, max_length=WORKSPACE_CURSOR_MAX_LENGTH),
+    limit: int = Query(
+        default=WORKSPACE_LIST_DEFAULT_LIMIT,
+        ge=1,
+        le=WORKSPACE_LIST_MAX_LIMIT,
+    ),
+):
+    """List metadata-only mapping drafts without exposing source or authoring payloads."""
+
+    if not template_packs_enabled():
+        raise HTTPException(404, "Template Pack API is not enabled.")
+    try:
+        result = _template_studio.list_workspaces(
+            status=status,
+            report_type=report_type.value if report_type is not None else None,
+            archived=archived,
+            q=q,
+            cursor=cursor,
+            limit=limit,
+        )
+    except TemplateMappingWorkspaceIndexChanged as exc:
+        raise HTTPException(409, str(exc)) from exc
+    except TemplateMappingWorkspaceError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+    # Keep a route-level allowlist so future domain additions cannot accidentally
+    # expose analysis, mappings, audit records, local paths, or pinned DOCX bytes.
+    return {
+        "items": [
+            {field: item[field] for field in _TEMPLATE_WORKSPACE_SUMMARY_FIELDS}
+            for item in result["items"]
+        ],
+        "nextCursor": result["nextCursor"],
+        "hasMore": result["hasMore"],
+        "skippedCorrupt": result["skippedCorrupt"],
+        "collectionFingerprint": result["collectionFingerprint"],
+    }
+
+
+def _installed_template_pack_source_hashes() -> set[str]:
+    """Protect every source checksum referenced by the isolated pack catalog."""
+
+    catalog = _template_pack_catalog.snapshot()
+    hashes: set[str] = set()
+    for pack in catalog.get("packs", {}).values():
+        if not isinstance(pack, dict):
+            raise TemplatePackCatalogError("Template Pack catalog schema is invalid.")
+        for version in pack.get("versions", {}).values():
+            checksum = version.get("templateSha256") if isinstance(version, dict) else None
+            if not isinstance(checksum, str) or not re.fullmatch(r"[0-9a-f]{64}", checksum):
+                raise TemplatePackCatalogError("Template Pack catalog checksum is invalid.")
+            hashes.add(checksum)
+    return hashes
+
+
+@router.get("/template-packs/workspaces/retention/preview")
+async def preview_template_workspace_retention(
+    retention_days: int = Query(
+        default=90,
+        alias="retentionDays",
+        ge=MIN_RETENTION_DAYS,
+        le=MAX_RETENTION_DAYS,
+    ),
+):
+    """Return an exact cleanup plan; this endpoint never moves or deletes files."""
+
+    if not template_packs_enabled():
+        raise HTTPException(404, "Template Pack API is not enabled.")
+    try:
+        return _template_workspace_retention.preview(
+            retention_days=retention_days,
+            protected_source_hashes=_installed_template_pack_source_hashes(),
+        )
+    except (TemplateWorkspaceRetentionError, TemplatePackCatalogError) as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+
+@router.post("/template-packs/workspaces/retention/apply")
+async def apply_template_workspace_retention(req: TemplateWorkspaceRetentionApplyRequest):
+    """Move only the previously previewed targets into recoverable quarantine."""
+
+    if not template_packs_enabled():
+        raise HTTPException(404, "Template Pack API is not enabled.")
+    try:
+        return _template_workspace_retention.apply(
+            req.confirmation_token,
+            protected_source_hashes=_installed_template_pack_source_hashes(),
+        )
+    except (TemplateWorkspaceRetentionError, TemplatePackCatalogError) as exc:
+        status_code = 409 if "preview again" in str(exc).lower() else 400
+        raise HTTPException(status_code, str(exc)) from exc
+
+
+@router.post("/template-packs/workspaces/retention/{quarantine_id}/restore")
+async def restore_template_workspace_retention(quarantine_id: str):
+    """Restore one quarantine batch; no permanent-delete endpoint exists."""
+
+    if not template_packs_enabled():
+        raise HTTPException(404, "Template Pack API is not enabled.")
+    try:
+        return _template_workspace_retention.restore(quarantine_id)
+    except TemplateWorkspaceRetentionError as exc:
+        status_code = 404 if "not found" in str(exc).lower() else 400
+        raise HTTPException(status_code, str(exc)) from exc
+
+
+@router.get("/template-packs/workspaces/{workspace_id}/export")
+async def export_template_mapping_workspace(workspace_id: str):
+    """Export a mapping draft without exposing local filesystem paths."""
+
+    if not template_packs_enabled():
+        raise HTTPException(404, "Template Pack API is not enabled.")
+    try:
+        workspace = _template_studio.get(workspace_id)
+        data = export_template_workspace(
+            workspace,
+            _template_studio.source_bytes(workspace_id),
+        )
+    except (TemplateWorkspaceTransferError, TemplateMappingWorkspaceError) as exc:
+        status_code = 404 if "not found" in str(exc).lower() else 400
+        raise HTTPException(status_code, str(exc)) from exc
+    return {
+        "filename": f"{workspace['profileId']}-{workspace['revision']}.rptdraft",
+        "contentBase64": base64.b64encode(data).decode("ascii"),
+        "sha256": hashlib.sha256(data).hexdigest(),
+        "sizeBytes": len(data),
+        "workspaceId": workspace_id,
+        "revision": workspace["revision"],
+        "legacyRendererUnchanged": True,
+    }
+
+
+@router.patch("/template-packs/workspaces/{workspace_id}/rename")
+async def rename_template_mapping_workspace(
+    workspace_id: str,
+    req: TemplateWorkspaceRenameRequest,
+):
+    """Rename an active draft without changing mappings or profile identity."""
+
+    if not template_packs_enabled():
+        raise HTTPException(404, "Template Pack API is not enabled.")
+    try:
+        return _template_studio.rename(
+            workspace_id,
+            display_name=req.display_name,
+            expected_revision=req.expected_revision,
+        )
+    except TemplateMappingRevisionConflict as exc:
+        raise HTTPException(409, str(exc)) from exc
+    except TemplateMappingWorkspaceError as exc:
+        status_code = 404 if "not found" in str(exc).lower() else 400
+        raise HTTPException(status_code, str(exc)) from exc
+
+
+@router.post("/template-packs/workspaces/{workspace_id}/clone", status_code=201)
+async def clone_template_mapping_workspace(
+    workspace_id: str,
+    req: TemplateWorkspaceCloneRequest,
+):
+    """Clone one draft into a new active workspace that shares immutable source bytes."""
+
+    if not template_packs_enabled():
+        raise HTTPException(404, "Template Pack API is not enabled.")
+    try:
+        return _template_studio.clone(
+            workspace_id,
+            profile_id=req.profile_id,
+            display_name=req.display_name,
+            version=req.version,
+            expected_revision=req.expected_revision,
+        )
+    except TemplateMappingRevisionConflict as exc:
+        raise HTTPException(409, str(exc)) from exc
+    except TemplateMappingWorkspaceError as exc:
+        status_code = 404 if "not found" in str(exc).lower() else 400
+        raise HTTPException(status_code, str(exc)) from exc
+
+
+@router.post("/template-packs/workspaces/{workspace_id}/archive")
+async def archive_template_mapping_workspace(
+    workspace_id: str,
+    req: TemplateWorkspaceArchiveRequest,
+):
+    """Archive or restore a draft without deleting its mappings or source."""
+
+    if not template_packs_enabled():
+        raise HTTPException(404, "Template Pack API is not enabled.")
+    try:
+        return _template_studio.set_archived(
+            workspace_id,
+            archived=req.archived,
+            expected_revision=req.expected_revision,
+        )
+    except TemplateMappingRevisionConflict as exc:
+        raise HTTPException(409, str(exc)) from exc
+    except TemplateMappingWorkspaceError as exc:
+        status_code = 404 if "not found" in str(exc).lower() else 400
+        raise HTTPException(status_code, str(exc)) from exc
 
 
 @router.get("/template-packs/workspaces/{workspace_id}")

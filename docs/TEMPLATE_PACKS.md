@@ -124,12 +124,20 @@ starting the backend:
   the publication gate. It never stores, extracts, installs or renders the pack.
 - `POST /api/template-packs/workspaces` pins the uploaded DOCX by SHA-256 and
   creates a revisioned mapping draft.
+- `GET /api/template-packs/workspaces` lists metadata-only drafts with
+  filter/search/cursor pagination and corrupt-file isolation.
 - `GET /api/template-packs/workspaces/{id}` reads a draft without exposing its
   filesystem path.
 - `PUT /api/template-packs/workspaces/{id}/mappings/{semantic}` approves one
   discovered, unique anchor and its required field mappings.
 - `POST /api/template-packs/workspaces/{id}/mappings/{semantic}/remove` returns a
   semantic to the unmapped state.
+- Rename, clone and archive/restore endpoints provide non-destructive lifecycle
+  operations with the same optimistic revision guard and audit trail.
+- Export/import uses a data-only `.rptdraft` archive with manifest/checksums and
+  always assigns a new workspace identity on import.
+- Retention is preview-first and moves eligible archived drafts into recoverable
+  quarantine. There is no permanent-delete endpoint.
 
 Every mapping command includes `expectedRevision`. A stale editor receives HTTP
 `409` instead of overwriting newer work. DOCX sources are content-addressed and

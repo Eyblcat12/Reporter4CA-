@@ -1,9 +1,9 @@
 # Template Studio — trạng thái triển khai và hồ sơ bàn giao
 
-> **Ngày chốt:** 27/08/2026
+> **Ngày chốt:** 28/08/2026
 > **Nhánh phát triển:** `codex/template-studio`
 > **Baseline ổn định:** `github/main` tại commit `ec5795d`
-> **Checkpoint Template Studio:** commit `adc0995`
+> **Checkpoint Template Studio:** commit `aa0ea9f`
 > **Trạng thái tích hợp:** chưa nối vào luồng tạo report mặc định
 > **Feature flag:** `AUTO_REPORT_TEMPLATE_PACKS=0` theo mặc định
 
@@ -91,7 +91,7 @@ quyền thay template tạo report.
 |---|---|
 | `github/main` | Không thay đổi, đang ở `ec5795d` |
 | Nhánh làm việc | `codex/template-studio` |
-| Checkpoint đã commit | `adc0995 feat(template-studio): add isolated template pack lifecycle` |
+| Checkpoint đã commit | `aa0ea9f docs(template-studio): record implementation handoff and backlog` |
 | Push nhánh lên remote | Chưa thực hiện |
 | UI Workbench mới | Chưa commit, đang chờ người dùng review |
 | `apps/backend/data/` | Runtime/user data, untracked; tuyệt đối không stage hoặc commit |
@@ -100,6 +100,11 @@ Các thay đổi chưa commit hợp lệ hiện tại:
 
 - `docs/template-studio-workbench.html`
 - phần kiểm thử Workbench trong `tests/test_template_studio_prototype.py`
+- Workspace Index TS-10A trong `template_mapping_workspace.py`, route API và các
+  test liên quan.
+- Workspace lifecycle/transfer/retention TS-10B trong các module
+  `template_workspace_transfer.py`, `template_workspace_retention.py`, API và test.
+- tài liệu trạng thái này.
 
 Nếu trạng thái Git khác danh sách trên ở phiên sau, phải kiểm tra chủ sở hữu thay
 đổi trước khi stage, sửa hoặc xóa.
@@ -184,7 +189,16 @@ Tất cả endpoint trả `404` khi feature flag tắt:
 | POST | `/api/template-packs/inspect` | Hoàn thành |
 | POST | `/api/template-packs/analyze-template` | Hoàn thành |
 | POST | `/api/template-packs/workspaces` | Hoàn thành |
+| POST | `/api/template-packs/workspaces/import` | Hoàn thành TS-10B.2 |
+| GET | `/api/template-packs/workspaces` | Hoàn thành TS-10A |
 | GET | `/api/template-packs/workspaces/{id}` | Hoàn thành |
+| GET | `/api/template-packs/workspaces/{id}/export` | Hoàn thành TS-10B.2 |
+| PATCH | `/api/template-packs/workspaces/{id}/rename` | Hoàn thành TS-10B.1 |
+| POST | `/api/template-packs/workspaces/{id}/clone` | Hoàn thành TS-10B.1 |
+| POST | `/api/template-packs/workspaces/{id}/archive` | Hoàn thành TS-10B.1 |
+| GET | `/api/template-packs/workspaces/retention/preview` | Hoàn thành TS-10B.3 |
+| POST | `/api/template-packs/workspaces/retention/apply` | Hoàn thành TS-10B.3 |
+| POST | `/api/template-packs/workspaces/retention/{id}/restore` | Hoàn thành TS-10B.3 |
 | PUT | `/api/template-packs/workspaces/{id}/mappings/{semantic}` | Hoàn thành |
 | POST | `/api/template-packs/workspaces/{id}/mappings/{semantic}/remove` | Hoàn thành |
 | GET | `/api/template-packs/catalog` | Hoàn thành |
@@ -206,24 +220,135 @@ Workbench mới có workflow `Analyze → Map → Review → Test → Publish`, 
 làm nội dung chính, search/filter, contextual drawer và dark/light mode. File
 không có external asset, form, API call hoặc liên kết tới tool thật.
 
+Ngày 27/08/2026, prototype được audit bằng skill cá nhân
+`reporter-enterprise-ui-ux`. Pass đầu tiên chỉ sửa usability/accessibility, không
+đổi visual direction: bổ sung keyboard-accessible mapping rows, search label,
+table/progress semantics, trạng thái filter/theme, focus-visible, focus return
+khi đóng drawer và reduced-motion support. Bố cục Workbench và ranh giới Legacy
+Renderer được giữ nguyên; visual direction vẫn cần người dùng duyệt.
+
+Ngày 28/08/2026, pass enterprise thứ hai hoàn thiện hành vi của prototype mà vẫn
+không nối API: drawer phản ánh đúng `mapped/unmapped` và renderer, dùng Word anchor
+control thật, cho phép approve/unmap cục bộ, cập nhật coverage/blocker/revision,
+giữ selection đồng bộ với search/filter và hỗ trợ Escape/focus return. CTA dẫn
+thẳng tới blocker thay vì cho Review khi coverage chưa đủ 100%.
+
+Workbench cũng đã chuyển sang một ngôn ngữ nhất quán, bỏ annotation lặp, rút gọn
+summary, bổ sung overlay drawer/reflow ở viewport hẹp, local table scrolling,
+loading-recovery variants qua `?state=conflict|load-error|save-timeout`, và token
+contrast tối thiểu 4.5:1 cho text/filled action, 3:1 cho control boundary. Các
+thay đổi chỉ nằm trong prototype độc lập; cần người dùng duyệt hình ảnh trước TS-09.
+
+### TS-10A — Workspace Index chỉ đọc — hoàn thành
+
+- API metadata-only liệt kê workspace theo `updatedAt DESC`, có tie-break ổn định
+  bằng `workspaceId`.
+- Lọc theo trạng thái/report type, tìm theo display name/profile ID và phân trang
+  cursor với giới hạn 1–100 bản ghi.
+- Cursor gắn với filter và fingerprint của collection. Nếu workspace thay đổi giữa
+  hai trang, API trả `409` và yêu cầu tải lại từ trang đầu thay vì âm thầm bỏ sót
+  hoặc lặp bản ghi.
+- Summary tự tính lại coverage từ semantic slot thực, không tin các trường tổng hợp
+  lưu sẵn và không trả source DOCX, checksum template, analysis, mapping, audit hay
+  đường dẫn local.
+- Workspace JSON hỏng/không hợp lệ được cô lập khỏi danh sách và báo bằng
+  `skippedCorrupt`; feature flag tắt vẫn trả `404` như baseline.
+- Mutation mapping đồng thời cùng revision có đúng một lệnh thắng; lệnh còn lại
+  nhận revision conflict, không ghi đè im lặng.
+
+Phần rename/clone/archive/export/import và retention an toàn được tách thành TS-10B;
+chưa có mutation lifecycle mới trong TS-10A.
+
+### TS-10B.1 — Lifecycle draft không phá hủy — hoàn thành phần backend
+
+- Rename chỉ đổi display name, giữ profile identity, source và toàn bộ mappings.
+- Clone tạo workspace ID/revision/audit mới, giữ snapshot mapping và tham chiếu tới
+  source DOCX content-addressed đã được xác minh checksum.
+- Archive/restore không xóa dữ liệu. Workspace đã archive là read-only cho mapping
+  và rename đến khi được restore.
+- Mọi mutation yêu cầu `expectedRevision`; stale request trả `409` và không ghi đè.
+- Workspace Index có filter `archived=true|false`; cursor cũng gắn với filter này.
+- Feature flag tắt vẫn ẩn toàn bộ endpoint lifecycle bằng `404`.
+
+### TS-10B.2 — Portable draft transfer — hoàn thành backend
+
+- Export tạo archive `.rptdraft` deterministic gồm đúng `manifest.json`,
+  `workspace.json` và `template.docx`; không chứa path local hoặc code thực thi.
+- Manifest khóa checksum workspace/DOCX và source workspace ID/revision.
+- Inspector chặn path traversal, member thừa/trùng, symlink, encryption, archive
+  vượt giới hạn và compression ratio đáng ngờ; không extract archive.
+- Import luôn cấp workspace ID/revision/audit mới, xác minh lại workspace checksum,
+  mapping contract, DOCX và source hash trước khi ghi nguyên tử.
+- Source DOCX content-addressed được tái sử dụng khi checksum giống nhau; không ghi
+  đè template nguồn bằng bytes khác.
+
+### TS-10B.3 — Retention preview-first — hoàn thành backend
+
+- Preview trả danh sách workspace/source ứng viên, cutoff, dung lượng có thể thu hồi,
+  blockers, fingerprint và confirmation token có HMAC/hạn 15 phút.
+- Chỉ archived draft `analyzed`/`mapping_incomplete` đủ tuổi mới là ứng viên;
+  workspace active/mapping complete/tested/published không bị chọn.
+- Workspace corrupt/unsupported chặn toàn bộ cleanup. Source đang được workspace
+  còn lại hoặc Template Pack catalog tham chiếu được bảo vệ.
+- Apply chỉ chạy khi token và fingerprint còn khớp; thay đổi giữa preview/apply trả
+  conflict và yêu cầu preview lại.
+- Không có permanent-delete endpoint. Apply chuyển file vào quarantine theo batch;
+  lỗi giữa chừng rollback, và endpoint restore đưa toàn bộ batch về vị trí cũ.
+
 ## 6. Bằng chứng kiểm thử gần nhất
 
-### Quality gate đầy đủ ngày 26/08/2026
+### Quality gate đầy đủ gần nhất ngày 28/08/2026
 
 - Ruff check và Ruff format: đạt.
-- Backend regression: **281 tests đạt**.
+- Backend regression: **291 tests đạt**.
 - Frontend Vitest: **51 tests đạt**.
 - ESLint và Prettier: đạt.
 - Frontend production build: đạt, 1.916 module được transform.
 - Golden DOCX của sáu report type: đạt, không thay đổi baseline.
 
-### Sau khi tạo Workbench ngày 27/08/2026
+### Sau khi hoàn thiện Workbench ngày 28/08/2026
 
-- `tests.test_template_studio_prototype`: **4/4 đạt**.
+- `tests.test_template_studio_prototype`: **6/6 đạt**.
+- Embedded JavaScript syntax: đạt.
+- Isolation test chặn external asset/navigation/embed/network primitive: đạt.
+- Contrast contract cho dark/light và control boundary: đạt.
 - Ruff cho test Workbench: đạt.
 - `git diff --check`: đạt.
-- Chưa chạy lại toàn bộ quality gate vì Workbench chỉ là HTML độc lập chưa nối
-  ứng dụng. Phải chạy lại toàn bộ gate trước commit hoặc push tiếp theo.
+- Workbench vẫn là HTML độc lập chưa nối ứng dụng. Full quality gate sau đó đã
+  được chạy cùng TS-10A và đạt toàn bộ.
+
+### Sau khi hoàn thiện Workspace Index TS-10A ngày 28/08/2026
+
+- Targeted domain/API/architecture/Workbench: **23/23 đạt**.
+- Toàn bộ `tests.test_api_integration`: **24/24 đạt**.
+- Toàn bộ `tests.test_template_packs` + `tests.test_template_mapping_workspace`:
+  **32/32 đạt**.
+- Ruff check và Ruff format cho sáu tệp Python thay đổi: đạt.
+- Embedded JavaScript syntax và `git diff --check`: đạt.
+- Full quality gate `scripts/check.ps1`: **đạt** — Ruff, **291 backend tests**,
+  ESLint, Prettier, **51 frontend tests** và production build 1.916 modules.
+
+### Sau lát cắt lifecycle TS-10B.1 ngày 28/08/2026
+
+- Toàn bộ `tests.test_api_integration`: **25/25 đạt**.
+- Toàn bộ `tests.test_template_mapping_workspace` + `tests.test_template_packs`:
+  **33/33 đạt**.
+- Ruff check/format cho domain, API model/route và test thay đổi: đạt.
+- Full gate 291/51 ở trên chạy trước TS-10B.1; phải chạy lại sau khi hoàn tất toàn
+  bộ TS-10B hoặc trước commit/push, tùy mốc nào đến trước.
+
+### Sau khi hoàn thành backend TS-10B ngày 28/08/2026
+
+- Workspace lifecycle/transfer/retention + toàn bộ API integration + Template Pack:
+  **66/66 đạt**.
+- Ruff check và format cho chín tệp Python liên quan: đạt.
+- Kiến trúc cấm ba module Legacy Renderer import Mapping Workspace, transfer,
+  retention và các runtime Template Pack khác: đạt.
+- Quality gate phát hành đã được cập nhật để luôn chạy hai module transfer và
+  retention mới.
+- Full backend gate sau cập nhật: **301/301 đạt**; Ruff check/format đạt.
+- Frontend gate trong cùng checkpoint: ESLint, Prettier, **51/51 Vitest** và
+  production build 1.916 modules đều đạt.
 
 Lệnh gate chuẩn:
 
@@ -239,8 +364,12 @@ cần frontend đang chạy tại localhost.
 | ID | Công việc | Trạng thái | Blocker/điểm duyệt |
 |---|---|---|---|
 | TS-08.1 | Review bố cục Workbench mới | Chờ người dùng | Cần xác nhận hướng UI |
-| TS-08.2 | Chỉnh màu, mật độ, thuật ngữ và drawer theo feedback | Chưa bắt đầu | Phụ thuộc TS-08.1 |
+| TS-08.2 | Chỉnh màu, mật độ, thuật ngữ và drawer theo feedback | Hoàn thành phần prototype | Chờ người dùng duyệt hình ảnh |
 | TS-08.3 | Commit UI prototype đã được duyệt | Chưa bắt đầu | Chỉ commit sau review |
+| TS-10A | Workspace Index metadata-only, filter/search/cursor | Hoàn thành | Không nối Generate |
+| TS-10B.1 | Rename/clone/archive draft | Hoàn thành backend | Chưa nối UI |
+| TS-10B.2 | Export/import draft portable | Hoàn thành backend | Chưa nối UI |
+| TS-10B.3 | Retention preview/quarantine/restore | Hoàn thành backend | Không xóa vĩnh viễn |
 | TS-09 | Chuyển UI được duyệt thành React route tách biệt | Chưa bắt đầu | Cần hai lần duyệt UI |
 
 Không được bắt đầu nối UI vào API hoặc menu Generate trước khi TS-08 được duyệt.
@@ -263,10 +392,14 @@ Template Studio; tắt flag cho kết quả giống baseline hiện tại.
 
 #### TS-10 — Workspace index và lifecycle
 
-- API liệt kê workspace, lọc theo trạng thái và mở bản gần nhất.
-- Đổi tên/clone/archive draft theo cơ chế không phá hủy.
-- Dọn source/workspace orphan theo retention an toàn.
-- Export/import draft để chuyển giữa thành viên team.
+- **TS-10A hoàn thành:** API liệt kê metadata workspace, lọc/tìm kiếm, cursor ổn
+  định, đếm corrupt và phát hiện collection thay đổi giữa hai trang.
+- **TS-10B.1 hoàn thành backend:** đổi tên/clone/archive/restore draft theo cơ chế
+  không phá hủy, có revision và audit.
+- **TS-10B.2 hoàn thành backend:** export/import draft portable để chuyển giữa
+  thành viên team bằng archive data-only có checksum.
+- **TS-10B.3 hoàn thành backend:** preview retention, confirmation token,
+  quarantine có rollback và restore; không cung cấp permanent delete.
 
 **Definition of Done:** không phải biết workspace ID thủ công; mọi mutation có
 revision/audit và không xóa source đang được pack sử dụng.

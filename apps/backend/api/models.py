@@ -316,6 +316,33 @@ class TemplateWorkspaceRevisionRequest(BaseModel):
     model_config = {"populate_by_name": True}
 
 
+class TemplateWorkspaceRenameRequest(TemplateWorkspaceRevisionRequest):
+    display_name: str = Field(alias="displayName", min_length=1, max_length=200)
+
+
+class TemplateWorkspaceCloneRequest(TemplateWorkspaceRevisionRequest):
+    profile_id: str = Field(alias="profileId", min_length=2, max_length=128)
+    display_name: str = Field(alias="displayName", min_length=1, max_length=200)
+    version: str = Field(default="0.1.0", min_length=1, max_length=64)
+
+
+class TemplateWorkspaceArchiveRequest(TemplateWorkspaceRevisionRequest):
+    archived: bool = True
+
+
+class TemplateWorkspaceImportRequest(BaseModel):
+    filename: str = ""
+    content_base64: str = Field(alias="contentBase64", default="")
+
+    model_config = {"populate_by_name": True}
+
+
+class TemplateWorkspaceRetentionApplyRequest(BaseModel):
+    confirmation_token: str = Field(alias="confirmationToken", min_length=1, max_length=4096)
+
+    model_config = {"populate_by_name": True}
+
+
 class TemplateAnalysis(BaseModel):
     """Detailed template analysis result."""
 

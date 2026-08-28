@@ -57,6 +57,8 @@ if (-not $SkipBackend) {
         tests.test_template_pack_catalog `
         tests.test_template_packs `
         tests.test_template_studio_prototype `
+        tests.test_template_workspace_retention `
+        tests.test_template_workspace_transfer `
         tests.test_compact_prototype_integration `
         tests.test_template_schema `
         tests.test_threat_intelligence `
