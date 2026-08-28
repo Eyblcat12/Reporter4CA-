@@ -3,7 +3,7 @@
 > **Ngày chốt:** 28/08/2026
 > **Nhánh phát triển:** `codex/template-studio`
 > **Baseline ổn định:** `github/main` tại commit `ec5795d`
-> **Checkpoint Template Studio:** commit `aa0ea9f`
+> **Checkpoint Template Studio:** commit `7b81937`
 > **Trạng thái tích hợp:** chưa nối vào luồng tạo report mặc định
 > **Feature flag:** `AUTO_REPORT_TEMPLATE_PACKS=0` theo mặc định
 
@@ -91,7 +91,7 @@ quyền thay template tạo report.
 |---|---|
 | `github/main` | Không thay đổi, đang ở `ec5795d` |
 | Nhánh làm việc | `codex/template-studio` |
-| Checkpoint đã commit | `aa0ea9f docs(template-studio): record implementation handoff and backlog` |
+| Checkpoint đã commit | `7b81937 feat(template-studio): complete safe workspace lifecycle` |
 | Push nhánh lên remote | Chưa thực hiện |
 | UI Workbench mới | Chưa commit, đang chờ người dùng review |
 | `apps/backend/data/` | Runtime/user data, untracked; tuyệt đối không stage hoặc commit |
@@ -100,11 +100,9 @@ Các thay đổi chưa commit hợp lệ hiện tại:
 
 - `docs/template-studio-workbench.html`
 - phần kiểm thử Workbench trong `tests/test_template_studio_prototype.py`
-- Workspace Index TS-10A trong `template_mapping_workspace.py`, route API và các
-  test liên quan.
-- Workspace lifecycle/transfer/retention TS-10B trong các module
-  `template_workspace_transfer.py`, `template_workspace_retention.py`, API và test.
-- tài liệu trạng thái này.
+
+Workspace Index và toàn bộ lifecycle/transfer/retention TS-10 đã được chốt tại
+commit `7b81937`; không còn là thay đổi làm việc chưa commit.
 
 Nếu trạng thái Git khác danh sách trên ở phiên sau, phải kiểm tra chủ sở hữu thay
 đổi trước khi stage, sửa hoặc xóa.
