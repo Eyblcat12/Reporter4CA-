@@ -40,6 +40,7 @@ class TemplatePackInspection:
     template_sha256: str
     profile: dict[str, Any]
     validation: ProfileValidationResult
+    template_bytes: bytes
 
     @property
     def publishable(self) -> bool:
@@ -116,7 +117,12 @@ def inspect_template_pack(
         detail = reasons[0] if reasons else "Profile did not pass the publication gate."
         raise TemplatePackError(f"Template Pack is not publishable: {detail}")
     return TemplatePackInspection(
-        pack_id, version, payloads_sha256(template_bytes), profile, result
+        pack_id,
+        version,
+        payloads_sha256(template_bytes),
+        profile,
+        result,
+        template_bytes,
     )
 
 

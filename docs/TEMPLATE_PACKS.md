@@ -25,7 +25,7 @@ New DOCX
   -> 100% semantic coverage gate
   -> fixture + integrity + visual tests
   -> publish Template Pack
-  -> Profile Renderer (future, opt-in only)
+  -> Profile Renderer (implemented domain-only; not selected by Generate)
 ```
 
 Current safeguards:
@@ -102,7 +102,8 @@ visual-review evidence.
 1. Schema, semantic catalog, safe archive inspector and regression barriers.
 2. Feature-gated inspect API with no storage or rendering side effects.
 3. Separate Template Studio for analyze, map, validate, test and publish.
-4. Profile Renderer implemented alongside the Legacy Renderer.
+4. Profile Renderer implemented alongside the Legacy Renderer. **Domain complete;
+   API/job/UI/Generate integration remains disabled.**
 5. Per-pack fixtures, golden DOCX comparison, performance benchmark and rollback.
 6. Opt-in release only after legacy regression and pack-specific gates pass.
 
@@ -179,6 +180,20 @@ The Pack Builder itself is not exposed as a public HTTP operation yet. Fixture
 and integrity evidence must come from the future Profile Renderer validation
 runner rather than booleans supplied by a browser. This prevents a UI client
 from self-certifying an untested customer template.
+
+## Isolated Profile Renderer v1
+
+The backend contains a declarative Profile Renderer that can render a
+publication-ready pack from one accepted normalized snapshot. It supports the
+semantic renderer catalog for all six report types, validates report type and
+the pinned template checksum, reports the exact failing semantic/anchor, emits a
+traceability manifest, and supports progress, cooperative cancellation and
+atomic temporary-file cleanup.
+
+This is currently a domain/test capability only. No API, background job, UI,
+catalog selection or production Generate path calls it. It never imports or
+falls back to the Legacy Renderer. Validation evidence still requires TS-12;
+therefore completing a domain render does not make a customer pack selectable.
 
 These endpoints do not appear in, or change, the current Configure/Preview/
 Generate workflow. Template Studio will call them from a separate experimental

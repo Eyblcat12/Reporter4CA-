@@ -377,6 +377,7 @@ class TemplatePackArchitectureTests(unittest.TestCase):
 
     def test_legacy_generation_modules_do_not_import_template_pack_runtime(self) -> None:
         forbidden = {
+            "core.profile_renderer",
             "core.template_pack",
             "core.template_pack_catalog",
             "core.template_mapping_workspace",

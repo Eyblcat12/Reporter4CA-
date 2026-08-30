@@ -42,6 +42,7 @@ if (-not $SkipBackend) {
         tests.test_prepared_template `
         tests.test_preview_benchmark_summary `
         tests.test_preview_artifacts `
+        tests.test_profile_renderer `
         tests.test_report_jobs `
         tests.test_report_generator `
         tests.test_report_integrity `

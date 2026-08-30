@@ -348,6 +348,22 @@ chưa có mutation lifecycle mới trong TS-10A.
 - Frontend gate trong cùng checkpoint: ESLint, Prettier, **51/51 Vitest** và
   production build 1.916 modules đều đạt.
 
+### Sau khi hoàn thành domain Profile Renderer TS-11 ngày 30/08/2026
+
+- Profile Renderer xử lý đủ semantic catalog của sáu report type từ Template
+  Pack publication-ready và accepted normalized snapshot.
+- Targeted renderer/pack/catalog: **32/32 đạt**; riêng Profile Renderer:
+  **8/8 đạt**.
+- Ruff check cho renderer, pack inspector và regression tests: đạt.
+- Regression architecture tiếp tục cấm ba module Legacy Renderer import Profile
+  Renderer hoặc các runtime Template Pack.
+- Hủy hợp tác được kiểm tra cả trong render và sau bước lưu; file tạm thuộc
+  renderer được dọn khi lỗi/hủy.
+- Full release gate: Ruff check/format, **309/309 backend tests**, ESLint,
+  Prettier, **51/51 frontend tests**, production build 1.916 modules và golden
+  DOCX đều đạt.
+- Chưa có API, job, UI hoặc catalog selection gọi Profile Renderer.
+
 Lệnh gate chuẩn:
 
 ```powershell
@@ -368,6 +384,7 @@ cần frontend đang chạy tại localhost.
 | TS-10B.1 | Rename/clone/archive draft | Hoàn thành backend | Chưa nối UI |
 | TS-10B.2 | Export/import draft portable | Hoàn thành backend | Chưa nối UI |
 | TS-10B.3 | Retention preview/quarantine/restore | Hoàn thành backend | Không xóa vĩnh viễn |
+| TS-11 | Profile Renderer v1 chạy song song | Hoàn thành domain | Chưa nối API/job/UI/Generate |
 | TS-09 | Chuyển UI được duyệt thành React route tách biệt | Chưa bắt đầu | Cần hai lần duyệt UI |
 
 Không được bắt đầu nối UI vào API hoặc menu Generate trước khi TS-08 được duyệt.
@@ -406,15 +423,20 @@ revision/audit và không xóa source đang được pack sử dụng.
 
 #### TS-11 — Profile Renderer v1 chạy song song
 
-- Renderer đọc profile declarative, không chạy Python từ pack.
-- Implement renderer theo semantic block: text, rich text, asset/result table,
-  finding sections, remediation table và IoC table.
-- Chỉ đọc normalized snapshot hiện tại; không thay parser/rule engine.
-- Không fallback sang Legacy Renderer khi lỗi.
-- Cancellation, progress, temp cleanup và metrics tương đương report job hiện tại.
+- **Hoàn thành domain renderer:** đọc profile declarative, không chạy Python từ
+  pack và không import Legacy Renderer.
+- Đã implement text, rich text, asset/result/summary/finding/remediation/IoC,
+  field-group, timeline, MITRE và incident response blocks.
+- Chỉ đọc accepted normalized snapshot; kiểm tra report type và template hash,
+  không thay parser/rule engine.
+- Không fallback sang Legacy Renderer; lỗi trả semantic và anchor gây lỗi.
+- Có cooperative cancellation, progress, row counts, manifest truy vết và atomic
+  save có temp cleanup.
+- Chưa nối API/job/UI/Generate. Việc chọn pack vẫn bị cô lập trong catalog.
 
-**Definition of Done:** một pack test có thể tạo DOCX mà không import từ hoặc sửa
-Legacy Renderer; lỗi trả rõ semantic/anchor gây lỗi.
+**Definition of Done domain: đạt.** Một pack test có thể tạo DOCX mà không import
+từ hoặc sửa Legacy Renderer; lỗi trả rõ semantic/anchor gây lỗi. Tích hợp chỉ được
+xem xét sau TS-12/TS-13 và cổng duyệt TS-15.
 
 #### TS-12 — Fixture, integrity và visual validation runner
 
