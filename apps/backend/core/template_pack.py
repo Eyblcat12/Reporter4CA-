@@ -272,6 +272,11 @@ def _validate_pack_documents(
             "fixtureId",
             "validatedAt",
             "validatorVersion",
+            "validationRunId",
+            "artifactSha256",
+            "structuralSha256",
+            "reviewedBy",
+            "reviewedAt",
         },
         "validation.json",
     )

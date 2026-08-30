@@ -1,6 +1,6 @@
 # Template Studio — trạng thái triển khai và hồ sơ bàn giao
 
-> **Ngày chốt:** 30/08/2026
+> **Ngày chốt:** 31/08/2026
 > **Nhánh phát triển:** `codex/template-studio`
 > **Baseline ổn định:** `github/main` tại commit `ec5795d`
 > **Checkpoint mã nguồn Template Studio:** commit `1ca3eea`
@@ -366,6 +366,17 @@ chưa có mutation lifecycle mới trong TS-10A.
   DOCX đều đạt.
 - Chưa có API, job, UI hoặc catalog selection gọi Profile Renderer.
 
+### Sau khi hoàn thành domain Validation Runner TS-12 ngày 31/08/2026
+
+- Targeted validation/renderer/pack/catalog/API: **65/65 đạt**.
+- Ma trận runner hai lượt của sáu report type: đạt; candidate vẫn không
+  publishable và normal renderer từ chối candidate.
+- Kiểm thử baseline thiếu/sai, unresolved token, artifact checksum sai,
+  cancellation và evidence provenance: đạt.
+- Ruff check/format cho domain và regression tests: đạt.
+- Full release gate: **315/315 backend tests**, **51/51 frontend tests**, Ruff,
+  ESLint, Prettier, production build 1.916 modules và golden DOCX đều đạt.
+
 Lệnh gate chuẩn:
 
 ```powershell
@@ -387,6 +398,7 @@ cần frontend đang chạy tại localhost.
 | TS-10B.2 | Export/import draft portable | Hoàn thành backend | Chưa nối UI |
 | TS-10B.3 | Retention preview/quarantine/restore | Hoàn thành backend | Không xóa vĩnh viễn |
 | TS-11 | Profile Renderer v1 chạy song song | Hoàn thành domain | Chưa nối API/job/UI/Generate |
+| TS-12 | Fixture/integrity/structural validation runner | Hoàn thành domain | Chưa nối API/publish workflow |
 | TS-09 | Chuyển UI được duyệt thành React route tách biệt | Chưa bắt đầu | Cần hai lần duyệt UI |
 
 Không được bắt đầu nối UI vào API hoặc menu Generate trước khi TS-08 được duyệt.
@@ -442,15 +454,22 @@ xem xét sau TS-12/TS-13 và cổng duyệt TS-15.
 
 #### TS-12 — Fixture, integrity và visual validation runner
 
-- Fixture chuẩn cho report type/profile.
-- Verify asset/finding/evidence coverage và section bắt buộc.
-- Structural golden diff cho heading, paragraph, table, numbering, relationship,
-  image/chart và anchor còn sót.
-- Visual review tạo artifact có checksum và người duyệt.
-- Evidence được backend tạo; browser không tự gửi ba cờ `passed=true`.
+- **Hoàn thành domain runner:** candidate pack ở trạng thái `mapping_complete`,
+  deterministic nhưng không publishable/cài được.
+- Fixture runner kiểm tra đủ semantic, row count và giá trị asset/finding/evidence
+  trên accepted normalized snapshot cho sáu report type.
+- Structural snapshot/diff bao phủ paragraph, heading style, table/content/format,
+  numbering, relationship, media, section và token còn sót.
+- Table do Profile Renderer tạo có semantic caption ẩn để diff truy về block.
+- Hai lượt bắt buộc: tạo baseline để review, sau đó render lại và so khớp baseline.
+- Visual approval bị khóa vào checksum DOCX, structural hash, validation run ID,
+  reviewer và thời gian review.
+- Pack Builder từ chối evidence đạt nhưng thiếu provenance của runner.
+- Chưa nối API/UI/Publish; browser không có đường gửi ba cờ `passed=true`.
 
-**Definition of Done:** chỉ validation runner mới có thể cấp evidence cho Pack
-Builder; diff lỗi đọc được và truy về semantic block.
+**Definition of Done domain: đạt.** Runner tạo evidence có provenance cho Pack
+Builder; diff lỗi đọc được và table diff truy về semantic block. API/publish
+orchestration thuộc TS-14, sau TS-13 preview/diff.
 
 #### TS-13 — Preview/diff cho pack
 

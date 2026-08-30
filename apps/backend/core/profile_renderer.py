@@ -107,10 +107,53 @@ def render_profile_document(
 ) -> ProfileRenderResult:
     """Render a published Template Pack from the accepted normalized snapshot."""
 
+    return _render_profile_document(
+        pack_bytes,
+        prepared,
+        require_publishable=True,
+        check_cancelled=check_cancelled,
+        on_progress=on_progress,
+    )
+
+
+def render_profile_validation_candidate(
+    pack_bytes: bytes,
+    prepared: PreparedReportSnapshot,
+    *,
+    check_cancelled: Callable[[], Any] | None = None,
+    on_progress: Callable[[int, str], Any] | None = None,
+) -> ProfileRenderResult:
+    """Render one non-publishable candidate for the isolated validation runner."""
+
+    return _render_profile_document(
+        pack_bytes,
+        prepared,
+        require_publishable=False,
+        check_cancelled=check_cancelled,
+        on_progress=on_progress,
+    )
+
+
+def _render_profile_document(
+    pack_bytes: bytes,
+    prepared: PreparedReportSnapshot,
+    *,
+    require_publishable: bool,
+    check_cancelled: Callable[[], Any] | None,
+    on_progress: Callable[[int, str], Any] | None,
+) -> ProfileRenderResult:
+
     try:
-        inspection = inspect_template_pack(pack_bytes, require_publishable=True)
+        inspection = inspect_template_pack(pack_bytes, require_publishable=require_publishable)
     except TemplatePackError as exc:
         raise ProfileRendererError(f"Template Pack failed inspection: {exc}") from exc
+    if not require_publishable:
+        if inspection.publishable or inspection.profile.get("status") != "mapping_complete":
+            raise ProfileRendererError(
+                "Validation rendering requires a non-publishable mapping_complete candidate."
+            )
+        if not inspection.validation.mapping_complete:
+            raise ProfileRendererError("Validation candidate does not have 100% semantic mapping.")
     accepted = prepared.accepted
     if inspection.profile["reportType"] != accepted.report_type:
         raise ProfileRendererError(
@@ -128,7 +171,7 @@ def render_profile_document(
     payload = thaw_json(prepared.payload)
     if not isinstance(payload, dict):
         raise ProfileRendererError("Prepared report payload must be an object.")
-    sources = _build_semantic_sources(prepared, payload)
+    sources = build_profile_semantic_sources(prepared, payload)
     rendered: list[str] = []
     row_counts: dict[str, int] = {}
     slots = inspection.profile["slots"]
@@ -237,6 +280,7 @@ def _render_slot(
                 document,
                 headers,
                 table_rows,
+                semantic=slot["semantic"],
                 check_cancelled=check_cancelled,
             )
         ]
@@ -244,7 +288,9 @@ def _render_slot(
     elif renderer == "summary_table":
         summary = value if isinstance(value, dict) else {}
         table_rows = [[_humanize(key), _plain_text(item)] for key, item in summary.items()]
-        elements = [_new_table(document, ["Metric", "Value"], table_rows)]
+        elements = [
+            _new_table(document, ["Metric", "Value"], table_rows, semantic=slot["semantic"])
+        ]
         row_count = len(table_rows)
     elif renderer == "finding_table":
         rows = value if isinstance(value, list) else []
@@ -254,6 +300,7 @@ def _render_slot(
                 document,
                 [_HEADERS.get(field, _humanize(field)) for field in fields],
                 [[_plain_text(item.get(field)) for field in fields] for item in rows],
+                semantic=slot["semantic"],
                 check_cancelled=check_cancelled,
             )
         ]
@@ -261,7 +308,7 @@ def _render_slot(
     elif renderer == "field_group":
         group = value if isinstance(value, dict) else {}
         table_rows = [[_humanize(key), _plain_text(item)] for key, item in group.items()]
-        elements = [_new_table(document, ["Field", "Value"], table_rows)]
+        elements = [_new_table(document, ["Field", "Value"], table_rows, semantic=slot["semantic"])]
         row_count = len(table_rows)
     elif renderer == "finding_sections":
         rows = value if isinstance(value, list) else []
@@ -270,8 +317,17 @@ def _render_slot(
             _check_cancelled(check_cancelled)
             title = _plain_text(item.get("hostname") or item.get("finding") or "Finding")
             elements.append(_new_paragraph(document, title, bold=True))
-            details = item.get("details") or item.get("evidence") or item.get("finding")
-            elements.append(_new_paragraph(document, _plain_text(details)))
+            details = (
+                ("Finding", item.get("finding")),
+                ("Severity", item.get("severity")),
+                ("Evidence", item.get("evidence")),
+                ("Analysis", item.get("details")),
+                ("Remediation", item.get("remediation")),
+            )
+            for label, detail in details:
+                value_text = _plain_text(detail).strip()
+                if value_text:
+                    elements.append(_new_paragraph(document, f"{label}: {value_text}"))
         row_count = len(rows)
     else:  # response_sections
         group = value if isinstance(value, dict) else {}
@@ -288,7 +344,7 @@ def _render_slot(
     return row_count
 
 
-def _build_semantic_sources(
+def build_profile_semantic_sources(
     prepared: PreparedReportSnapshot,
     payload: dict[str, Any],
 ) -> dict[str, Any]:
@@ -539,6 +595,7 @@ def _new_table(
     headers: list[str],
     rows: list[list[str]],
     *,
+    semantic: str = "",
     check_cancelled: Callable[[], Any] | None = None,
 ) -> Any:
     effective_headers = headers or ["Value"]
@@ -547,6 +604,11 @@ def _new_table(
         table.style = "Table Grid"
     except KeyError:
         pass
+    if semantic:
+        properties = table._tbl.tblPr
+        caption = OxmlElement("w:tblCaption")
+        caption.set(qn("w:val"), f"ReporterPro:{semantic}")
+        properties.append(caption)
     for index, header in enumerate(effective_headers):
         table.rows[0].cells[index].text = header
     for row_index, values in enumerate(rows, start=1):

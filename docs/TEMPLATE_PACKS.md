@@ -192,8 +192,30 @@ atomic temporary-file cleanup.
 
 This is currently a domain/test capability only. No API, background job, UI,
 catalog selection or production Generate path calls it. It never imports or
-falls back to the Legacy Renderer. Validation evidence still requires TS-12;
-therefore completing a domain render does not make a customer pack selectable.
+falls back to the Legacy Renderer. TS-12 now validates its output, but completing
+a domain render alone does not make a customer pack selectable.
+
+## Backend-owned validation runner
+
+TS-12 adds a two-pass validation runner without exposing a browser-controlled
+`passed=true` contract:
+
+1. A 100%-mapped workspace creates a deterministic `mapping_complete` candidate
+   pack. The candidate is deliberately non-publishable and cannot be installed.
+2. The Profile Renderer renders the accepted fixture snapshot and the runner
+   checks semantic/row counts, asset/finding/evidence values, unresolved tokens,
+   renderer provenance and the structural DOCX snapshot.
+3. The first run establishes a structural baseline artifact. A later run must
+   match that reviewed baseline with no heading/table/numbering/relationship/
+   media/section differences.
+4. A human reviewer approves the exact DOCX checksum. The resulting evidence is
+   bound to the validation run, artifact hash, structural hash, reviewer and
+   timestamp before the final publishable pack can be built.
+
+Generated tables carry invisible semantic captions so a structural difference
+can identify the mapped block that changed. Candidate rendering, validation and
+approval remain backend-domain operations; no Template Studio API or production
+Generate selection calls them yet.
 
 These endpoints do not appear in, or change, the current Configure/Preview/
 Generate workflow. Template Studio will call them from a separate experimental

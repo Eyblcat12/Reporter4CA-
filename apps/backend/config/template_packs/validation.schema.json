@@ -11,6 +11,11 @@
     "visualApproved": {"type": "boolean"},
     "fixtureId": {"type": "string", "minLength": 1, "maxLength": 128},
     "validatedAt": {"type": "string", "format": "date-time"},
-    "validatorVersion": {"type": "string", "minLength": 1, "maxLength": 64}
+    "validatorVersion": {"type": "string", "minLength": 1, "maxLength": 64},
+    "validationRunId": {"type": "string", "minLength": 1, "maxLength": 128},
+    "artifactSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "structuralSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "reviewedBy": {"type": "string", "minLength": 1, "maxLength": 128},
+    "reviewedAt": {"type": "string", "format": "date-time"}
   }
 }

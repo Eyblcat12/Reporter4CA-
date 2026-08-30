@@ -67,6 +67,11 @@ def _evidence() -> TemplatePackValidationEvidence:
         visual_approved=True,
         validator_version="template-studio-test/1.0",
         validated_at="2026-08-26T00:00:00Z",
+        validation_run_id="1" * 64,
+        artifact_sha256="2" * 64,
+        structural_sha256="3" * 64,
+        reviewed_by="template-studio-test",
+        reviewed_at="2026-08-26T00:00:00Z",
     )
 
 
@@ -101,6 +106,16 @@ class TemplatePackBuilderTests(unittest.TestCase):
         )
         with self.assertRaisesRegex(TemplatePackCatalogError, "must pass"):
             build_template_pack(workspace, template, failed)
+
+        unproven = TemplatePackValidationEvidence(
+            fixture_id="summary-baseline-v1",
+            fixture_passed=True,
+            integrity_passed=True,
+            visual_approved=True,
+            validator_version="template-studio-test/1.0",
+        )
+        with self.assertRaisesRegex(TemplatePackCatalogError, "provenance"):
+            build_template_pack(workspace, template, unproven)
 
     def test_build_rejects_changed_template_source(self) -> None:
         template = _template_bytes()

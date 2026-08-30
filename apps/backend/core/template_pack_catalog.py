@@ -46,11 +46,11 @@ class TemplatePackCatalogRevisionConflict(TemplatePackCatalogError):
 
 @dataclass(frozen=True)
 class TemplatePackValidationEvidence:
-    """Trusted results produced by the future pack validation pipeline.
+    """Trusted results produced by the backend Template Pack validation runner.
 
     The public API deliberately does not accept this object yet.  Fixture and
-    integrity results must eventually come from the Profile Renderer test
-    runner; visual approval remains an explicit human gate.
+    integrity results come from the Profile Renderer runner; visual approval
+    remains an explicit human gate bound to the exact artifact checksum.
     """
 
     fixture_id: str
@@ -59,6 +59,11 @@ class TemplatePackValidationEvidence:
     visual_approved: bool
     validator_version: str
     validated_at: str = ""
+    validation_run_id: str = ""
+    artifact_sha256: str = ""
+    structural_sha256: str = ""
+    reviewed_by: str = ""
+    reviewed_at: str = ""
 
     def public(self) -> dict[str, Any]:
         fixture_id = self.fixture_id.strip()
@@ -72,7 +77,7 @@ class TemplatePackValidationEvidence:
                 "Fixture, integrity and visual validation must pass before pack build."
             )
         validated_at = self.validated_at.strip() or _timestamp()
-        return {
+        result = {
             "fixturePassed": True,
             "integrityPassed": True,
             "visualApproved": True,
@@ -80,6 +85,24 @@ class TemplatePackValidationEvidence:
             "validatedAt": validated_at,
             "validatorVersion": validator_version,
         }
+        extended = {
+            "validationRunId": self.validation_run_id.strip(),
+            "artifactSha256": self.artifact_sha256.strip().lower(),
+            "structuralSha256": self.structural_sha256.strip().lower(),
+            "reviewedBy": self.reviewed_by.strip(),
+            "reviewedAt": self.reviewed_at.strip(),
+        }
+        if not all(extended.values()):
+            raise TemplatePackCatalogError(
+                "Runner-issued evidence requires complete artifact and reviewer provenance."
+            )
+        if not all(
+            _SHA256.fullmatch(extended[field])
+            for field in ("validationRunId", "artifactSha256", "structuralSha256")
+        ):
+            raise TemplatePackCatalogError("Validation run and artifact checksums must be SHA-256.")
+        result.update(extended)
+        return result
 
 
 def build_template_pack(
@@ -89,14 +112,7 @@ def build_template_pack(
 ) -> bytes:
     """Build a deterministic, publication-gated ``.rptpack`` archive."""
 
-    if workspace.get("status") != "mapping_complete":
-        raise TemplatePackCatalogError("Workspace must have 100% mapping before pack build.")
-    expected_template_hash = workspace.get("templateSha256")
-    actual_template_hash = hashlib.sha256(template_bytes).hexdigest()
-    if expected_template_hash != actual_template_hash:
-        raise TemplatePackCatalogError("Workspace and template checksums do not match.")
-
-    profile = workspace_profile(workspace)
+    profile = _pack_profile(workspace, template_bytes)
     profile["status"] = "published"
     profile["validation"] = evidence.public()
     validation = validate_template_profile(profile)
@@ -107,6 +123,45 @@ def build_template_pack(
         )
         raise TemplatePackCatalogError(detail)
 
+    return _build_pack_archive(profile, template_bytes, require_publishable=True)
+
+
+def build_template_pack_candidate(workspace: dict[str, Any], template_bytes: bytes) -> bytes:
+    """Build a deterministic, non-publishable pack used only by the validation runner."""
+
+    profile = _pack_profile(workspace, template_bytes)
+    profile["status"] = "mapping_complete"
+    profile["validation"] = {
+        "fixturePassed": False,
+        "integrityPassed": False,
+        "visualApproved": False,
+    }
+    validation = validate_template_profile(profile)
+    if not validation.structural_valid or not validation.mapping_complete:
+        detail = next(
+            (item.message for item in (*validation.errors, *validation.warnings)),
+            "Candidate profile failed the mapping gate.",
+        )
+        raise TemplatePackCatalogError(detail)
+    return _build_pack_archive(profile, template_bytes, require_publishable=False)
+
+
+def _pack_profile(workspace: dict[str, Any], template_bytes: bytes) -> dict[str, Any]:
+    if workspace.get("status") != "mapping_complete":
+        raise TemplatePackCatalogError("Workspace must have 100% mapping before pack build.")
+    expected_template_hash = workspace.get("templateSha256")
+    actual_template_hash = hashlib.sha256(template_bytes).hexdigest()
+    if expected_template_hash != actual_template_hash:
+        raise TemplatePackCatalogError("Workspace and template checksums do not match.")
+    return workspace_profile(workspace)
+
+
+def _build_pack_archive(
+    profile: dict[str, Any],
+    template_bytes: bytes,
+    *,
+    require_publishable: bool,
+) -> bytes:
     layout = {
         key: profile[key]
         for key in (
@@ -151,9 +206,11 @@ def build_template_pack(
             _write_deterministic(archive, name, payloads[name])
     built = output.getvalue()
     try:
-        inspect_template_pack(built, require_publishable=True)
+        inspection = inspect_template_pack(built, require_publishable=require_publishable)
     except TemplatePackError as exc:
         raise TemplatePackCatalogError(f"Built pack failed self-inspection: {exc}") from exc
+    if not require_publishable and inspection.publishable:
+        raise TemplatePackCatalogError("Validation candidate must not be publication-ready.")
     return built
 
 

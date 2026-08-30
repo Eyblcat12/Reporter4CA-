@@ -380,6 +380,7 @@ class TemplatePackArchitectureTests(unittest.TestCase):
             "core.profile_renderer",
             "core.template_pack",
             "core.template_pack_catalog",
+            "core.template_pack_validation",
             "core.template_mapping_workspace",
             "core.template_profile_analyzer",
             "core.template_profiles",

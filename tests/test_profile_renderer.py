@@ -380,6 +380,11 @@ def _evidence() -> TemplatePackValidationEvidence:
         visual_approved=True,
         validator_version="test-1.0",
         validated_at="2026-08-28T00:00:00Z",
+        validation_run_id="1" * 64,
+        artifact_sha256="2" * 64,
+        structural_sha256="3" * 64,
+        reviewed_by="profile-renderer-test",
+        reviewed_at="2026-08-28T00:00:00Z",
     )
 
 
