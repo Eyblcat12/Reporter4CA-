@@ -3,7 +3,7 @@
 > **Ngày chốt:** 31/08/2026
 > **Nhánh phát triển:** `codex/template-studio`
 > **Baseline ổn định:** `github/main` tại commit `ec5795d`
-> **Checkpoint mã nguồn Template Studio:** commit `1ca3eea`
+> **Checkpoint mã nguồn Template Studio:** commit `8aef963`
 > **Trạng thái tích hợp:** chưa nối vào luồng tạo report mặc định
 > **Feature flag:** `AUTO_REPORT_TEMPLATE_PACKS=0` theo mặc định
 
@@ -91,7 +91,7 @@ quyền thay template tạo report.
 |---|---|
 | `github/main` | Không thay đổi, đang ở `ec5795d` |
 | Nhánh làm việc | `codex/template-studio` |
-| Checkpoint đã commit | `1ca3eea feat(template-studio): add isolated profile renderer v1` |
+| Checkpoint đã commit | `8aef963 feat(template-studio): add trusted pack validation runner` |
 | Push nhánh lên remote | Đã push `github/codex/template-studio` |
 | UI Workbench mới | Chưa commit, đang chờ người dùng review |
 | `apps/backend/data/` | Runtime/user data, untracked; tuyệt đối không stage hoặc commit |
@@ -104,7 +104,8 @@ Các thay đổi chưa commit hợp lệ hiện tại:
 
 Workspace Index và toàn bộ lifecycle/transfer/retention TS-10 đã được chốt tại
 commit `7b81937`. Profile Renderer domain TS-11 đã được chốt tại commit `1ca3eea`;
-không còn là thay đổi làm việc chưa commit.
+Validation Runner domain TS-12 được chốt tại commit `8aef963`. Các phần này không
+còn là thay đổi làm việc chưa commit.
 
 Nếu trạng thái Git khác danh sách trên ở phiên sau, phải kiểm tra chủ sở hữu thay
 đổi trước khi stage, sửa hoặc xóa.
