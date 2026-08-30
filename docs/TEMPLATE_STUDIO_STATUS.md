@@ -378,6 +378,17 @@ chưa có mutation lifecycle mới trong TS-10A.
 - Full release gate: **315/315 backend tests**, **51/51 frontend tests**, Ruff,
   ESLint, Prettier, production build 1.916 modules và golden DOCX đều đạt.
 
+### Sau khi hoàn thành domain Preview/diff TS-13 ngày 31/08/2026
+
+- Targeted preview/validation/renderer/pack/API: **71/71 đạt**.
+- Sáu report type preview thành công; cache identity, same-version changed bytes,
+  stale prepared snapshot, corrupt artifact, bounded eviction và cancellation:
+  đạt.
+- Preview promotion giữ byte-for-byte artifact và content signature: đạt.
+- Ruff check/format cho preview domain và regression tests: đạt.
+- Full release gate: **321/321 backend tests**, **51/51 frontend tests**, Ruff,
+  ESLint, Prettier, production build 1.916 modules và golden DOCX đều đạt.
+
 Lệnh gate chuẩn:
 
 ```powershell
@@ -400,6 +411,7 @@ cần frontend đang chạy tại localhost.
 | TS-10B.3 | Retention preview/quarantine/restore | Hoàn thành backend | Không xóa vĩnh viễn |
 | TS-11 | Profile Renderer v1 chạy song song | Hoàn thành domain | Chưa nối API/job/UI/Generate |
 | TS-12 | Fixture/integrity/structural validation runner | Hoàn thành domain | Chưa nối API/publish workflow |
+| TS-13 | Preview/diff và byte-for-byte promotion | Hoàn thành domain | Chưa nối API/job/UI/Generate |
 | TS-09 | Chuyển UI được duyệt thành React route tách biệt | Chưa bắt đầu | Cần hai lần duyệt UI |
 
 Không được bắt đầu nối UI vào API hoặc menu Generate trước khi TS-08 được duyệt.
@@ -474,13 +486,17 @@ orchestration thuộc TS-14, sau TS-13 preview/diff.
 
 #### TS-13 — Preview/diff cho pack
 
-- Preview từ cùng accepted snapshot với Generate.
-- So sánh preview/generate bằng content signature.
-- Hiển thị template structure và rendered structure cạnh nhau khi test.
-- Cache phải có pack checksum và version trong key.
+- **Hoàn thành domain:** preview pin pack ID/version/full checksum, template hash,
+  request signature, content signature và renderer version.
+- Cache bounded theo entry/bytes; pack hoặc normalized data đổi thì key đổi và
+  không thể reuse, kể cả khi version string giữ nguyên.
+- Artifact chứa original-template structure, rendered structure và readable diff.
+- Promotion chỉ trả đúng preview bytes khi toàn bộ identity, content signature và
+  artifact checksum còn khớp; không render lần hai.
+- Có progress/cancellation; chưa nối API/job/UI/Generate mặc định.
 
-**Definition of Done:** pack đổi version hoặc bytes không thể tái sử dụng nhầm
-preview cũ.
+**Definition of Done domain: đạt.** Pack đổi version, bytes hoặc prepared content
+không thể tái sử dụng nhầm preview cũ; Preview/Generate promotion byte-for-byte.
 
 ### P1–P2 — Publish và opt-in integration
 

@@ -217,6 +217,22 @@ can identify the mapped block that changed. Candidate rendering, validation and
 approval remain backend-domain operations; no Template Studio API or production
 Generate selection calls them yet.
 
+## Isolated pack Preview/diff
+
+TS-13 adds a bounded process-local preview cache whose identity includes pack ID,
+semantic version, complete pack SHA-256, template SHA-256, accepted request
+signature, prepared content signature and renderer version. A cache entry cannot
+be reused when either the pack bytes or normalized input changes—even if the pack
+version string is unchanged.
+
+Each preview exposes the original-template and rendered-document structural
+snapshots plus a bounded readable diff. Generate promotion returns the exact
+preview bytes only when every identity component and the artifact checksum still
+match. This proves Preview/Generate content parity without a second render.
+
+The service is still domain-only. It has no route, job, browser cache, dropdown
+selection or connection to the production Generate workflow.
+
 These endpoints do not appear in, or change, the current Configure/Preview/
 Generate workflow. Template Studio will call them from a separate experimental
 screen in a later phase.
