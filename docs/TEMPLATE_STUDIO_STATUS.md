@@ -1,9 +1,9 @@
 # Template Studio — trạng thái triển khai và hồ sơ bàn giao
 
-> **Ngày chốt:** 28/08/2026
+> **Ngày chốt:** 30/08/2026
 > **Nhánh phát triển:** `codex/template-studio`
 > **Baseline ổn định:** `github/main` tại commit `ec5795d`
-> **Checkpoint Template Studio:** commit `7b81937`
+> **Checkpoint mã nguồn Template Studio:** commit `1ca3eea`
 > **Trạng thái tích hợp:** chưa nối vào luồng tạo report mặc định
 > **Feature flag:** `AUTO_REPORT_TEMPLATE_PACKS=0` theo mặc định
 
@@ -72,7 +72,7 @@ DOCX mới
   → Mapping Workspace
   → Pack Builder
   → Isolated Pack Catalog
-  → Profile Renderer (chưa triển khai)
+  → Profile Renderer (domain-only, chưa nối Generate)
 ```
 
 Ba module legacy sau bị kiểm thử kiến trúc cấm import runtime Template Pack:
@@ -91,8 +91,8 @@ quyền thay template tạo report.
 |---|---|
 | `github/main` | Không thay đổi, đang ở `ec5795d` |
 | Nhánh làm việc | `codex/template-studio` |
-| Checkpoint đã commit | `7b81937 feat(template-studio): complete safe workspace lifecycle` |
-| Push nhánh lên remote | Chưa thực hiện |
+| Checkpoint đã commit | `1ca3eea feat(template-studio): add isolated profile renderer v1` |
+| Push nhánh lên remote | Đã push `github/codex/template-studio` |
 | UI Workbench mới | Chưa commit, đang chờ người dùng review |
 | `apps/backend/data/` | Runtime/user data, untracked; tuyệt đối không stage hoặc commit |
 
@@ -100,9 +100,11 @@ Các thay đổi chưa commit hợp lệ hiện tại:
 
 - `docs/template-studio-workbench.html`
 - phần kiểm thử Workbench trong `tests/test_template_studio_prototype.py`
+- `docs/skill-drafts/` là tài liệu nháp ngoài checkpoint sản phẩm
 
 Workspace Index và toàn bộ lifecycle/transfer/retention TS-10 đã được chốt tại
-commit `7b81937`; không còn là thay đổi làm việc chưa commit.
+commit `7b81937`. Profile Renderer domain TS-11 đã được chốt tại commit `1ca3eea`;
+không còn là thay đổi làm việc chưa commit.
 
 Nếu trạng thái Git khác danh sách trên ở phiên sau, phải kiểm tra chủ sở hữu thay
 đổi trước khi stage, sửa hoặc xóa.
