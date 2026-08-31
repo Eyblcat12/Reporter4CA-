@@ -441,6 +441,7 @@ cần frontend đang chạy tại localhost.
 | TS-17B | Pack/OOXML corpus và concurrent publish/select | Hoàn thành backend | Chưa stress đa tiến trình |
 | TS-17C | Cross-process catalog lock và seeded fuzz | Hoàn thành backend | Chưa benchmark 50k cho pack thực tế |
 | TS-18A | Administrator guide và migration/rollback contract | Hoàn thành | Chưa merge hoặc bật feature flag |
+| TS-18B | Automated merge-safety boundary | Hoàn thành | PR gate bảo vệ default flow |
 | TS-09 | Chuyển UI được duyệt thành React route tách biệt | Chưa bắt đầu | Cần hai lần duyệt UI |
 
 Không được bắt đầu nối UI vào API hoặc menu Generate trước khi TS-08 được duyệt.
@@ -614,13 +615,22 @@ trước khi TS-15 được bật trong workflow chính.
   Legacy Renderer và `selectionIntegrated: false` không bị mô tả sai.
 - Full release gate TS-18A: **337/337 backend tests**, **51/51 frontend tests**,
   Ruff check/format, ESLint, Prettier và production build 1.916 modules đều đạt.
+- **TS-18B hoàn thành:** `scripts/check_template_studio_merge.py` kiểm tra flag
+  mặc định tắt, Legacy Renderer không import Template Pack runtime và Git không
+  track runtime/customer artifact. Trên pull request, checker so diff với base SHA
+  và chặn mọi sửa/rename/copy ở ba module Legacy Renderer hoặc template mặc định.
+- GitHub CI fetch đầy đủ history cho backend job và chạy merge checker trước full
+  regression. Checker tĩnh cũng chạy trong `scripts/check.ps1` trên mọi môi trường.
+- Full release gate TS-18B: **342/342 backend tests**, **51/51 frontend tests**,
+  Ruff check/format, ESLint, Prettier và production build 1.916 modules đều đạt;
+  diff gate với `github/main` xác nhận protected baseline không thay đổi.
 - Full backend/frontend/E2E/golden/security/performance gate.
 - Branch review và merge có kiểm soát vào main.
 - Feature flag vẫn mặc định tắt trong lần merge đầu.
 
 **Còn lại của TS-18:** pilot với template thực tế, benchmark pack, duyệt
-UI/workflow và quyết định merge vẫn là các cổng độc lập. Hoàn thành tài liệu và
-full gate không cấp quyền nối Template Pack vào Generate.
+UI/workflow và quyết định merge vẫn là các cổng độc lập. Hoàn thành tài liệu,
+merge-safety và full gate không cấp quyền nối Template Pack vào Generate.
 
 ## 9. Những việc không làm trong chương trình hiện tại
 

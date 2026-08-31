@@ -23,6 +23,17 @@ powershell -ExecutionPolicy Bypass -File .\scripts\verify-release.ps1
 powershell -ExecutionPolicy Bypass -File .\scripts\check.ps1
 ```
 
+Với pull request của Template Studio, chạy thêm merge boundary theo đúng SHA/ref
+nhánh đích trước khi đề nghị review:
+
+```powershell
+apps\backend\.venv\Scripts\python.exe scripts\check_template_studio_merge.py --base-ref github/main
+```
+
+Gate này chặn thay đổi ở template mặc định, ba module Legacy Renderer, flag bật
+mặc định và runtime/customer artifact bị đưa vào Git. Không bỏ qua gate bằng cách
+đổi tên hoặc di chuyển file; rename/copy cũng được kiểm tra cả đường dẫn cũ và mới.
+
 Commit version/release metadata trước khi tag. Không di chuyển hoặc ghi đè tag đã
 phát hành; nếu release sai, sửa bằng version mới.
 

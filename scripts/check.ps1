@@ -25,6 +25,11 @@ if (-not $SkipBackend) {
     if ($LASTEXITCODE -ne 0) {
         throw "Python format check failed with exit code $LASTEXITCODE."
     }
+    Write-Step "Checking Template Studio merge boundary..."
+    & $Python (Join-Path $Root "scripts\check_template_studio_merge.py")
+    if ($LASTEXITCODE -ne 0) {
+        throw "Template Studio merge boundary failed with exit code $LASTEXITCODE."
+    }
     Write-Step "Running backend regression suite..."
     & $Python -m unittest -v `
         tests.test_api_import `
@@ -65,6 +70,7 @@ if (-not $SkipBackend) {
         tests.test_compact_prototype_integration `
         tests.test_template_schema `
         tests.test_template_studio_documentation `
+        tests.test_template_studio_merge_gate `
         tests.test_threat_intelligence `
         tests.test_tracking_import `
         tests.test_upload_limits `
