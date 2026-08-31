@@ -11,6 +11,8 @@
 | [PROJECT_STATUS_AND_ROADMAP.md](PROJECT_STATUS_AND_ROADMAP.md) | Những gì đã hoàn thành và hướng phát triển |
 | [TEMPLATE_STUDIO_STATUS.md](TEMPLATE_STUDIO_STATUS.md) | Trạng thái, backlog, invariant và hồ sơ bàn giao Template Studio |
 | [TEMPLATE_PACKS.md](TEMPLATE_PACKS.md) | Kiến trúc, schema và API Template Pack thử nghiệm |
+| [TEMPLATE_ADMIN_GUIDE.md](TEMPLATE_ADMIN_GUIDE.md) | Quy trình analyze, mapping, review và publish an toàn |
+| [TEMPLATE_STUDIO_MIGRATION_ROLLBACK.md](TEMPLATE_STUDIO_MIGRATION_ROLLBACK.md) | Runbook migration, recovery và rollback |
 
 Hướng dẫn cài đặt nằm tại [INSTALL.md](../INSTALL.md). Chính sách đóng góp và bảo
 mật nằm tại [CONTRIBUTING.md](../CONTRIBUTING.md) và [SECURITY.md](../SECURITY.md).

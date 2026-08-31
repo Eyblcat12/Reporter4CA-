@@ -64,6 +64,7 @@ if (-not $SkipBackend) {
         tests.test_template_workspace_transfer `
         tests.test_compact_prototype_integration `
         tests.test_template_schema `
+        tests.test_template_studio_documentation `
         tests.test_threat_intelligence `
         tests.test_tracking_import `
         tests.test_upload_limits `

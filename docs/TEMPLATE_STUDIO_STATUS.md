@@ -440,6 +440,7 @@ cần frontend đang chạy tại localhost.
 | TS-17A | Catalog checksum, recovery và concurrent install | Hoàn thành backend | Chưa stress đa tiến trình |
 | TS-17B | Pack/OOXML corpus và concurrent publish/select | Hoàn thành backend | Chưa stress đa tiến trình |
 | TS-17C | Cross-process catalog lock và seeded fuzz | Hoàn thành backend | Chưa benchmark 50k cho pack thực tế |
+| TS-18A | Administrator guide và migration/rollback contract | Hoàn thành | Chưa merge hoặc bật feature flag |
 | TS-09 | Chuyển UI được duyệt thành React route tách biệt | Chưa bắt đầu | Cần hai lần duyệt UI |
 
 Không được bắt đầu nối UI vào API hoặc menu Generate trước khi TS-08 được duyệt.
@@ -604,11 +605,22 @@ trước khi TS-15 được bật trong workflow chính.
 
 #### TS-18 — Release và merge gate
 
-- Tài liệu người dùng và template administrator.
-- Migration/rollback instructions.
+- **TS-18A hoàn thành:** hướng dẫn Template Administrator mô tả vai trò, workflow
+  mapping/validation hai lượt, version, retention, recovery và pilot gate.
+- **TS-18A hoàn thành:** migration/rollback runbook bắt buộc preflight, backup +
+  dry-run, checksum, optimistic revision, checkpoint recovery và Legacy smoke test.
+- Release documentation contract được chạy trong `scripts/check.ps1`: kiểm tra
+  tài liệu/index, endpoint được mô tả có route thật, feature flag mặc định `0`,
+  Legacy Renderer và `selectionIntegrated: false` không bị mô tả sai.
+- Full release gate TS-18A: **337/337 backend tests**, **51/51 frontend tests**,
+  Ruff check/format, ESLint, Prettier và production build 1.916 modules đều đạt.
 - Full backend/frontend/E2E/golden/security/performance gate.
 - Branch review và merge có kiểm soát vào main.
 - Feature flag vẫn mặc định tắt trong lần merge đầu.
+
+**Còn lại của TS-18:** pilot với template thực tế, benchmark pack, duyệt
+UI/workflow và quyết định merge vẫn là các cổng độc lập. Hoàn thành tài liệu và
+full gate không cấp quyền nối Template Pack vào Generate.
 
 ## 9. Những việc không làm trong chương trình hiện tại
 
@@ -691,3 +703,5 @@ Phải dừng và xin ý kiến khi xảy ra một trong các trường hợp:
 - [Benchmark đã công bố](BENCHMARKS.md)
 - [Golden DOCX testing](testing/golden-docx.md)
 - [Quy trình phát triển](DEVELOPMENT.md)
+- [Hướng dẫn Template Administrator](TEMPLATE_ADMIN_GUIDE.md)
+- [Migration và rollback runbook](TEMPLATE_STUDIO_MIGRATION_ROLLBACK.md)
