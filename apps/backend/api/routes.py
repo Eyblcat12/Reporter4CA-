@@ -61,7 +61,7 @@ from core.report_generator import (
 from core.report_integrity import verify_report_document
 from core.report_jobs import JobCancelled, ReportJob, ReportJobManager
 from core.report_orchestrator import ReportOrchestrator
-from core.report_snapshot import AcceptedReportSnapshot
+from core.report_snapshot import AcceptedReportSnapshot, PreparedReportSnapshot
 from core.rule_engine import (
     assess_asset,
     evaluate_asset,
@@ -93,6 +93,11 @@ from core.template_pack_catalog import (
     TemplatePackCatalogError,
     TemplatePackCatalogRevisionConflict,
 )
+from core.template_pack_publish import (
+    TemplatePackPublishConflict,
+    TemplatePackPublishError,
+    TemplatePackPublishService,
+)
 from core.template_profile_analyzer import analyze_profile_template
 from core.template_schema import compare_template_analysis
 from core.template_workspace_retention import (
@@ -115,7 +120,7 @@ from core.workspace_backup import (
     restore_workspace_backup,
 )
 from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, Query, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 from starlette.background import BackgroundTask
 
@@ -135,9 +140,12 @@ from api.models import (
     SaveAsTemplateRequest,
     SavePresetRequest,
     SheetSelectRequest,
+    TemplatePackBaselineApprovalRequest,
     TemplatePackInspectRequest,
     TemplatePackInstallRequest,
+    TemplatePackPublishRequest,
     TemplatePackSelectRequest,
+    TemplatePackValidationRequest,
     TemplateProfileAnalyzeRequest,
     TemplateVersionRequest,
     TemplateWorkspaceArchiveRequest,
@@ -183,6 +191,11 @@ _preview_artifacts = PreviewArtifactRegistry(
 )
 _template_studio = TemplateStudioService(PROJECT_ROOT / "data" / "template_studio")
 _template_pack_catalog = TemplatePackCatalog(PROJECT_ROOT / "data" / "template_studio" / "catalog")
+_template_pack_publisher = TemplatePackPublishService(
+    PROJECT_ROOT / "data" / "template_studio" / "validation",
+    _template_studio,
+    _template_pack_catalog,
+)
 _template_workspace_retention = TemplateWorkspaceRetention(_template_studio)
 _REPORT_TYPES = {item.value for item in ReportType}
 _PERFORMANCE_FEATURE_FLAGS = (
@@ -2429,6 +2442,157 @@ async def restore_template_workspace_retention(quarantine_id: str):
     try:
         return _template_workspace_retention.restore(quarantine_id)
     except TemplateWorkspaceRetentionError as exc:
+        status_code = 404 if "not found" in str(exc).lower() else 400
+        raise HTTPException(status_code, str(exc)) from exc
+
+
+def _prepare_template_pack_fixture(
+    workspace_id: str,
+    req: TemplatePackValidationRequest,
+) -> PreparedReportSnapshot:
+    """Pin a fixture to the workspace DOCX without entering the legacy renderer."""
+
+    _assert_report_size(req.rows)
+    if not req.rows:
+        raise HTTPException(400, "Validation fixture must contain at least one row.")
+    workspace = _template_studio.get(workspace_id)
+    template_bytes = _template_studio.source_bytes(workspace_id)
+    metadata = _metadata_with_custom_rules(req.metadata)
+    accepted = AcceptedReportSnapshot.create(
+        rows=req.rows,
+        metadata=metadata,
+        title=req.title,
+        organization=req.organization,
+        assessment_date=req.assessment_date,
+        report_type=workspace["reportType"],
+        template_bytes=template_bytes,
+        template_key=(
+            f"template-studio:{workspace_id}:{workspace['revision']}:{workspace['templateSha256']}"
+        ),
+        plugin_manifest=(),
+        disable_plugins=True,
+    )
+    payload, quality, warnings = _validate_and_normalize_snapshot(
+        req.rows,
+        metadata,
+        workspace["reportType"],
+    )
+    return PreparedReportSnapshot.create(
+        accepted,
+        payload=payload,
+        quality=quality,
+        warnings=warnings,
+        plugin_manifest=(),
+        cache_policy="deterministic",
+    )
+
+
+@router.post(
+    "/template-packs/workspaces/{workspace_id}/validation-runs",
+    status_code=201,
+)
+async def create_template_pack_validation_run(
+    workspace_id: str,
+    req: TemplatePackValidationRequest,
+):
+    """Create a backend-owned validation run and retain its exact DOCX artifact."""
+
+    if not template_packs_enabled():
+        raise HTTPException(404, "Template Pack API is not enabled.")
+    try:
+        prepared = _prepare_template_pack_fixture(workspace_id, req)
+        return _template_pack_publisher.validate(
+            workspace_id,
+            prepared,
+            fixture_id=req.fixture_id,
+            expected_workspace_revision=req.expected_workspace_revision,
+            baseline_run_id=req.baseline_run_id,
+        )
+    except TemplatePackPublishConflict as exc:
+        raise HTTPException(409, str(exc)) from exc
+    except (TemplatePackPublishError, TemplateMappingWorkspaceError, ValueError) as exc:
+        status_code = 404 if "not found" in str(exc).lower() else 400
+        raise HTTPException(status_code, str(exc)) from exc
+
+
+@router.get("/template-packs/workspaces/{workspace_id}/validation-runs/{run_id}/artifact")
+async def download_template_pack_validation_artifact(workspace_id: str, run_id: str):
+    """Download the exact checksum-bound DOCX that a reviewer must inspect."""
+
+    if not template_packs_enabled():
+        raise HTTPException(404, "Template Pack API is not enabled.")
+    try:
+        artifact, run = _template_pack_publisher.artifact(workspace_id, run_id)
+    except TemplatePackPublishConflict as exc:
+        raise HTTPException(409, str(exc)) from exc
+    except (TemplatePackPublishError, TemplateMappingWorkspaceError) as exc:
+        status_code = 404 if "not found" in str(exc).lower() else 400
+        raise HTTPException(status_code, str(exc)) from exc
+    return Response(
+        artifact,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={
+            "Content-Disposition": f'attachment; filename="validation-{run_id[:12]}.docx"',
+            "X-Artifact-SHA256": run["validation"]["artifactSha256"],
+        },
+    )
+
+
+@router.post("/template-packs/workspaces/{workspace_id}/validation-runs/{run_id}/approve-baseline")
+async def approve_template_pack_structural_baseline(
+    workspace_id: str,
+    run_id: str,
+    req: TemplatePackBaselineApprovalRequest,
+):
+    """Approve one exact first-pass artifact as the reviewed structural baseline."""
+
+    if not template_packs_enabled():
+        raise HTTPException(404, "Template Pack API is not enabled.")
+    try:
+        return _template_pack_publisher.approve_baseline(
+            workspace_id,
+            run_id,
+            expected_workspace_revision=req.expected_workspace_revision,
+            reviewer=req.reviewer,
+            artifact_sha256=req.artifact_sha256,
+        )
+    except TemplatePackPublishConflict as exc:
+        raise HTTPException(409, str(exc)) from exc
+    except (TemplatePackPublishError, TemplateMappingWorkspaceError) as exc:
+        status_code = 404 if "not found" in str(exc).lower() else 400
+        raise HTTPException(status_code, str(exc)) from exc
+
+
+@router.post(
+    "/template-packs/workspaces/{workspace_id}/validation-runs/{run_id}/publish",
+    status_code=201,
+)
+async def publish_template_pack_validation_run(
+    workspace_id: str,
+    run_id: str,
+    req: TemplatePackPublishRequest,
+):
+    """Publish only the exact, reviewed second-pass artifact into the isolated catalog."""
+
+    if not template_packs_enabled():
+        raise HTTPException(404, "Template Pack API is not enabled.")
+    try:
+        return _template_pack_publisher.publish(
+            workspace_id,
+            run_id,
+            expected_workspace_revision=req.expected_workspace_revision,
+            expected_catalog_revision=req.expected_catalog_revision,
+            reviewer=req.reviewer,
+            artifact_sha256=req.artifact_sha256,
+        )
+    except (TemplatePackPublishConflict, TemplatePackCatalogRevisionConflict) as exc:
+        raise HTTPException(409, str(exc)) from exc
+    except (
+        TemplatePackPublishError,
+        TemplatePackCatalogError,
+        TemplateMappingWorkspaceError,
+        ValueError,
+    ) as exc:
         status_code = 404 if "not found" in str(exc).lower() else 400
         raise HTTPException(status_code, str(exc)) from exc
 

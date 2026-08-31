@@ -139,6 +139,9 @@ starting the backend:
   always assigns a new workspace identity on import.
 - Retention is preview-first and moves eligible archived drafts into recoverable
   quarantine. There is no permanent-delete endpoint.
+- Publication uses a backend-owned two-pass workflow: create a baseline run,
+  review and approve its exact DOCX SHA-256, run again against that approved
+  baseline, then publish the exact successful second-pass artifact.
 
 Every mapping command includes `expectedRevision`. A stale editor receives HTTP
 `409` instead of overwriting newer work. DOCX sources are content-addressed and
@@ -175,11 +178,20 @@ Additional feature-gated endpoints:
   version in Template Studio.
 - `POST /api/template-packs/catalog/{packId}/rollback` records an explicit
   rollback to an installed version.
+- `POST /api/template-packs/workspaces/{id}/validation-runs` creates a baseline
+  candidate or a second-pass run against an approved baseline.
+- `GET /api/template-packs/workspaces/{id}/validation-runs/{runId}/artifact`
+  downloads the checksum-bound DOCX for review.
+- `POST .../{runId}/approve-baseline` records reviewer approval for the exact
+  first-pass artifact checksum.
+- `POST .../{runId}/publish` rechecks workspace and catalog revisions and then
+  installs only the exact successful second-pass result.
 
-The Pack Builder itself is not exposed as a public HTTP operation yet. Fixture
-and integrity evidence must come from the future Profile Renderer validation
-runner rather than booleans supplied by a browser. This prevents a UI client
-from self-certifying an untested customer template.
+The Pack Builder is reachable only through this trusted publication workflow.
+It never accepts fixture/integrity/visual booleans from a browser. Server-owned
+records bind workspace revision/hash, template hash, fixture signatures,
+structural baseline, artifact SHA-256 and reviewer identity before a
+publication-ready pack can be created.
 
 ## Isolated Profile Renderer v1
 
@@ -213,9 +225,10 @@ TS-12 adds a two-pass validation runner without exposing a browser-controlled
    timestamp before the final publishable pack can be built.
 
 Generated tables carry invisible semantic captions so a structural difference
-can identify the mapped block that changed. Candidate rendering, validation and
-approval remain backend-domain operations; no Template Studio API or production
-Generate selection calls them yet.
+can identify the mapped block that changed. TS-14 exposes validation and publish
+through the feature-gated Template Studio API and stores artifacts in an
+isolated checksum-protected store. Production Generate selection still does not
+call this workflow.
 
 ## Isolated pack Preview/diff
 

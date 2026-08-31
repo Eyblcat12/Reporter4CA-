@@ -343,6 +343,37 @@ class TemplateWorkspaceRetentionApplyRequest(BaseModel):
     model_config = {"populate_by_name": True}
 
 
+class TemplatePackValidationRequest(BaseModel):
+    """Run a server-owned fixture against one revisioned mapping workspace."""
+
+    rows: list[dict[str, Any]] = Field(default_factory=list)
+    fixture_id: str = Field(alias="fixtureId", min_length=1, max_length=128)
+    expected_workspace_revision: int = Field(alias="expectedWorkspaceRevision", ge=1)
+    baseline_run_id: str = Field(alias="baselineRunId", default="", max_length=64)
+    title: str = DEFAULT_REPORT_TITLE
+    organization: str = ""
+    assessment_date: str = Field(alias="assessmentDate", default="")
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    model_config = {"populate_by_name": True}
+
+
+class TemplatePackBaselineApprovalRequest(BaseModel):
+    """Approve the checksum of an exact first-pass validation artifact."""
+
+    expected_workspace_revision: int = Field(alias="expectedWorkspaceRevision", ge=1)
+    reviewer: str = Field(min_length=1, max_length=128)
+    artifact_sha256: str = Field(alias="artifactSha256", min_length=64, max_length=64)
+
+    model_config = {"populate_by_name": True}
+
+
+class TemplatePackPublishRequest(TemplatePackBaselineApprovalRequest):
+    """Publish an exact reviewed second-pass run with catalog revision control."""
+
+    expected_catalog_revision: int = Field(alias="expectedCatalogRevision", ge=0)
+
+
 class TemplateAnalysis(BaseModel):
     """Detailed template analysis result."""
 

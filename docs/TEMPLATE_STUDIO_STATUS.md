@@ -3,7 +3,7 @@
 > **Ngày chốt:** 31/08/2026
 > **Nhánh phát triển:** `codex/template-studio`
 > **Baseline ổn định:** `github/main` tại commit `ec5795d`
-> **Checkpoint mã nguồn Template Studio:** commit `619faaa`
+> **Checkpoint mã nguồn Template Studio:** commit `576b4ac`
 > **Trạng thái tích hợp:** chưa nối vào luồng tạo report mặc định
 > **Feature flag:** `AUTO_REPORT_TEMPLATE_PACKS=0` theo mặc định
 
@@ -91,7 +91,7 @@ quyền thay template tạo report.
 |---|---|
 | `github/main` | Không thay đổi, đang ở `ec5795d` |
 | Nhánh làm việc | `codex/template-studio` |
-| Checkpoint đã commit | `619faaa feat(template-studio): add isolated pack preview and diff` |
+| Checkpoint đã commit | `576b4ac docs(template-studio): record TS-13 preview checkpoint` |
 | Push nhánh lên remote | Đã push `github/codex/template-studio` |
 | UI Workbench mới | Chưa commit, đang chờ người dùng review |
 | `apps/backend/data/` | Runtime/user data, untracked; tuyệt đối không stage hoặc commit |
@@ -106,7 +106,7 @@ Workspace Index và toàn bộ lifecycle/transfer/retention TS-10 đã được 
 commit `7b81937`. Profile Renderer domain TS-11 đã được chốt tại commit `1ca3eea`;
 Validation Runner domain TS-12 được chốt tại commit `8aef963`. Các phần này không
 còn là thay đổi làm việc chưa commit. Preview/diff domain TS-13 được chốt tại
-commit `619faaa`.
+commit `619faaa`, với tài liệu checkpoint tại `576b4ac`.
 
 Nếu trạng thái Git khác danh sách trên ở phiên sau, phải kiểm tra chủ sở hữu thay
 đổi trước khi stage, sửa hoặc xóa.
@@ -168,8 +168,9 @@ Tệp chính: `apps/backend/core/template_pack.py`.
 - Chỉ build từ workspace `mapping_complete` có source checksum khớp.
 - Yêu cầu fixture, integrity và visual evidence đều đạt.
 - Tạo archive ổn định, sinh checksum và tự inspect đầu ra trước khi trả kết quả.
-- Pack Builder chưa mở trực tiếp qua HTTP vì browser không được phép tự chứng nhận
-  fixture/integrity bằng các boolean do client gửi lên.
+- Pack Builder không có endpoint nhận pack/evidence tùy ý. TS-14 chỉ gọi Builder
+  sau workflow validation hai lượt do backend sở hữu; browser không thể tự chứng
+  nhận fixture/integrity bằng các boolean do client gửi lên.
 
 Tệp chính: `apps/backend/core/template_pack_catalog.py`.
 
@@ -207,6 +208,10 @@ Tất cả endpoint trả `404` khi feature flag tắt:
 | POST | `/api/template-packs/catalog/install` | Hoàn thành |
 | POST | `/api/template-packs/catalog/{packId}/activate` | Hoàn thành |
 | POST | `/api/template-packs/catalog/{packId}/rollback` | Hoàn thành |
+| POST | `/api/template-packs/workspaces/{id}/validation-runs` | Hoàn thành TS-14 |
+| GET | `/api/template-packs/workspaces/{id}/validation-runs/{runId}/artifact` | Hoàn thành TS-14 |
+| POST | `/api/template-packs/workspaces/{id}/validation-runs/{runId}/approve-baseline` | Hoàn thành TS-14 |
+| POST | `/api/template-packs/workspaces/{id}/validation-runs/{runId}/publish` | Hoàn thành TS-14 |
 
 ### TS-08 — UI exploration — đang chờ duyệt
 
@@ -390,6 +395,22 @@ chưa có mutation lifecycle mới trong TS-10A.
 - Full release gate: **321/321 backend tests**, **51/51 frontend tests**, Ruff,
   ESLint, Prettier, production build 1.916 modules và golden DOCX đều đạt.
 
+### Sau khi hoàn thành trusted Publish API TS-14 ngày 31/08/2026
+
+- Validation run và artifact DOCX được lưu bởi backend với record checksum; client
+  không thể gửi cờ `passed=true` để tự chứng nhận.
+- Workflow bắt buộc hai lượt: tạo baseline → duyệt đúng artifact checksum → chạy
+  lại với baseline đã duyệt → publish đúng artifact checksum của lượt hai.
+- Publish kiểm tra lại workspace revision, toàn bộ workspace hash, template hash,
+  baseline approval và catalog revision ngay tại commit point.
+- Catalog rollback payload mới nếu ghi index thất bại; không để version nửa vời.
+- Targeted publish/API regression: **33/33 đạt**; tamper, stale workspace/catalog,
+  baseline chưa duyệt, checksum sai và lỗi ghi index đều bị chặn.
+- Full release gate hiện tại: **322/322 backend tests**, **51/51 frontend tests**,
+  Ruff check/format, ESLint, Prettier và production build 1.916 modules đều đạt.
+- Feature flag vẫn tắt mặc định; không activate pack, không thêm dropdown và không
+  nối Profile Renderer vào Preview/Generate mặc định.
+
 Lệnh gate chuẩn:
 
 ```powershell
@@ -410,9 +431,10 @@ cần frontend đang chạy tại localhost.
 | TS-10B.1 | Rename/clone/archive draft | Hoàn thành backend | Chưa nối UI |
 | TS-10B.2 | Export/import draft portable | Hoàn thành backend | Chưa nối UI |
 | TS-10B.3 | Retention preview/quarantine/restore | Hoàn thành backend | Không xóa vĩnh viễn |
-| TS-11 | Profile Renderer v1 chạy song song | Hoàn thành domain | Chưa nối API/job/UI/Generate |
-| TS-12 | Fixture/integrity/structural validation runner | Hoàn thành domain | Chưa nối API/publish workflow |
+| TS-11 | Profile Renderer v1 chạy song song | Hoàn thành domain | Chỉ TS-14 gọi để validate; chưa nối Preview/Generate |
+| TS-12 | Fixture/integrity/structural validation runner | Hoàn thành + nối TS-14 | Chưa nối UI/job/Generate |
 | TS-13 | Preview/diff và byte-for-byte promotion | Hoàn thành domain | Chưa nối API/job/UI/Generate |
+| TS-14 | Publish API với trusted two-pass evidence | Hoàn thành backend | Không activate hoặc nối Generate |
 | TS-09 | Chuyển UI được duyệt thành React route tách biệt | Chưa bắt đầu | Cần hai lần duyệt UI |
 
 Không được bắt đầu nối UI vào API hoặc menu Generate trước khi TS-08 được duyệt.
@@ -479,7 +501,8 @@ xem xét sau TS-12/TS-13 và cổng duyệt TS-15.
 - Visual approval bị khóa vào checksum DOCX, structural hash, validation run ID,
   reviewer và thời gian review.
 - Pack Builder từ chối evidence đạt nhưng thiếu provenance của runner.
-- Chưa nối API/UI/Publish; browser không có đường gửi ba cờ `passed=true`.
+- Đã nối vào Publish API TS-14 theo workflow checksum hai lượt; browser vẫn không
+  có đường gửi ba cờ `passed=true`.
 
 **Definition of Done domain: đạt.** Runner tạo evidence có provenance cho Pack
 Builder; diff lỗi đọc được và table diff truy về semantic block. API/publish
@@ -503,10 +526,19 @@ không thể tái sử dụng nhầm preview cũ; Preview/Generate promotion byt
 
 #### TS-14 — Publish API có trusted evidence
 
-- Nối Mapping Workspace → validation runner → Pack Builder → catalog.
-- Atomic staging/install; lỗi giữa chừng không tạo version nửa vời.
-- Publish cùng version khác bytes bị từ chối.
-- Rollback catalog không xóa version mới.
+- **Hoàn thành backend:** nối Mapping Workspace → validation runner → Pack Builder
+  → isolated catalog bằng endpoint feature-gated.
+- Baseline chỉ hợp lệ sau khi reviewer duyệt checksum đúng của artifact lượt đầu;
+  publish chỉ nhận lượt hai đã so khớp baseline này.
+- Validation record, structural snapshot và DOCX artifact được lưu trong staging
+  directory rồi rename nguyên tử; khi đọc luôn xác minh checksum.
+- Workspace revision/hash/template và catalog revision được kiểm tra lại trước
+  publish; stale/tampered input bị từ chối.
+- Catalog install rollback payload vừa tạo nếu index write lỗi; cùng version khác
+  bytes tiếp tục bị từ chối và rollback version không xóa archive nào.
+
+**Definition of Done backend: đạt.** Chưa có UI, background job, activate tự động
+hoặc kết nối với Generate mặc định.
 
 #### TS-15 — Chọn pack theo cơ chế opt-in
 

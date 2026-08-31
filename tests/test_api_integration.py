@@ -28,7 +28,10 @@ from core.template_mapping_workspace import (  # noqa: E402
     set_mapping_workspace_archived,
 )
 from core.template_pack_catalog import TemplatePackCatalog  # noqa: E402
+from core.template_pack_publish import TemplatePackPublishService  # noqa: E402
 from core.template_workspace_retention import TemplateWorkspaceRetention  # noqa: E402
+
+from tests.test_profile_renderer import _complete_workspace, _template_for  # noqa: E402
 
 
 class ApiIntegrationTests(unittest.TestCase):
@@ -43,6 +46,11 @@ class ApiIntegrationTests(unittest.TestCase):
         self.preview_registry = PreviewArtifactRegistry(self.root / "preview-cache")
         self.template_studio = TemplateStudioService(self.root / "studio")
         self.template_pack_catalog = TemplatePackCatalog(self.root / "studio" / "catalog")
+        self.template_pack_publisher = TemplatePackPublishService(
+            self.root / "studio" / "validation",
+            self.template_studio,
+            self.template_pack_catalog,
+        )
         self.template_workspace_retention = TemplateWorkspaceRetention(self.template_studio)
         self.patches = [
             patch("api.routes.get_db", return_value=self.database),
@@ -53,6 +61,7 @@ class ApiIntegrationTests(unittest.TestCase):
             patch("api.routes.GENERATED_REPORTS_DIR", self.root / "generated"),
             patch("api.routes._template_studio", self.template_studio),
             patch("api.routes._template_pack_catalog", self.template_pack_catalog),
+            patch("api.routes._template_pack_publisher", self.template_pack_publisher),
             patch("api.routes._template_workspace_retention", self.template_workspace_retention),
         ]
         for active in self.patches:
@@ -136,6 +145,99 @@ class ApiIntegrationTests(unittest.TestCase):
 
         with patch("api.routes.template_packs_enabled", return_value=False):
             hidden = self.client.get("/api/template-packs/catalog")
+        self.assertEqual(hidden.status_code, 404)
+
+    def test_template_pack_publish_api_requires_reviewed_two_pass_evidence(self) -> None:
+        template, anchors = _template_for("summary")
+        workspace = _complete_workspace(
+            self.template_studio,
+            template,
+            "summary",
+            anchors,
+        )
+        fixture = {
+            "rows": [
+                {
+                    "type": "server",
+                    "hostname": "SRV-API-001",
+                    "ip": "10.30.0.1",
+                    "os": "Windows Server 2022",
+                    "result": "Không phát hiện dấu hiệu bất thường",
+                },
+                {
+                    "type": "client",
+                    "hostname": "PC-API-001",
+                    "ip": "10.30.1.1",
+                    "os": "Windows 11",
+                    "result": "Ghi nhận dấu hiệu bất thường: ngrok.exe",
+                    "notes": "Phát hiện công cụ proxy ngrok.exe",
+                },
+            ],
+            "fixtureId": "summary-api-integration-v1",
+            "expectedWorkspaceRevision": workspace["revision"],
+        }
+
+        with patch("api.routes.template_packs_enabled", return_value=True):
+            baseline_response = self.client.post(
+                f"/api/template-packs/workspaces/{workspace['workspaceId']}/validation-runs",
+                json=fixture,
+            )
+            self.assertEqual(baseline_response.status_code, 201)
+            baseline = baseline_response.json()
+
+            premature = self.client.post(
+                f"/api/template-packs/workspaces/{workspace['workspaceId']}/validation-runs",
+                json={**fixture, "baselineRunId": baseline["runId"]},
+            )
+            self.assertEqual(premature.status_code, 400)
+
+            artifact = self.client.get(
+                f"/api/template-packs/workspaces/{workspace['workspaceId']}"
+                f"/validation-runs/{baseline['runId']}/artifact"
+            )
+            self.assertEqual(artifact.status_code, 200)
+            self.assertEqual(
+                artifact.headers["X-Artifact-SHA256"],
+                baseline["validation"]["artifactSha256"],
+            )
+
+            approval = self.client.post(
+                f"/api/template-packs/workspaces/{workspace['workspaceId']}"
+                f"/validation-runs/{baseline['runId']}/approve-baseline",
+                json={
+                    "expectedWorkspaceRevision": workspace["revision"],
+                    "reviewer": "api-reviewer@example.test",
+                    "artifactSha256": baseline["validation"]["artifactSha256"],
+                },
+            )
+            self.assertEqual(approval.status_code, 200)
+
+            verified_response = self.client.post(
+                f"/api/template-packs/workspaces/{workspace['workspaceId']}/validation-runs",
+                json={**fixture, "baselineRunId": baseline["runId"]},
+            )
+            self.assertEqual(verified_response.status_code, 201)
+            verified = verified_response.json()
+            self.assertTrue(verified["validation"]["readyForVisualReview"])
+
+            published = self.client.post(
+                f"/api/template-packs/workspaces/{workspace['workspaceId']}"
+                f"/validation-runs/{verified['runId']}/publish",
+                json={
+                    "expectedWorkspaceRevision": workspace["revision"],
+                    "expectedCatalogRevision": 0,
+                    "reviewer": "api-reviewer@example.test",
+                    "artifactSha256": verified["validation"]["artifactSha256"],
+                },
+            )
+            self.assertEqual(published.status_code, 201)
+            self.assertFalse(published.json()["selectionIntegrated"])
+
+        with patch("api.routes.template_packs_enabled", return_value=False):
+            hidden = self.client.post(
+                f"/api/template-packs/workspaces/{workspace['workspaceId']}/validation-runs",
+                json=fixture,
+            )
         self.assertEqual(hidden.status_code, 404)
 
     def test_profile_template_analysis_starts_with_zero_approved_mapping(self) -> None:

@@ -258,12 +258,14 @@ class TemplatePackCatalog:
                 return self._public(catalog)
 
             target = self._pack_path(inspection.pack_id, inspection.version)
+            created_target = False
             if target.exists():
                 existing_hash = hashlib.sha256(target.read_bytes()).hexdigest()
                 if existing_hash != pack_sha256:
                     raise TemplatePackCatalogError("Stored pack conflicts with catalog state.")
             else:
                 _atomic_write(target, pack_bytes)
+                created_target = True
             installed_at = _timestamp()
             entry["versions"][inspection.version] = {
                 "packSha256": pack_sha256,
@@ -280,7 +282,15 @@ class TemplatePackCatalog:
                 version=inspection.version,
                 actor=actor,
             )
-            self._save(catalog)
+            try:
+                self._save(catalog)
+            except Exception:
+                # The catalog index is the commit point.  Roll back only a payload
+                # created by this call so a failed index write cannot leave an
+                # apparently installable orphan version behind.
+                if created_target:
+                    target.unlink(missing_ok=True)
+                raise
             return self._public(catalog)
 
     def activate(
