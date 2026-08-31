@@ -3,7 +3,7 @@
 > **Ngày chốt:** 31/08/2026
 > **Nhánh phát triển:** `codex/template-studio`
 > **Baseline ổn định:** `github/main` tại commit `ec5795d`
-> **Checkpoint mã nguồn Template Studio:** commit `500aca3`
+> **Checkpoint mã nguồn Template Studio:** commit `57967c2`
 > **Trạng thái tích hợp:** chưa nối vào luồng tạo report mặc định
 > **Feature flag:** `AUTO_REPORT_TEMPLATE_PACKS=0` theo mặc định
 
@@ -91,7 +91,7 @@ quyền thay template tạo report.
 |---|---|
 | `github/main` | Không thay đổi, đang ở `ec5795d` |
 | Nhánh làm việc | `codex/template-studio` |
-| Checkpoint đã commit | `500aca3 test(template-studio): harden pack and OOXML boundaries` |
+| Checkpoint đã commit | `57967c2 feat(template-studio): serialize catalog across processes` |
 | Push nhánh lên remote | Đã push `github/codex/template-studio` |
 | UI Workbench mới | Chưa commit, đang chờ người dùng review |
 | `apps/backend/data/` | Runtime/user data, untracked; tuyệt đối không stage hoặc commit |
