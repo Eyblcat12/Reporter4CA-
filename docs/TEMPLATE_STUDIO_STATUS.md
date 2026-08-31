@@ -440,6 +440,7 @@ cần frontend đang chạy tại localhost.
 | TS-17A | Catalog checksum, recovery và concurrent install | Hoàn thành backend | Chưa stress đa tiến trình |
 | TS-17B | Pack/OOXML corpus và concurrent publish/select | Hoàn thành backend | Chưa stress đa tiến trình |
 | TS-17C | Cross-process catalog lock và seeded fuzz | Hoàn thành backend | Chưa benchmark 50k cho pack thực tế |
+| TS-17D | Reproducible fuzz/soak harness | Hoàn thành | Chờ chạy lại với pack thực tế |
 | TS-18A | Administrator guide và migration/rollback contract | Hoàn thành | Chưa merge hoặc bật feature flag |
 | TS-18B | Automated merge-safety boundary | Hoàn thành | PR gate bảo vệ default flow |
 | TS-09 | Chuyển UI được duyệt thành React route tách biệt | Chưa bắt đầu | Cần hai lần duyệt UI |
@@ -594,8 +595,19 @@ trước khi TS-15 được bật trong workflow chính.
 - Seeded mutation corpus chạy 128 biến thể truncate/bit-flip/append/zero-range.
   Fuzz phát hiện và đã đóng đường `zlib.error` thoát khỏi inspector; mọi biến thể
   giờ chỉ thành pack hợp lệ hoặc `TemplatePackError` có kiểm soát.
-- Còn lại của security hardening: fuzz dài hạn ngoài release gate và benchmark
-  Template Pack thực tế ở 50/1.000/10.000/50.000 tài sản.
+- **TS-17D hoàn thành:** thêm fuzz/soak runner có seed, bảy mutation, giới hạn
+  iteration/thời gian, checkpoint nguyên tử, recipe replay, latency/RSS aggregate
+  và không lưu source bytes. Corpus tổng hợp 10.000 case đạt trong 23,49 giây:
+  1.434 mutation vẫn hợp lệ, 8.566 controlled rejection, 0 exception thoát;
+  inspector P50 0,503 ms, P95 7,036 ms, max 11,347 ms.
+- TS-17D phát hiện thêm `ValueError: negative seek value` từ ZIP bị xóa range;
+  pack/DOCX inspector đã chuẩn hóa lỗi thư viện này thành `TemplatePackError` và
+  recipe được giữ thành regression test cố định.
+- Full release gate TS-17D: **347/347 backend tests**, **51/51 frontend tests**,
+  merge boundary, Ruff check/format, ESLint, Prettier và production build 1.916
+  modules đều đạt.
+- Còn lại của security hardening: chạy soak nhiều giờ với pack được duyệt và
+  benchmark Template Pack thực tế ở 50/1.000/10.000/50.000 tài sản.
 - Full release gate TS-17C: **333/333 backend tests**, **51/51 frontend tests**,
   Ruff check/format, ESLint, Prettier và production build 1.916 modules đều đạt.
 - Full release gate TS-17A: **326/326 backend tests**, **51/51 frontend tests**,

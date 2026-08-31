@@ -13,6 +13,7 @@
 | [TEMPLATE_PACKS.md](TEMPLATE_PACKS.md) | Kiến trúc, schema và API Template Pack thử nghiệm |
 | [TEMPLATE_ADMIN_GUIDE.md](TEMPLATE_ADMIN_GUIDE.md) | Quy trình analyze, mapping, review và publish an toàn |
 | [TEMPLATE_STUDIO_MIGRATION_ROLLBACK.md](TEMPLATE_STUDIO_MIGRATION_ROLLBACK.md) | Runbook migration, recovery và rollback |
+| [testing/template-pack-fuzz.md](testing/template-pack-fuzz.md) | Fuzz/soak Template Pack có seed và checkpoint |
 
 Hướng dẫn cài đặt nằm tại [INSTALL.md](../INSTALL.md). Chính sách đóng góp và bảo
 mật nằm tại [CONTRIBUTING.md](../CONTRIBUTING.md) và [SECURITY.md](../SECURITY.md).

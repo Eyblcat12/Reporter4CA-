@@ -431,6 +431,14 @@ class TemplatePackInspectionTests(unittest.TestCase):
                 except TemplatePackError:
                     pass
 
+    def test_deleted_zip_range_never_leaks_negative_seek_value_error(self) -> None:
+        source = _pack_bytes()
+        mutated = bytearray(source)
+        del mutated[11201:11217]
+
+        with self.assertRaisesRegex(TemplatePackError, "ZIP is invalid"):
+            inspect_template_pack(bytes(mutated))
+
 
 class TemplateProfileAnalyzerTests(unittest.TestCase):
     def test_analyzer_reports_facts_but_never_auto_approves_mapping(self) -> None:

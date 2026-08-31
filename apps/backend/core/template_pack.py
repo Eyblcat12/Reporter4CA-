@@ -84,12 +84,15 @@ def inspect_template_pack(
             mapping = _read_json(archive, "mapping.json")
             evidence = _read_json(archive, "validation.json")
             template_bytes = archive.read(members["template.docx"])
+    except TemplatePackError:
+        raise
     except (
         zipfile.BadZipFile,
         RuntimeError,
         NotImplementedError,
         OSError,
         EOFError,
+        ValueError,
         zlib.error,
     ) as exc:
         raise TemplatePackError("Template Pack ZIP is invalid.") from exc
@@ -423,12 +426,15 @@ def _validate_docx_package(data: bytes) -> None:
                     raise TemplatePackError(
                         f"Unsafe XML declaration in template.docx part {info.filename}."
                     )
+    except TemplatePackError:
+        raise
     except (
         zipfile.BadZipFile,
         RuntimeError,
         NotImplementedError,
         OSError,
         EOFError,
+        ValueError,
         zlib.error,
     ) as exc:
         raise TemplatePackError("template.docx is not a valid Office ZIP package.") from exc
