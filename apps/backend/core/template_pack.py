@@ -24,6 +24,11 @@ MAX_PACK_SIZE = 25 * 1024 * 1024
 MAX_PACK_ENTRIES = 16
 MAX_UNCOMPRESSED_SIZE = 100 * 1024 * 1024
 MAX_COMPRESSION_RATIO = 200
+MAX_JSON_DEPTH = 64
+MAX_JSON_NODES = 20_000
+MAX_DOCX_ENTRIES = 2_048
+MAX_DOCX_UNCOMPRESSED_SIZE = 200 * 1024 * 1024
+MAX_DOCX_COMPRESSION_RATIO = 200
 REQUIRED_MEMBERS = frozenset(
     {"manifest.json", "layout.json", "mapping.json", "validation.json", "template.docx"}
 )
@@ -78,7 +83,7 @@ def inspect_template_pack(
             mapping = _read_json(archive, "mapping.json")
             evidence = _read_json(archive, "validation.json")
             template_bytes = archive.read(members["template.docx"])
-    except (zipfile.BadZipFile, RuntimeError) as exc:
+    except (zipfile.BadZipFile, RuntimeError, NotImplementedError, OSError, EOFError) as exc:
         raise TemplatePackError("Template Pack ZIP is invalid.") from exc
 
     _validate_manifest(manifest)
@@ -179,15 +184,35 @@ def _validate_archive(archive: zipfile.ZipFile) -> dict[str, zipfile.ZipInfo]:
 def _read_json(archive: zipfile.ZipFile, name: str) -> dict[str, Any]:
     try:
         value = json.loads(archive.read(name).decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError, KeyError) as exc:
+    except (UnicodeDecodeError, json.JSONDecodeError, KeyError, RecursionError) as exc:
         raise TemplatePackError(f"{name} is not valid UTF-8 JSON.") from exc
     if not isinstance(value, dict):
         raise TemplatePackError(f"{name} must contain a JSON object.")
+    _validate_json_complexity(value, name)
     return value
 
 
+def _validate_json_complexity(value: dict[str, Any], source: str) -> None:
+    stack: list[tuple[Any, int]] = [(value, 1)]
+    nodes = 0
+    while stack:
+        current, depth = stack.pop()
+        nodes += 1
+        if depth > MAX_JSON_DEPTH:
+            raise TemplatePackError(f"{source} JSON nesting exceeds the safety limit.")
+        if nodes > MAX_JSON_NODES:
+            raise TemplatePackError(f"{source} JSON complexity exceeds the safety limit.")
+        if isinstance(current, dict):
+            stack.extend((item, depth + 1) for item in current.values())
+        elif isinstance(current, list):
+            stack.extend((item, depth + 1) for item in current)
+
+
 def _canonical_json_bytes(value: dict[str, Any]) -> bytes:
-    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+    try:
+        return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+    except RecursionError as exc:
+        raise TemplatePackError("Template Pack JSON nesting exceeds the safety limit.") from exc
 
 
 def _validate_manifest(manifest: dict[str, Any]) -> None:
@@ -347,8 +372,50 @@ def _combine_profile(
 def _validate_docx_package(data: bytes) -> None:
     try:
         with zipfile.ZipFile(io.BytesIO(data)) as document:
-            names = set(document.namelist())
-    except zipfile.BadZipFile as exc:
+            infos = document.infolist()
+            if len(infos) > MAX_DOCX_ENTRIES:
+                raise TemplatePackError("template.docx contains too many package parts.")
+            names: set[str] = set()
+            total = 0
+            xml_parts: list[zipfile.ZipInfo] = []
+            for info in infos:
+                name = info.filename
+                path = PurePosixPath(name)
+                if (
+                    not name
+                    or "\\" in name
+                    or path.is_absolute()
+                    or ".." in path.parts
+                    or ":" in name
+                ):
+                    raise TemplatePackError(f"Unsafe template.docx package part: {name!r}.")
+                if name in names:
+                    raise TemplatePackError(f"Duplicate template.docx package part: {name}.")
+                if info.flag_bits & 0x1:
+                    raise TemplatePackError("Encrypted template.docx parts are not supported.")
+                unix_mode = (info.external_attr >> 16) & 0xFFFF
+                if unix_mode and stat.S_ISLNK(unix_mode):
+                    raise TemplatePackError("Symbolic links are not allowed in template.docx.")
+                total += info.file_size
+                if total > MAX_DOCX_UNCOMPRESSED_SIZE:
+                    raise TemplatePackError("template.docx expands beyond the safety limit.")
+                if info.compress_size == 0 and info.file_size > 0:
+                    raise TemplatePackError(f"Invalid DOCX compression metadata for {name}.")
+                if (
+                    info.compress_size
+                    and info.file_size / info.compress_size > MAX_DOCX_COMPRESSION_RATIO
+                ):
+                    raise TemplatePackError(f"Suspicious DOCX compression ratio for {name}.")
+                names.add(name)
+                if name.lower().endswith((".xml", ".rels")):
+                    xml_parts.append(info)
+            for info in xml_parts:
+                upper_xml = document.read(info).upper()
+                if b"<!DOCTYPE" in upper_xml or b"<!ENTITY" in upper_xml:
+                    raise TemplatePackError(
+                        f"Unsafe XML declaration in template.docx part {info.filename}."
+                    )
+    except (zipfile.BadZipFile, RuntimeError, NotImplementedError, OSError, EOFError) as exc:
         raise TemplatePackError("template.docx is not a valid Office ZIP package.") from exc
     required = {"[Content_Types].xml", "word/document.xml"}
     if not required.issubset(names):

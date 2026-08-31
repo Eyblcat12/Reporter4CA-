@@ -5,7 +5,9 @@ import hashlib
 import io
 import json
 import os
+import stat
 import unittest
+import warnings
 import zipfile
 from pathlib import Path
 from unittest.mock import patch
@@ -167,6 +169,20 @@ def _pack_bytes(*, omit_last_slot: bool = False, checksum_mismatch: bool = False
     return output.getvalue()
 
 
+def _replace_pack_template(source: bytes, template: bytes) -> bytes:
+    with zipfile.ZipFile(io.BytesIO(source)) as existing:
+        values = {info.filename: existing.read(info.filename) for info in existing.infolist()}
+    manifest = json.loads(values["manifest.json"])
+    manifest["checksums"]["template.docx"] = hashlib.sha256(template).hexdigest()
+    values["manifest.json"] = _canonical(manifest)
+    values["template.docx"] = template
+    output = io.BytesIO()
+    with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as archive:
+        for name, payload in values.items():
+            archive.writestr(name, payload)
+    return output.getvalue()
+
+
 class TemplateProfileTests(unittest.TestCase):
     def test_complete_profile_is_publishable(self) -> None:
         result = validate_template_profile(_complete_profile())
@@ -307,6 +323,88 @@ class TemplatePackInspectionTests(unittest.TestCase):
 
         with self.assertRaises(TemplatePackError):
             inspect_template_pack(output.getvalue())
+
+    def test_duplicate_member_and_symbolic_link_are_rejected(self) -> None:
+        source = _pack_bytes()
+        with zipfile.ZipFile(io.BytesIO(source)) as existing:
+            values = [(info.filename, existing.read(info.filename)) for info in existing.infolist()]
+
+        duplicate = io.BytesIO()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            with zipfile.ZipFile(duplicate, "w", zipfile.ZIP_DEFLATED) as archive:
+                for name, payload in values:
+                    archive.writestr(name, payload)
+                archive.writestr("manifest.json", values[0][1])
+        with self.assertRaisesRegex(TemplatePackError, "Duplicate archive member"):
+            inspect_template_pack(duplicate.getvalue())
+
+        linked = io.BytesIO()
+        with zipfile.ZipFile(linked, "w", zipfile.ZIP_DEFLATED) as archive:
+            for name, payload in values:
+                if name == "mapping.json":
+                    info = zipfile.ZipInfo(name)
+                    info.create_system = 3
+                    info.external_attr = (stat.S_IFLNK | 0o777) << 16
+                    archive.writestr(info, payload)
+                else:
+                    archive.writestr(name, payload)
+        with self.assertRaisesRegex(TemplatePackError, "Symbolic links"):
+            inspect_template_pack(linked.getvalue())
+
+    def test_compression_bomb_metadata_is_rejected_before_json_processing(self) -> None:
+        source = _pack_bytes()
+        with zipfile.ZipFile(io.BytesIO(source)) as existing:
+            values = {info.filename: existing.read(info.filename) for info in existing.infolist()}
+        values["layout.json"] = b"0" * (1024 * 1024)
+        output = io.BytesIO()
+        with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
+            for name, payload in values.items():
+                archive.writestr(name, payload)
+
+        with self.assertRaisesRegex(TemplatePackError, "compression ratio"):
+            inspect_template_pack(output.getvalue())
+
+    def test_deeply_nested_json_returns_a_bounded_pack_error(self) -> None:
+        source = _pack_bytes()
+        with zipfile.ZipFile(io.BytesIO(source)) as existing:
+            values = {info.filename: existing.read(info.filename) for info in existing.infolist()}
+        values["layout.json"] = b'{"displayName":' + b"[" * 2000 + b"0" + b"]" * 2000 + b"}"
+        output = io.BytesIO()
+        with zipfile.ZipFile(output, "w", zipfile.ZIP_STORED) as archive:
+            for name, payload in values.items():
+                archive.writestr(name, payload)
+
+        with self.assertRaisesRegex(TemplatePackError, "nesting exceeds"):
+            inspect_template_pack(output.getvalue())
+
+    def test_unsafe_nested_ooxml_and_inner_compression_bomb_are_rejected(self) -> None:
+        template = _minimal_docx()
+        malicious = io.BytesIO()
+        with (
+            zipfile.ZipFile(io.BytesIO(template)) as existing,
+            zipfile.ZipFile(malicious, "w", zipfile.ZIP_DEFLATED) as modified,
+        ):
+            for info in existing.infolist():
+                payload = existing.read(info.filename)
+                if info.filename == "word/document.xml":
+                    payload = b"<!DOCTYPE w:document [<!ENTITY x 'unsafe'>]>" + payload
+                modified.writestr(info.filename, payload)
+        with self.assertRaisesRegex(TemplatePackError, "Unsafe XML declaration"):
+            inspect_template_pack(_replace_pack_template(_pack_bytes(), malicious.getvalue()))
+
+        compressed = io.BytesIO()
+        with (
+            zipfile.ZipFile(io.BytesIO(template)) as existing,
+            zipfile.ZipFile(compressed, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as modified,
+        ):
+            for info in existing.infolist():
+                payload = existing.read(info.filename)
+                if info.filename == "word/document.xml":
+                    payload = b"0" * (1024 * 1024)
+                modified.writestr(info.filename, payload)
+        with self.assertRaisesRegex(TemplatePackError, "DOCX compression ratio"):
+            inspect_template_pack(_replace_pack_template(_pack_bytes(), compressed.getvalue()))
 
 
 class TemplateProfileAnalyzerTests(unittest.TestCase):

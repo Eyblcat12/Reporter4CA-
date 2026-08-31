@@ -269,6 +269,37 @@ class TemplatePackCatalogTests(unittest.TestCase):
             with self.assertRaisesRegex(TemplatePackCatalogError, "No valid"):
                 catalog.recover("0" * 64)
 
+    def test_concurrent_activate_and_rollback_have_one_revision_winner(self) -> None:
+        template = _template_bytes()
+        pack_v1 = build_template_pack(_complete_workspace(template), template, _evidence())
+        pack_v2 = build_template_pack(
+            _complete_workspace(template, version="2.0.0"), template, _evidence()
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            catalog = TemplatePackCatalog(Path(temporary) / "catalog")
+            catalog.install(pack_v1, expected_revision=0)
+            catalog.install(pack_v2, expected_revision=1)
+            catalog.activate("customer-summary", "1.0.0", expected_revision=2)
+
+            def select(action: str) -> str:
+                try:
+                    if action == "activate":
+                        catalog.activate("customer-summary", "2.0.0", expected_revision=3)
+                    else:
+                        catalog.rollback("customer-summary", "2.0.0", expected_revision=3)
+                except TemplatePackCatalogRevisionConflict:
+                    return "conflict"
+                return "selected"
+
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                outcomes = list(executor.map(select, ("activate", "rollback")))
+
+            self.assertEqual(sorted(outcomes), ["conflict", "selected"])
+            snapshot = catalog.snapshot()
+            self.assertEqual(snapshot["revision"], 4)
+            self.assertEqual(snapshot["packs"]["customer-summary"]["activeVersion"], "2.0.0")
+            self.assertEqual(len(snapshot["audit"]), 4)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -59,6 +59,12 @@ Executable files, plugins, extra archive members, encrypted members, symbolic
 links and path traversal are rejected. Size, entry-count, expanded-size and
 compression-ratio limits are checked without extracting the archive.
 
+The nested `template.docx` package receives a second independent safety pass:
+bounded entry count/expanded size/compression ratio, duplicate and unsafe path
+checks, encryption/symlink rejection, and denial of `DOCTYPE`/`ENTITY`
+declarations in OOXML parts. Pack JSON is also bounded by nesting depth and node
+count so malformed inputs return a controlled validation error.
+
 ## Stable anchors
 
 The preferred anchor order is:

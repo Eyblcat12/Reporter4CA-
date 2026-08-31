@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 import tempfile
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from unittest.mock import patch
 
@@ -207,6 +208,50 @@ class TemplatePackPublishTests(unittest.TestCase):
                 artifact_sha256=verified["validation"]["artifactSha256"],
             )
         self.assertEqual(self.catalog.snapshot()["packs"], {})
+
+    def test_concurrent_publish_of_same_run_has_exactly_one_catalog_commit(self) -> None:
+        baseline = self.publisher.validate(
+            self.workspace["workspaceId"],
+            self.prepared,
+            fixture_id="summary-concurrent-publish-v1",
+            expected_workspace_revision=self.workspace["revision"],
+        )
+        self.publisher.approve_baseline(
+            self.workspace["workspaceId"],
+            baseline["runId"],
+            expected_workspace_revision=self.workspace["revision"],
+            reviewer="reviewer",
+            artifact_sha256=baseline["validation"]["artifactSha256"],
+        )
+        verified = self.publisher.validate(
+            self.workspace["workspaceId"],
+            self.prepared,
+            fixture_id="summary-concurrent-publish-v1",
+            expected_workspace_revision=self.workspace["revision"],
+            baseline_run_id=baseline["runId"],
+        )
+
+        def publish() -> str:
+            try:
+                self.publisher.publish(
+                    self.workspace["workspaceId"],
+                    verified["runId"],
+                    expected_workspace_revision=self.workspace["revision"],
+                    expected_catalog_revision=0,
+                    reviewer="reviewer",
+                    artifact_sha256=verified["validation"]["artifactSha256"],
+                )
+            except TemplatePackCatalogRevisionConflict:
+                return "conflict"
+            return "published"
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            outcomes = list(executor.map(lambda _: publish(), range(2)))
+
+        self.assertEqual(sorted(outcomes), ["conflict", "published"])
+        snapshot = self.catalog.snapshot()
+        self.assertEqual(snapshot["revision"], 1)
+        self.assertEqual(len(snapshot["audit"]), 1)
 
 
 if __name__ == "__main__":

@@ -438,6 +438,7 @@ cần frontend đang chạy tại localhost.
 | TS-13 | Preview/diff và byte-for-byte promotion | Hoàn thành domain | Chưa nối API/job/UI/Generate |
 | TS-14 | Publish API với trusted two-pass evidence | Hoàn thành backend | Không activate hoặc nối Generate |
 | TS-17A | Catalog checksum, recovery và concurrent install | Hoàn thành backend | Chưa stress đa tiến trình |
+| TS-17B | Pack/OOXML corpus và concurrent publish/select | Hoàn thành backend | Chưa stress đa tiến trình |
 | TS-09 | Chuyển UI được duyệt thành React route tách biệt | Chưa bắt đầu | Cần hai lần duyệt UI |
 
 Không được bắt đầu nối UI vào API hoặc menu Generate trước khi TS-08 được duyệt.
@@ -566,7 +567,12 @@ trước khi TS-15 được bật trong workflow chính.
 
 #### TS-17 — Security/performance hardening
 
-- Fuzz/zip-bomb/path traversal/malformed OOXML.
+- **TS-17B hoàn thành backend:** corpus chặn duplicate archive member, symlink,
+  path traversal, compression bomb, JSON quá sâu/phức tạp và ZIP codec lỗi bằng
+  error có kiểm soát thay vì exception thoát ra ngoài.
+- `template.docx` lồng bên trong pack có safety pass riêng cho số part, expanded
+  size, compression ratio, duplicate/unsafe path, encryption, symlink và khai báo
+  XML `DOCTYPE`/`ENTITY` nguy hiểm.
 - **TS-17A hoàn thành backend:** catalog index được seal bằng SHA-256 canonical;
   sửa metadata nhưng không cập nhật seal sẽ bị phát hiện trước mọi mutation.
 - **TS-17A hoàn thành backend:** giữ một checkpoint revision hợp lệ; recovery bắt
@@ -574,8 +580,13 @@ trước khi TS-15 được bật trong workflow chính.
   phục. Checkpoint thiếu/hỏng payload không được xem là recoverable.
 - Concurrent catalog install cùng revision đã được kiểm thử: đúng một lệnh thắng,
   lệnh còn lại nhận conflict và không tạo lost update/version thừa.
-- Còn lại: concurrent publish/activate/rollback matrix mở rộng và stress đa tiến
-  trình; hiện khóa catalog chỉ bảo vệ trong một backend process local/team.
+- Concurrent publish cùng validation run và activate/rollback cùng revision đã
+  được kiểm thử: đúng một lệnh commit, lệnh còn lại nhận revision conflict, audit
+  không lặp và catalog không có version thừa.
+- Còn lại: fuzz sinh ngẫu nhiên dài hạn và stress đa tiến trình; hiện khóa catalog
+  chỉ bảo vệ trong một backend process local/team.
+- Full release gate TS-17B: **331/331 backend tests**, **51/51 frontend tests**,
+  Ruff check/format, ESLint, Prettier và production build 1.916 modules đều đạt.
 - Full release gate TS-17A: **326/326 backend tests**, **51/51 frontend tests**,
   Ruff check/format, ESLint, Prettier và production build 1.916 modules đều đạt.
 - Benchmark analyzer, renderer, preview và generate với 50/1.000/10.000/50.000
