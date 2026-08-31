@@ -441,6 +441,7 @@ cần frontend đang chạy tại localhost.
 | TS-17B | Pack/OOXML corpus và concurrent publish/select | Hoàn thành backend | Chưa stress đa tiến trình |
 | TS-17C | Cross-process catalog lock và seeded fuzz | Hoàn thành backend | Chưa benchmark 50k cho pack thực tế |
 | TS-17D | Reproducible fuzz/soak harness | Hoàn thành | Chờ chạy lại với pack thực tế |
+| TS-17E | Synthetic Profile Renderer capacity harness | Hoàn thành | Engineering-only, chưa thay benchmark khách hàng |
 | TS-18A | Administrator guide và migration/rollback contract | Hoàn thành | Chưa merge hoặc bật feature flag |
 | TS-18B | Automated merge-safety boundary | Hoàn thành | PR gate bảo vệ default flow |
 | TS-09 | Chuyển UI được duyệt thành React route tách biệt | Chưa bắt đầu | Cần hai lần duyệt UI |
@@ -615,6 +616,18 @@ trước khi TS-15 được bật trong workflow chính.
 - Benchmark analyzer, renderer, preview và generate với 50/1.000/10.000/50.000
   tài sản theo loại template.
 - Xác định giới hạn từ dữ liệu đo; không suy đoán.
+
+**TS-17E hoàn thành phần synthetic capacity:** mỗi mốc chạy trong worker riêng có
+watchdog RAM/timeout cả trong worker và parent; workload lớn cần `--allow-large`.
+Full synthetic pack đạt 50, 1.000, 10.000 và 50.000 tài sản, không dùng Legacy
+Renderer. Kết quả một trial/mốc trên máy phát triển: 50 = 1,05 giây/43,2 MiB;
+1.000 = 2,24 giây/49,4 MiB; 10.000 = 23,34 giây/144,4 MiB; 50.000 = 164,70
+giây/549,0 MiB. Đây là engineering capacity smoke với template tối giản, không
+phải SLA hoặc benchmark template khách hàng; TS-16 vẫn phải chạy lại matrix với
+pack thực tế và tối thiểu 10 trial tương thích trước khi công bố P50/P95.
+- Full release gate TS-17E: **351/351 backend tests**, **51/51 frontend tests**,
+  merge boundary, Ruff check/format, ESLint, Prettier và production build 1.916
+  modules đều đạt.
 
 #### TS-18 — Release và merge gate
 
