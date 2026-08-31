@@ -178,6 +178,11 @@ Additional feature-gated endpoints:
   version in Template Studio.
 - `POST /api/template-packs/catalog/{packId}/rollback` records an explicit
   rollback to an installed version.
+- `GET /api/template-packs/catalog/recovery` verifies primary/checkpoint metadata
+  and every referenced pack payload, then returns a one-time state-bound token
+  only when recovery is safe.
+- `POST /api/template-packs/catalog/recovery` restores that exact checkpoint;
+  stale tokens and incomplete/corrupt payload sets are rejected.
 - `POST /api/template-packs/workspaces/{id}/validation-runs` creates a baseline
   candidate or a second-pass run against an approved baseline.
 - `GET /api/template-packs/workspaces/{id}/validation-runs/{runId}/artifact`
@@ -192,6 +197,12 @@ It never accepts fixture/integrity/visual booleans from a browser. Server-owned
 records bind workspace revision/hash, template hash, fixture signatures,
 structural baseline, artifact SHA-256 and reviewer identity before a
 publication-ready pack can be created.
+
+Catalog index writes are sealed with a SHA-256 over canonical metadata. Before a
+new revision becomes the primary index, the previous valid revision is retained
+as a bounded checkpoint. Recovery is preview-first and explicit; it never treats
+a syntactically valid index as recoverable unless every referenced `.rptpack`
+exists and matches its catalog checksum.
 
 ## Isolated Profile Renderer v1
 

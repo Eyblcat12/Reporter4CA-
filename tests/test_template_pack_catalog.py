@@ -4,6 +4,7 @@ import hashlib
 import io
 import tempfile
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from docx import Document
@@ -177,6 +178,96 @@ class TemplatePackCatalogTests(unittest.TestCase):
 
             with self.assertRaisesRegex(TemplatePackCatalogError, "checksum"):
                 catalog.activate("customer-summary", "1.0.0", expected_revision=1)
+
+    def test_catalog_metadata_is_sealed_and_tampering_is_detected(self) -> None:
+        template = _template_bytes()
+        pack = build_template_pack(_complete_workspace(template), template, _evidence())
+        with tempfile.TemporaryDirectory() as temporary:
+            catalog = TemplatePackCatalog(Path(temporary) / "catalog")
+            installed = catalog.install(pack, expected_revision=0)
+            self.assertEqual(installed["integrity"], "sealed")
+            self.assertRegex(installed["catalogSha256"], r"^[0-9a-f]{64}$")
+
+            index = Path(temporary) / "catalog" / "catalog.json"
+            document = index.read_text(encoding="utf-8").replace(
+                "Customer Summary", "Tampered Summary"
+            )
+            index.write_text(document, encoding="utf-8")
+            with self.assertRaisesRegex(TemplatePackCatalogError, "checksum"):
+                catalog.snapshot()
+
+    def test_corrupt_primary_can_be_restored_from_previewed_checkpoint(self) -> None:
+        template = _template_bytes()
+        pack_v1 = build_template_pack(_complete_workspace(template), template, _evidence())
+        pack_v2 = build_template_pack(
+            _complete_workspace(template, version="2.0.0"), template, _evidence()
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "catalog"
+            catalog = TemplatePackCatalog(root)
+            catalog.install(pack_v1, expected_revision=0)
+            catalog.install(pack_v2, expected_revision=1)
+            (root / "catalog.json").write_text("{corrupt", encoding="utf-8")
+
+            preview = catalog.recovery_preview()
+            self.assertTrue(preview["canRecover"])
+            self.assertEqual(preview["checkpoint"]["revision"], 1)
+            with self.assertRaisesRegex(TemplatePackCatalogError, "preview changed"):
+                catalog.recover("0" * 64)
+
+            recovered = catalog.recover(preview["confirmationToken"])
+            self.assertTrue(recovered["recovery"]["restored"])
+            self.assertEqual(recovered["revision"], 1)
+            self.assertIn("1.0.0", recovered["packs"]["customer-summary"]["versions"])
+            self.assertNotIn("2.0.0", recovered["packs"]["customer-summary"]["versions"])
+            self.assertEqual(catalog.pack_bytes("customer-summary", "1.0.0"), pack_v1)
+
+    def test_concurrent_install_has_one_revision_winner_and_no_lost_update(self) -> None:
+        template = _template_bytes()
+        packs = [
+            build_template_pack(
+                _complete_workspace(template, version=version), template, _evidence()
+            )
+            for version in ("1.0.0", "2.0.0")
+        ]
+        with tempfile.TemporaryDirectory() as temporary:
+            catalog = TemplatePackCatalog(Path(temporary) / "catalog")
+
+            def install(pack: bytes) -> str:
+                try:
+                    catalog.install(pack, expected_revision=0)
+                except TemplatePackCatalogRevisionConflict:
+                    return "conflict"
+                return "installed"
+
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                outcomes = list(executor.map(install, packs))
+
+            self.assertEqual(sorted(outcomes), ["conflict", "installed"])
+            snapshot = catalog.snapshot()
+            self.assertEqual(snapshot["revision"], 1)
+            versions = snapshot["packs"]["customer-summary"]["versions"]
+            self.assertEqual(len(versions), 1)
+
+    def test_recovery_rejects_checkpoint_with_missing_pack_payload(self) -> None:
+        template = _template_bytes()
+        pack_v1 = build_template_pack(_complete_workspace(template), template, _evidence())
+        pack_v2 = build_template_pack(
+            _complete_workspace(template, version="2.0.0"), template, _evidence()
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "catalog"
+            catalog = TemplatePackCatalog(root)
+            catalog.install(pack_v1, expected_revision=0)
+            catalog.install(pack_v2, expected_revision=1)
+            (root / "catalog.json").write_text("{corrupt", encoding="utf-8")
+            (root / "packs" / "customer-summary" / "1.0.0.rptpack").unlink()
+
+            preview = catalog.recovery_preview()
+            self.assertFalse(preview["canRecover"])
+            self.assertFalse(preview["checkpoint"]["payloadsValid"])
+            with self.assertRaisesRegex(TemplatePackCatalogError, "No valid"):
+                catalog.recover("0" * 64)
 
 
 if __name__ == "__main__":

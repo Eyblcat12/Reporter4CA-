@@ -144,6 +144,7 @@ from api.models import (
     TemplatePackInspectRequest,
     TemplatePackInstallRequest,
     TemplatePackPublishRequest,
+    TemplatePackRecoveryRequest,
     TemplatePackSelectRequest,
     TemplatePackValidationRequest,
     TemplateProfileAnalyzeRequest,
@@ -2210,6 +2211,28 @@ async def get_template_pack_catalog():
         return _template_pack_catalog.snapshot()
     except TemplatePackCatalogError as exc:
         raise HTTPException(400, str(exc)) from exc
+
+
+@router.get("/template-packs/catalog/recovery")
+async def preview_template_pack_catalog_recovery():
+    """Inspect catalog/checkpoint integrity without changing either file."""
+
+    if not template_packs_enabled():
+        raise HTTPException(404, "Template Pack API is not enabled.")
+    return _template_pack_catalog.recovery_preview()
+
+
+@router.post("/template-packs/catalog/recovery")
+async def recover_template_pack_catalog(req: TemplatePackRecoveryRequest):
+    """Restore the exact checkpoint described by an unchanged preview token."""
+
+    if not template_packs_enabled():
+        raise HTTPException(404, "Template Pack API is not enabled.")
+    try:
+        return _template_pack_catalog.recover(req.confirmation_token)
+    except TemplatePackCatalogError as exc:
+        status_code = 409 if "preview" in str(exc).lower() else 400
+        raise HTTPException(status_code, str(exc)) from exc
 
 
 @router.post("/template-packs/catalog/install", status_code=201)

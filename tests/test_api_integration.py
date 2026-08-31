@@ -128,6 +128,7 @@ class ApiIntegrationTests(unittest.TestCase):
     def test_template_pack_catalog_is_isolated_and_feature_gated(self) -> None:
         with patch("api.routes.template_packs_enabled", return_value=True):
             catalog = self.client.get("/api/template-packs/catalog")
+            recovery = self.client.get("/api/template-packs/catalog/recovery")
             invalid_install = self.client.post(
                 "/api/template-packs/catalog/install",
                 json={
@@ -141,11 +142,16 @@ class ApiIntegrationTests(unittest.TestCase):
         self.assertEqual(catalog.json()["revision"], 0)
         self.assertFalse(catalog.json()["selectionIntegrated"])
         self.assertTrue(catalog.json()["legacyRendererUnchanged"])
+        self.assertEqual(recovery.status_code, 200)
+        self.assertFalse(recovery.json()["canRecover"])
+        self.assertTrue(recovery.json()["legacyRendererUnchanged"])
         self.assertEqual(invalid_install.status_code, 400)
 
         with patch("api.routes.template_packs_enabled", return_value=False):
             hidden = self.client.get("/api/template-packs/catalog")
+            hidden_recovery = self.client.get("/api/template-packs/catalog/recovery")
         self.assertEqual(hidden.status_code, 404)
+        self.assertEqual(hidden_recovery.status_code, 404)
 
     def test_template_pack_publish_api_requires_reviewed_two_pass_evidence(self) -> None:
         template, anchors = _template_for("summary")

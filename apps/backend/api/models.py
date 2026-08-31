@@ -281,6 +281,14 @@ class TemplatePackSelectRequest(BaseModel):
     model_config = {"populate_by_name": True}
 
 
+class TemplatePackRecoveryRequest(BaseModel):
+    """Restore a catalog only from an unchanged, previewed checkpoint."""
+
+    confirmation_token: str = Field(alias="confirmationToken", min_length=64, max_length=64)
+
+    model_config = {"populate_by_name": True}
+
+
 class TemplateProfileAnalyzeRequest(BaseModel):
     """Read-only DOCX analysis request for experimental Template Studio."""
 

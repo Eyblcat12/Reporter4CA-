@@ -30,6 +30,7 @@ from .template_pack import (
 from .template_profiles import validate_template_profile
 
 CATALOG_SCHEMA_VERSION = "1.0"
+CATALOG_CHECKSUM_FIELD = "catalogSha256"
 MAX_CATALOG_AUDIT_EVENTS = 1000
 _IDENTIFIER = re.compile(r"^[a-z0-9][a-z0-9._-]{1,127}$")
 _VERSION = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z][0-9A-Za-z.-]{0,63})?$")
@@ -220,12 +221,44 @@ class TemplatePackCatalog:
     def __init__(self, root: Path):
         self.root = root.resolve()
         self.index_path = self.root / "catalog.json"
+        self.checkpoint_path = self.root / "catalog.checkpoint.json"
         self.pack_root = self.root / "packs"
         self._lock = threading.RLock()
 
     def snapshot(self) -> dict[str, Any]:
         with self._lock:
             return self._public(self._load())
+
+    def recovery_preview(self) -> dict[str, Any]:
+        """Inspect primary/checkpoint integrity without changing catalog state."""
+
+        with self._lock:
+            return self._recovery_preview()
+
+    def recover(self, confirmation_token: str) -> dict[str, Any]:
+        """Restore the last valid checkpoint after an explicit preview token."""
+
+        with self._lock:
+            preview = self._recovery_preview()
+            if not preview["canRecover"]:
+                raise TemplatePackCatalogError("No valid catalog checkpoint is available.")
+            if not confirmation_token or confirmation_token != preview["confirmationToken"]:
+                raise TemplatePackCatalogError(
+                    "Catalog recovery preview changed; preview again before restoring."
+                )
+            try:
+                checkpoint_bytes = self.checkpoint_path.read_bytes()
+                checkpoint = self._decode_catalog(checkpoint_bytes)
+            except OSError as exc:
+                raise TemplatePackCatalogError("Catalog checkpoint is unavailable.") from exc
+            _atomic_write(self.index_path, checkpoint_bytes)
+            restored = self._public(checkpoint)
+            restored["recovery"] = {
+                "restored": True,
+                "restoredRevision": checkpoint["revision"],
+                "checkpointSha256": hashlib.sha256(checkpoint_bytes).hexdigest(),
+            }
+            return restored
 
     def install(
         self,
@@ -387,16 +420,16 @@ class TemplatePackCatalog:
 
     def _load(self) -> dict[str, Any]:
         if not self.index_path.exists():
-            return {
-                "catalogSchemaVersion": CATALOG_SCHEMA_VERSION,
-                "revision": 0,
-                "updatedAt": "",
-                "packs": {},
-                "audit": [],
-            }
+            return _empty_catalog()
         try:
-            catalog = json.loads(self.index_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError) as exc:
+            return self._decode_catalog(self.index_path.read_bytes())
+        except OSError as exc:
+            raise TemplatePackCatalogError("Template Pack catalog is corrupt.") from exc
+
+    def _decode_catalog(self, payload: bytes) -> dict[str, Any]:
+        try:
+            catalog = json.loads(payload.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
             raise TemplatePackCatalogError("Template Pack catalog is corrupt.") from exc
         if (
             not isinstance(catalog, dict)
@@ -406,10 +439,87 @@ class TemplatePackCatalog:
             or not isinstance(catalog.get("audit"), list)
         ):
             raise TemplatePackCatalogError("Template Pack catalog schema is invalid.")
+        checksum = catalog.get(CATALOG_CHECKSUM_FIELD)
+        if checksum is not None:
+            if not isinstance(checksum, str) or not _SHA256.fullmatch(checksum):
+                raise TemplatePackCatalogError("Template Pack catalog checksum is invalid.")
+            unsealed = {
+                key: value for key, value in catalog.items() if key != CATALOG_CHECKSUM_FIELD
+            }
+            if checksum != hashlib.sha256(_canonical_json(unsealed)).hexdigest():
+                raise TemplatePackCatalogError("Template Pack catalog checksum is invalid.")
         return catalog
 
     def _save(self, catalog: dict[str, Any]) -> None:
-        _atomic_write(self.index_path, _pretty_json(catalog))
+        sealed = _seal_catalog(catalog)
+        if self.index_path.exists():
+            try:
+                current = self.index_path.read_bytes()
+                self._decode_catalog(current)
+            except (OSError, TemplatePackCatalogError):
+                current = b""
+            if current:
+                _atomic_write(self.checkpoint_path, current)
+        _atomic_write(self.index_path, _pretty_json(sealed))
+        catalog[CATALOG_CHECKSUM_FIELD] = sealed[CATALOG_CHECKSUM_FIELD]
+
+    def _recovery_preview(self) -> dict[str, Any]:
+        primary = self._path_health(self.index_path)
+        checkpoint = self._path_health(self.checkpoint_path)
+        can_recover = not primary["valid"] and checkpoint["valid"]
+        identity = {
+            "schema": CATALOG_SCHEMA_VERSION,
+            "primarySha256": primary["sha256"],
+            "checkpointSha256": checkpoint["sha256"],
+            "checkpointRevision": checkpoint["revision"],
+        }
+        return {
+            "primary": primary,
+            "checkpoint": checkpoint,
+            "canRecover": can_recover,
+            "confirmationToken": hashlib.sha256(_canonical_json(identity)).hexdigest()
+            if can_recover
+            else "",
+            "legacyRendererUnchanged": True,
+        }
+
+    def _path_health(self, path: Path) -> dict[str, Any]:
+        if not path.exists():
+            return {"exists": False, "valid": False, "revision": None, "sha256": ""}
+        try:
+            payload = path.read_bytes()
+            catalog = self._decode_catalog(payload)
+            payloads_valid = self._catalog_payloads_valid(catalog)
+        except (OSError, TemplatePackCatalogError):
+            try:
+                checksum = hashlib.sha256(path.read_bytes()).hexdigest()
+            except OSError:
+                checksum = ""
+            return {"exists": True, "valid": False, "revision": None, "sha256": checksum}
+        return {
+            "exists": True,
+            "valid": payloads_valid,
+            "revision": catalog["revision"],
+            "sha256": hashlib.sha256(payload).hexdigest(),
+            "sealed": CATALOG_CHECKSUM_FIELD in catalog,
+            "payloadsValid": payloads_valid,
+        }
+
+    def _catalog_payloads_valid(self, catalog: dict[str, Any]) -> bool:
+        for pack_id, pack in catalog.get("packs", {}).items():
+            if not isinstance(pack, dict) or not isinstance(pack.get("versions"), dict):
+                return False
+            for version, metadata in pack["versions"].items():
+                if not isinstance(metadata, dict):
+                    return False
+                try:
+                    _validate_identity(pack_id, version)
+                    data = self._pack_path(pack_id, version).read_bytes()
+                except (OSError, TemplatePackCatalogError):
+                    return False
+                if hashlib.sha256(data).hexdigest() != metadata.get("packSha256"):
+                    return False
+        return True
 
     def _pack_path(self, pack_id: str, version: str) -> Path:
         return self.pack_root / pack_id / f"{version}.rptpack"
@@ -442,6 +552,7 @@ class TemplatePackCatalog:
     @staticmethod
     def _public(catalog: dict[str, Any]) -> dict[str, Any]:
         result = copy.deepcopy(catalog)
+        result["integrity"] = "sealed" if CATALOG_CHECKSUM_FIELD in catalog else "legacy_unsealed"
         result["selectionIntegrated"] = False
         result["legacyRendererUnchanged"] = True
         return result
@@ -452,6 +563,23 @@ def _validate_identity(pack_id: str, version: str) -> None:
         raise TemplatePackCatalogError("Invalid Template Pack identifier.")
     if not _VERSION.fullmatch(version):
         raise TemplatePackCatalogError("Template Pack version must use semantic versioning.")
+
+
+def _empty_catalog() -> dict[str, Any]:
+    return {
+        "catalogSchemaVersion": CATALOG_SCHEMA_VERSION,
+        "revision": 0,
+        "updatedAt": "",
+        "packs": {},
+        "audit": [],
+    }
+
+
+def _seal_catalog(catalog: dict[str, Any]) -> dict[str, Any]:
+    sealed = copy.deepcopy(catalog)
+    sealed.pop(CATALOG_CHECKSUM_FIELD, None)
+    sealed[CATALOG_CHECKSUM_FIELD] = hashlib.sha256(_canonical_json(sealed)).hexdigest()
+    return sealed
 
 
 def _canonical_json(value: dict[str, Any]) -> bytes:
