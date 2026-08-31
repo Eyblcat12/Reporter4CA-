@@ -15,7 +15,9 @@ import os
 import re
 import tempfile
 import threading
+import time
 import zipfile
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -25,6 +27,7 @@ from .template_mapping_workspace import workspace_profile
 from .template_pack import (
     PACK_FORMAT_VERSION,
     TemplatePackError,
+    TemplatePackInspection,
     inspect_template_pack,
 )
 from .template_profiles import validate_template_profile
@@ -32,6 +35,7 @@ from .template_profiles import validate_template_profile
 CATALOG_SCHEMA_VERSION = "1.0"
 CATALOG_CHECKSUM_FIELD = "catalogSha256"
 MAX_CATALOG_AUDIT_EVENTS = 1000
+CATALOG_LOCK_TIMEOUT_SECONDS = 10.0
 _IDENTIFIER = re.compile(r"^[a-z0-9][a-z0-9._-]{1,127}$")
 _VERSION = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z][0-9A-Za-z.-]{0,63})?$")
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
@@ -222,43 +226,47 @@ class TemplatePackCatalog:
         self.root = root.resolve()
         self.index_path = self.root / "catalog.json"
         self.checkpoint_path = self.root / "catalog.checkpoint.json"
+        self.lock_path = self.root / "catalog.lock"
         self.pack_root = self.root / "packs"
         self._lock = threading.RLock()
 
     def snapshot(self) -> dict[str, Any]:
         with self._lock:
-            return self._public(self._load())
+            with _catalog_file_lock(self.lock_path):
+                return self._public(self._load())
 
     def recovery_preview(self) -> dict[str, Any]:
         """Inspect primary/checkpoint integrity without changing catalog state."""
 
         with self._lock:
-            return self._recovery_preview()
+            with _catalog_file_lock(self.lock_path):
+                return self._recovery_preview()
 
     def recover(self, confirmation_token: str) -> dict[str, Any]:
         """Restore the last valid checkpoint after an explicit preview token."""
 
         with self._lock:
-            preview = self._recovery_preview()
-            if not preview["canRecover"]:
-                raise TemplatePackCatalogError("No valid catalog checkpoint is available.")
-            if not confirmation_token or confirmation_token != preview["confirmationToken"]:
-                raise TemplatePackCatalogError(
-                    "Catalog recovery preview changed; preview again before restoring."
-                )
-            try:
-                checkpoint_bytes = self.checkpoint_path.read_bytes()
-                checkpoint = self._decode_catalog(checkpoint_bytes)
-            except OSError as exc:
-                raise TemplatePackCatalogError("Catalog checkpoint is unavailable.") from exc
-            _atomic_write(self.index_path, checkpoint_bytes)
-            restored = self._public(checkpoint)
-            restored["recovery"] = {
-                "restored": True,
-                "restoredRevision": checkpoint["revision"],
-                "checkpointSha256": hashlib.sha256(checkpoint_bytes).hexdigest(),
-            }
-            return restored
+            with _catalog_file_lock(self.lock_path):
+                preview = self._recovery_preview()
+                if not preview["canRecover"]:
+                    raise TemplatePackCatalogError("No valid catalog checkpoint is available.")
+                if not confirmation_token or confirmation_token != preview["confirmationToken"]:
+                    raise TemplatePackCatalogError(
+                        "Catalog recovery preview changed; preview again before restoring."
+                    )
+                try:
+                    checkpoint_bytes = self.checkpoint_path.read_bytes()
+                    checkpoint = self._decode_catalog(checkpoint_bytes)
+                except OSError as exc:
+                    raise TemplatePackCatalogError("Catalog checkpoint is unavailable.") from exc
+                _atomic_write(self.index_path, checkpoint_bytes)
+                restored = self._public(checkpoint)
+                restored["recovery"] = {
+                    "restored": True,
+                    "restoredRevision": checkpoint["revision"],
+                    "checkpointSha256": hashlib.sha256(checkpoint_bytes).hexdigest(),
+                }
+                return restored
 
     def install(
         self,
@@ -277,54 +285,72 @@ class TemplatePackCatalog:
         pack_sha256 = hashlib.sha256(pack_bytes).hexdigest()
 
         with self._lock:
-            catalog = self._checked_catalog(expected_revision)
-            entry = catalog["packs"].setdefault(
-                inspection.pack_id,
-                {"activeVersion": "", "versions": {}},
-            )
-            existing = entry["versions"].get(inspection.version)
-            if existing:
-                if existing.get("packSha256") != pack_sha256:
-                    raise TemplatePackCatalogError(
-                        "Pack versions are immutable; use a new semantic version."
-                    )
-                return self._public(catalog)
+            with _catalog_file_lock(self.lock_path):
+                return self._install_locked(
+                    inspection,
+                    pack_bytes,
+                    pack_sha256=pack_sha256,
+                    expected_revision=expected_revision,
+                    actor=actor,
+                )
 
-            target = self._pack_path(inspection.pack_id, inspection.version)
-            created_target = False
-            if target.exists():
-                existing_hash = hashlib.sha256(target.read_bytes()).hexdigest()
-                if existing_hash != pack_sha256:
-                    raise TemplatePackCatalogError("Stored pack conflicts with catalog state.")
-            else:
-                _atomic_write(target, pack_bytes)
-                created_target = True
-            installed_at = _timestamp()
-            entry["versions"][inspection.version] = {
-                "packSha256": pack_sha256,
-                "templateSha256": inspection.template_sha256,
-                "reportType": inspection.profile["reportType"],
-                "displayName": inspection.profile["displayName"],
-                "installedAt": installed_at,
-                "state": "installed",
-            }
-            self._advance(
-                catalog,
-                action="pack.installed",
-                pack_id=inspection.pack_id,
-                version=inspection.version,
-                actor=actor,
-            )
-            try:
-                self._save(catalog)
-            except Exception:
-                # The catalog index is the commit point.  Roll back only a payload
-                # created by this call so a failed index write cannot leave an
-                # apparently installable orphan version behind.
-                if created_target:
-                    target.unlink(missing_ok=True)
-                raise
+    def _install_locked(
+        self,
+        inspection: TemplatePackInspection,
+        pack_bytes: bytes,
+        *,
+        pack_sha256: str,
+        expected_revision: int,
+        actor: str,
+    ) -> dict[str, Any]:
+        catalog = self._checked_catalog(expected_revision)
+        entry = catalog["packs"].setdefault(
+            inspection.pack_id,
+            {"activeVersion": "", "versions": {}},
+        )
+        existing = entry["versions"].get(inspection.version)
+        if existing:
+            if existing.get("packSha256") != pack_sha256:
+                raise TemplatePackCatalogError(
+                    "Pack versions are immutable; use a new semantic version."
+                )
             return self._public(catalog)
+
+        target = self._pack_path(inspection.pack_id, inspection.version)
+        created_target = False
+        if target.exists():
+            existing_hash = hashlib.sha256(target.read_bytes()).hexdigest()
+            if existing_hash != pack_sha256:
+                raise TemplatePackCatalogError("Stored pack conflicts with catalog state.")
+        else:
+            _atomic_write(target, pack_bytes)
+            created_target = True
+        installed_at = _timestamp()
+        entry["versions"][inspection.version] = {
+            "packSha256": pack_sha256,
+            "templateSha256": inspection.template_sha256,
+            "reportType": inspection.profile["reportType"],
+            "displayName": inspection.profile["displayName"],
+            "installedAt": installed_at,
+            "state": "installed",
+        }
+        self._advance(
+            catalog,
+            action="pack.installed",
+            pack_id=inspection.pack_id,
+            version=inspection.version,
+            actor=actor,
+        )
+        try:
+            self._save(catalog)
+        except Exception:
+            # The catalog index is the commit point.  Roll back only a payload
+            # created by this call so a failed index write cannot leave an
+            # apparently installable orphan version behind.
+            if created_target:
+                target.unlink(missing_ok=True)
+            raise
+        return self._public(catalog)
 
     def activate(
         self,
@@ -365,18 +391,22 @@ class TemplatePackCatalog:
     def pack_bytes(self, pack_id: str, version: str) -> bytes:
         _validate_identity(pack_id, version)
         with self._lock:
-            catalog = self._load()
-            metadata = catalog.get("packs", {}).get(pack_id, {}).get("versions", {}).get(version)
-            if not metadata:
-                raise TemplatePackCatalogError("Template Pack version was not found.")
-            path = self._pack_path(pack_id, version)
-            try:
-                payload = path.read_bytes()
-            except FileNotFoundError as exc:
-                raise TemplatePackCatalogError("Template Pack payload is missing.") from exc
-            if hashlib.sha256(payload).hexdigest() != metadata.get("packSha256"):
-                raise TemplatePackCatalogError("Template Pack payload checksum is invalid.")
-            return payload
+            with _catalog_file_lock(self.lock_path):
+                return self._pack_bytes_locked(pack_id, version)
+
+    def _pack_bytes_locked(self, pack_id: str, version: str) -> bytes:
+        catalog = self._load()
+        metadata = catalog.get("packs", {}).get(pack_id, {}).get("versions", {}).get(version)
+        if not metadata:
+            raise TemplatePackCatalogError("Template Pack version was not found.")
+        path = self._pack_path(pack_id, version)
+        try:
+            payload = path.read_bytes()
+        except FileNotFoundError as exc:
+            raise TemplatePackCatalogError("Template Pack payload is missing.") from exc
+        if hashlib.sha256(payload).hexdigest() != metadata.get("packSha256"):
+            raise TemplatePackCatalogError("Template Pack payload checksum is invalid.")
+        return payload
 
     def _select(
         self,
@@ -389,25 +419,26 @@ class TemplatePackCatalog:
     ) -> dict[str, Any]:
         _validate_identity(pack_id, version)
         with self._lock:
-            catalog = self._checked_catalog(expected_revision)
-            entry = catalog["packs"].get(pack_id)
-            if not entry or version not in entry.get("versions", {}):
-                raise TemplatePackCatalogError("Template Pack version was not found.")
-            self.pack_bytes(pack_id, version)
-            previous = entry.get("activeVersion", "")
-            if previous == version:
+            with _catalog_file_lock(self.lock_path):
+                catalog = self._checked_catalog(expected_revision)
+                entry = catalog["packs"].get(pack_id)
+                if not entry or version not in entry.get("versions", {}):
+                    raise TemplatePackCatalogError("Template Pack version was not found.")
+                self._pack_bytes_locked(pack_id, version)
+                previous = entry.get("activeVersion", "")
+                if previous == version:
+                    return self._public(catalog)
+                entry["activeVersion"] = version
+                self._advance(
+                    catalog,
+                    action=action,
+                    pack_id=pack_id,
+                    version=version,
+                    actor=actor,
+                    previous_version=previous,
+                )
+                self._save(catalog)
                 return self._public(catalog)
-            entry["activeVersion"] = version
-            self._advance(
-                catalog,
-                action=action,
-                pack_id=pack_id,
-                version=version,
-                actor=actor,
-                previous_version=previous,
-            )
-            self._save(catalog)
-            return self._public(catalog)
 
     def _checked_catalog(self, expected_revision: int) -> dict[str, Any]:
         catalog = self._load()
@@ -595,6 +626,56 @@ def _write_deterministic(archive: zipfile.ZipFile, name: str, payload: bytes) ->
     info.compress_type = zipfile.ZIP_DEFLATED
     info.external_attr = 0o600 << 16
     archive.writestr(info, payload)
+
+
+@contextmanager
+def _catalog_file_lock(
+    lock_path: Path,
+    *,
+    timeout_seconds: float = CATALOG_LOCK_TIMEOUT_SECONDS,
+):
+    """Hold one exclusive byte-range lock across processes on the catalog root."""
+
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    deadline = time.monotonic() + timeout_seconds
+    with lock_path.open("a+b") as handle:
+        handle.seek(0, os.SEEK_END)
+        if handle.tell() == 0:
+            handle.write(b"\0")
+            handle.flush()
+            os.fsync(handle.fileno())
+        acquired = False
+        try:
+            while not acquired:
+                handle.seek(0)
+                try:
+                    if os.name == "nt":
+                        import msvcrt
+
+                        msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+                    else:
+                        import fcntl
+
+                        fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    acquired = True
+                except OSError as exc:
+                    if time.monotonic() >= deadline:
+                        raise TemplatePackCatalogError(
+                            "Template Pack catalog is busy; retry the operation."
+                        ) from exc
+                    time.sleep(0.05)
+            yield
+        finally:
+            if acquired:
+                handle.seek(0)
+                if os.name == "nt":
+                    import msvcrt
+
+                    msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+                else:
+                    import fcntl
+
+                    fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
 def _atomic_write(target: Path, payload: bytes) -> None:

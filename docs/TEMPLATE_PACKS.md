@@ -210,6 +210,11 @@ as a bounded checkpoint. Recovery is preview-first and explicit; it never treats
 a syntactically valid index as recoverable unless every referenced `.rptpack`
 exists and matches its catalog checksum.
 
+Catalog reads and mutations also hold an OS byte-range lock with a bounded wait.
+This extends revision safety across separate Reporter Pro backend processes on
+Windows and POSIX systems; a busy catalog returns a controlled retryable error
+instead of allowing concurrent index replacement.
+
 ## Isolated Profile Renderer v1
 
 The backend contains a declarative Profile Renderer that can render a

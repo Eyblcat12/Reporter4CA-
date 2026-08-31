@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import io
+import multiprocessing
 import tempfile
 import unittest
 from concurrent.futures import ThreadPoolExecutor
@@ -18,6 +19,24 @@ from apps.backend.core.template_pack_catalog import (
     build_template_pack,
 )
 from apps.backend.core.template_profiles import COMMON_REQUIREMENTS, REPORT_REQUIREMENTS
+
+
+def _multiprocess_install_worker(
+    catalog_root: str,
+    pack: bytes,
+    start_event: object,
+    result_queue: object,
+) -> None:
+    start_event.wait(15)
+    catalog = TemplatePackCatalog(Path(catalog_root))
+    try:
+        catalog.install(pack, expected_revision=0, actor="multiprocess-test")
+    except TemplatePackCatalogRevisionConflict:
+        result_queue.put("conflict")
+    except Exception as exc:  # pragma: no cover - surfaced to the parent assertion
+        result_queue.put(f"error:{type(exc).__name__}:{exc}")
+    else:
+        result_queue.put("installed")
 
 
 def _template_bytes(label: str = "Customer template") -> bytes:
@@ -299,6 +318,44 @@ class TemplatePackCatalogTests(unittest.TestCase):
             self.assertEqual(snapshot["revision"], 4)
             self.assertEqual(snapshot["packs"]["customer-summary"]["activeVersion"], "2.0.0")
             self.assertEqual(len(snapshot["audit"]), 4)
+
+    def test_four_processes_installing_revision_zero_have_one_winner(self) -> None:
+        template = _template_bytes()
+        packs = [
+            build_template_pack(
+                _complete_workspace(template, version=f"{major}.0.0"), template, _evidence()
+            )
+            for major in range(1, 5)
+        ]
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "catalog"
+            context = multiprocessing.get_context("spawn")
+            start_event = context.Event()
+            result_queue = context.Queue()
+            processes = [
+                context.Process(
+                    target=_multiprocess_install_worker,
+                    args=(str(root), pack, start_event, result_queue),
+                )
+                for pack in packs
+            ]
+            for process in processes:
+                process.start()
+            start_event.set()
+            for process in processes:
+                process.join(20)
+                self.assertFalse(process.is_alive(), "Catalog worker did not exit before timeout.")
+                self.assertEqual(process.exitcode, 0)
+            outcomes = sorted(result_queue.get(timeout=2) for _ in processes)
+            result_queue.close()
+
+            self.assertEqual(outcomes, ["conflict", "conflict", "conflict", "installed"])
+            catalog = TemplatePackCatalog(root)
+            snapshot = catalog.snapshot()
+            self.assertEqual(snapshot["revision"], 1)
+            self.assertEqual(len(snapshot["audit"]), 1)
+            versions = snapshot["packs"]["customer-summary"]["versions"]
+            self.assertEqual(len(versions), 1)
 
 
 if __name__ == "__main__":

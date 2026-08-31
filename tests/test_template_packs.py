@@ -5,6 +5,7 @@ import hashlib
 import io
 import json
 import os
+import random
 import stat
 import unittest
 import warnings
@@ -405,6 +406,30 @@ class TemplatePackInspectionTests(unittest.TestCase):
                 modified.writestr(info.filename, payload)
         with self.assertRaisesRegex(TemplatePackError, "DOCX compression ratio"):
             inspect_template_pack(_replace_pack_template(_pack_bytes(), compressed.getvalue()))
+
+    def test_seeded_mutation_corpus_never_leaks_parser_exceptions(self) -> None:
+        source = _pack_bytes()
+        randomizer = random.Random(0xC0DEC0DE)
+        for case in range(128):
+            mutated = bytearray(source)
+            operation = case % 4
+            if operation == 0:
+                del mutated[randomizer.randrange(2, len(mutated)) :]
+            elif operation == 1:
+                for _ in range(randomizer.randint(1, 4)):
+                    index = randomizer.randrange(len(mutated))
+                    mutated[index] ^= randomizer.randrange(1, 256)
+            elif operation == 2:
+                mutated.extend(randomizer.randbytes(randomizer.randint(1, 32)))
+            else:
+                start = randomizer.randrange(len(mutated) - 1)
+                length = randomizer.randint(1, min(32, len(mutated) - start))
+                mutated[start : start + length] = b"\0" * length
+            with self.subTest(case=case, operation=operation):
+                try:
+                    inspect_template_pack(bytes(mutated))
+                except TemplatePackError:
+                    pass
 
 
 class TemplateProfileAnalyzerTests(unittest.TestCase):

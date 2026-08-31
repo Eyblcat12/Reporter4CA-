@@ -12,6 +12,7 @@ import io
 import json
 import stat
 import zipfile
+import zlib
 from dataclasses import dataclass
 from pathlib import PurePosixPath
 from typing import Any
@@ -83,7 +84,14 @@ def inspect_template_pack(
             mapping = _read_json(archive, "mapping.json")
             evidence = _read_json(archive, "validation.json")
             template_bytes = archive.read(members["template.docx"])
-    except (zipfile.BadZipFile, RuntimeError, NotImplementedError, OSError, EOFError) as exc:
+    except (
+        zipfile.BadZipFile,
+        RuntimeError,
+        NotImplementedError,
+        OSError,
+        EOFError,
+        zlib.error,
+    ) as exc:
         raise TemplatePackError("Template Pack ZIP is invalid.") from exc
 
     _validate_manifest(manifest)
@@ -415,7 +423,14 @@ def _validate_docx_package(data: bytes) -> None:
                     raise TemplatePackError(
                         f"Unsafe XML declaration in template.docx part {info.filename}."
                     )
-    except (zipfile.BadZipFile, RuntimeError, NotImplementedError, OSError, EOFError) as exc:
+    except (
+        zipfile.BadZipFile,
+        RuntimeError,
+        NotImplementedError,
+        OSError,
+        EOFError,
+        zlib.error,
+    ) as exc:
         raise TemplatePackError("template.docx is not a valid Office ZIP package.") from exc
     required = {"[Content_Types].xml", "word/document.xml"}
     if not required.issubset(names):

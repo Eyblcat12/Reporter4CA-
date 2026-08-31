@@ -439,6 +439,7 @@ cần frontend đang chạy tại localhost.
 | TS-14 | Publish API với trusted two-pass evidence | Hoàn thành backend | Không activate hoặc nối Generate |
 | TS-17A | Catalog checksum, recovery và concurrent install | Hoàn thành backend | Chưa stress đa tiến trình |
 | TS-17B | Pack/OOXML corpus và concurrent publish/select | Hoàn thành backend | Chưa stress đa tiến trình |
+| TS-17C | Cross-process catalog lock và seeded fuzz | Hoàn thành backend | Chưa benchmark 50k cho pack thực tế |
 | TS-09 | Chuyển UI được duyệt thành React route tách biệt | Chưa bắt đầu | Cần hai lần duyệt UI |
 
 Không được bắt đầu nối UI vào API hoặc menu Generate trước khi TS-08 được duyệt.
@@ -583,9 +584,17 @@ trước khi TS-15 được bật trong workflow chính.
 - Concurrent publish cùng validation run và activate/rollback cùng revision đã
   được kiểm thử: đúng một lệnh commit, lệnh còn lại nhận revision conflict, audit
   không lặp và catalog không có version thừa.
-- Còn lại: fuzz sinh ngẫu nhiên dài hạn và stress đa tiến trình; hiện khóa catalog
-  chỉ bảo vệ trong một backend process local/team.
 - Full release gate TS-17B: **331/331 backend tests**, **51/51 frontend tests**,
+  Ruff check/format, ESLint, Prettier và production build 1.916 modules đều đạt.
+- **TS-17C hoàn thành backend:** catalog dùng OS byte-range lock có timeout cho cả
+  Windows/POSIX; bốn backend process cùng install revision `0` có đúng một lệnh
+  thắng, ba lệnh conflict, một audit event và không có lost update/version thừa.
+- Seeded mutation corpus chạy 128 biến thể truncate/bit-flip/append/zero-range.
+  Fuzz phát hiện và đã đóng đường `zlib.error` thoát khỏi inspector; mọi biến thể
+  giờ chỉ thành pack hợp lệ hoặc `TemplatePackError` có kiểm soát.
+- Còn lại của security hardening: fuzz dài hạn ngoài release gate và benchmark
+  Template Pack thực tế ở 50/1.000/10.000/50.000 tài sản.
+- Full release gate TS-17C: **333/333 backend tests**, **51/51 frontend tests**,
   Ruff check/format, ESLint, Prettier và production build 1.916 modules đều đạt.
 - Full release gate TS-17A: **326/326 backend tests**, **51/51 frontend tests**,
   Ruff check/format, ESLint, Prettier và production build 1.916 modules đều đạt.
