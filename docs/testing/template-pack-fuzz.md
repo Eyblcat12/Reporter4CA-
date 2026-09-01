@@ -31,6 +31,29 @@ Runner dùng bảy mutation: truncate, bit flip, append, zero/delete/duplicate r
 và overwrite range. Mỗi case được sinh từ `seed + case`, vì vậy có thể replay mà
 không lưu byte nguồn trong JSON.
 
+## Fuzz sâu DOCX, workspace và catalog
+
+Byte mutation mặc định chủ yếu kiểm tra lớp ZIP ngoài. TS-17F bổ sung ba target
+giữ outer ZIP và checksum nhất quán để mutation thực sự đi tới `template.docx`:
+
+```powershell
+# Nested DOCX trong pack
+apps\backend\.venv\Scripts\python.exe scripts\fuzz_template_packs.py `
+  --pack C:\path\approved-pack.rptpack --target nested-pack --iterations 10000
+
+# Nested DOCX trong workspace draft export
+apps\backend\.venv\Scripts\python.exe scripts\fuzz_template_packs.py `
+  --pack C:\path\workspace-draft.zip --target nested-workspace --iterations 10000
+
+# Cài mutation vào catalog tạm; mọi rejection phải giữ snapshot nguyên vẹn
+apps\backend\.venv\Scripts\python.exe scripts\fuzz_template_packs.py `
+  --pack C:\path\approved-pack.rptpack --target catalog --iterations 10000
+```
+
+Target `catalog` chỉ dùng catalog trong thư mục tạm, không chạm catalog đang dùng
+của ứng dụng. Nếu một pack bị từ chối nhưng revision/metadata thay đổi, harness
+coi đó là unexpected error và dừng với recipe có thể replay.
+
 ## Đọc kết quả
 
 - `passed`: mọi input được accept hoặc bị từ chối bằng `TemplatePackError` có

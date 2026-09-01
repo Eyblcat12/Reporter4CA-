@@ -6,9 +6,21 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from apps.backend.core.template_mapping_workspace import TemplateStudioService
 from apps.backend.core.template_pack import inspect_template_pack
-from scripts.fuzz_template_packs import apply_recipe, build_recipe, run_fuzz
+from apps.backend.core.template_pack_catalog import TemplatePackCatalog
+from apps.backend.core.template_workspace_transfer import export_template_workspace
+from scripts.fuzz_template_packs import (
+    apply_recipe,
+    build_recipe,
+    catalog_inspector,
+    mutate_nested_member,
+    nested_member_length,
+    run_fuzz,
+    workspace_inspector,
+)
 from tests.test_template_packs import _pack_bytes
+from tests.test_template_workspace_transfer import _template_bytes
 
 
 class TemplatePackFuzzHarnessTests(unittest.TestCase):
@@ -79,6 +91,67 @@ class TemplatePackFuzzHarnessTests(unittest.TestCase):
                 run_fuzz(b"P", iterations=1, duration_seconds=0, seed=1, output=output)
             with self.assertRaises(Exception):
                 run_fuzz(b"PK", iterations=1, duration_seconds=0, seed=1, output=output)
+
+    def test_nested_docx_pack_mutations_reach_only_controlled_rejections(self) -> None:
+        source = _pack_bytes()
+        with tempfile.TemporaryDirectory() as temporary:
+            result = run_fuzz(
+                source,
+                iterations=35,
+                duration_seconds=0,
+                seed=1701,
+                output=Path(temporary) / "nested-pack.json",
+                mutator=lambda data, recipe: mutate_nested_member(data, recipe),
+                mutation_source_length=nested_member_length(source),
+            )
+        self.assertEqual("passed", result["outcome"])
+        self.assertEqual(35, result["completedIterations"])
+
+    def test_nested_docx_workspace_mutations_are_controlled(self) -> None:
+        template = _template_bytes("{{REPORT_TITLE}}")
+        with tempfile.TemporaryDirectory() as temporary:
+            service = TemplateStudioService(Path(temporary) / "studio")
+            workspace = service.create(
+                template,
+                report_type="server_only",
+                profile_id="fuzz-workspace",
+                display_name="Fuzz Workspace",
+            )
+            source = export_template_workspace(workspace, template)
+            result = run_fuzz(
+                source,
+                iterations=35,
+                duration_seconds=0,
+                seed=1702,
+                output=Path(temporary) / "nested-workspace.json",
+                inspector=workspace_inspector,
+                mutator=lambda data, recipe: mutate_nested_member(
+                    data, recipe, artifact_kind="workspace"
+                ),
+                mutation_source_length=nested_member_length(source),
+            )
+        self.assertEqual("passed", result["outcome"])
+        self.assertEqual(35, result["completedIterations"])
+
+    def test_rejected_nested_pack_never_changes_catalog_state(self) -> None:
+        source = _pack_bytes()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            catalog = TemplatePackCatalog(root / "catalog")
+            result = run_fuzz(
+                source,
+                iterations=35,
+                duration_seconds=0,
+                seed=1703,
+                output=root / "catalog-fuzz.json",
+                inspector=catalog_inspector(catalog),
+                mutator=lambda data, recipe: mutate_nested_member(data, recipe),
+                mutation_source_length=nested_member_length(source),
+            )
+            snapshot = catalog.snapshot()
+        self.assertEqual("passed", result["outcome"])
+        self.assertEqual(35, result["completedIterations"])
+        self.assertEqual(1, snapshot["revision"])
 
 
 if __name__ == "__main__":

@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import io
 import json
 import os
 import random
 import sys
+import tempfile
 import time
 import uuid
+import zipfile
 from collections import deque
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
@@ -26,6 +29,11 @@ from core.template_pack import (  # noqa: E402
     MAX_PACK_SIZE,
     TemplatePackError,
     inspect_template_pack,
+)
+from core.template_pack_catalog import TemplatePackCatalog  # noqa: E402
+from core.template_workspace_transfer import (  # noqa: E402
+    TemplateWorkspaceTransferError,
+    inspect_template_workspace_archive,
 )
 
 REPORT_SCHEMA_VERSION = 1
@@ -105,6 +113,84 @@ def apply_recipe(source: bytes, recipe: MutationRecipe) -> bytes:
     if len(mutated) > MAX_PACK_SIZE:
         return bytes(mutated[:MAX_PACK_SIZE])
     return bytes(mutated)
+
+
+def nested_member_length(source: bytes, member: str = "template.docx") -> int:
+    with zipfile.ZipFile(io.BytesIO(source)) as archive:
+        return len(archive.read(member))
+
+
+def mutate_nested_member(
+    source: bytes,
+    recipe: MutationRecipe,
+    *,
+    artifact_kind: str = "pack",
+    member: str = "template.docx",
+) -> bytes:
+    """Mutate a nested payload while keeping outer checksums internally consistent."""
+
+    with zipfile.ZipFile(io.BytesIO(source)) as archive:
+        payloads = {info.filename: archive.read(info) for info in archive.infolist()}
+    payloads[member] = apply_recipe(payloads[member], recipe)
+    manifest = json.loads(payloads["manifest.json"].decode("utf-8"))
+    if artifact_kind == "workspace":
+        workspace = json.loads(payloads["workspace.json"].decode("utf-8"))
+        workspace["templateSha256"] = hashlib.sha256(payloads[member]).hexdigest()
+        workspace_without_hash = {
+            key: value for key, value in workspace.items() if key != "workspaceHash"
+        }
+        workspace["workspaceHash"] = hashlib.sha256(
+            _canonical_json(workspace_without_hash)
+        ).hexdigest()
+        payloads["workspace.json"] = _canonical_json(workspace)
+        manifest["checksums"]["workspace.json"] = hashlib.sha256(
+            payloads["workspace.json"]
+        ).hexdigest()
+    elif artifact_kind != "pack":
+        raise ValueError("artifact_kind must be 'pack' or 'workspace'")
+    manifest["checksums"][member] = hashlib.sha256(payloads[member]).hexdigest()
+    payloads["manifest.json"] = _canonical_json(manifest)
+    output = io.BytesIO()
+    with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as archive:
+        for name in sorted(payloads):
+            info = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
+            info.compress_type = zipfile.ZIP_DEFLATED
+            info.external_attr = 0o600 << 16
+            archive.writestr(info, payloads[name])
+    return output.getvalue()
+
+
+def _canonical_json(value: dict[str, Any]) -> bytes:
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+
+
+def workspace_inspector(data: bytes, *, require_publishable: bool = True) -> Any:
+    del require_publishable
+    try:
+        return inspect_template_workspace_archive(data, actor="fuzz-harness")
+    except TemplateWorkspaceTransferError as exc:
+        raise TemplatePackError(str(exc)) from exc
+
+
+def catalog_inspector(catalog: TemplatePackCatalog) -> Callable[..., Any]:
+    """Adapt catalog install to the fuzz contract and audit rejected writes."""
+
+    def inspect(data: bytes, *, require_publishable: bool = True) -> Any:
+        del require_publishable
+        before = catalog.snapshot()
+        try:
+            return catalog.install(
+                data,
+                expected_revision=int(before["revision"]),
+                actor="fuzz-harness",
+            )
+        except ValueError as exc:
+            after = catalog.snapshot()
+            if after != before:
+                raise RuntimeError("Rejected catalog mutation changed persistent state.") from exc
+            raise TemplatePackError(str(exc)) from exc
+
+    return inspect
 
 
 def percentile(samples: list[float], value: float) -> float:
@@ -196,6 +282,8 @@ def run_fuzz(
     output: Path,
     checkpoint_every: int = 250,
     inspector: Callable[..., Any] = inspect_template_pack,
+    mutator: Callable[[bytes, MutationRecipe], bytes] = apply_recipe,
+    mutation_source_length: int | None = None,
 ) -> dict[str, Any]:
     if iterations < 1:
         raise ValueError("iterations must be at least 1")
@@ -219,8 +307,8 @@ def run_fuzz(
     for case in range(iterations):
         if deadline is not None and time.perf_counter() >= deadline:
             break
-        recipe = build_recipe(len(source), seed, case)
-        mutated = apply_recipe(source, recipe)
+        recipe = build_recipe(mutation_source_length or len(source), seed, case)
+        mutated = mutator(source, recipe)
         case_started = time.perf_counter()
         try:
             inspector(mutated, require_publishable=True)
@@ -283,7 +371,17 @@ def run_fuzz(
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--pack", required=True, type=Path, help="Published .rptpack seed file")
+    parser.add_argument(
+        "--pack",
+        required=True,
+        type=Path,
+        help="Published .rptpack or exported workspace draft seed file",
+    )
+    parser.add_argument(
+        "--target",
+        choices=("outer-pack", "nested-pack", "nested-workspace", "catalog"),
+        default="outer-pack",
+    )
     parser.add_argument("--iterations", type=int, default=10_000)
     parser.add_argument("--duration-minutes", type=float, default=0.0)
     parser.add_argument("--seed", type=int, default=0xC0DEC0DE)
@@ -296,14 +394,34 @@ def main() -> int:
     arguments = parser.parse_args()
     try:
         source = arguments.pack.resolve().read_bytes()
-        result = run_fuzz(
-            source,
-            iterations=arguments.iterations,
-            duration_seconds=arguments.duration_minutes * 60,
-            seed=arguments.seed,
-            output=arguments.output.resolve(),
-            checkpoint_every=arguments.checkpoint_every,
-        )
+        options: dict[str, Any] = {}
+        catalog_context: tempfile.TemporaryDirectory[str] | None = None
+        if arguments.target in {"nested-pack", "nested-workspace", "catalog"}:
+            kind = "workspace" if arguments.target == "nested-workspace" else "pack"
+            options["mutator"] = lambda data, recipe: mutate_nested_member(
+                data, recipe, artifact_kind=kind
+            )
+            options["mutation_source_length"] = nested_member_length(source)
+        if arguments.target == "nested-workspace":
+            options["inspector"] = workspace_inspector
+        elif arguments.target == "catalog":
+            catalog_context = tempfile.TemporaryDirectory(prefix="reporter-catalog-fuzz-")
+            options["inspector"] = catalog_inspector(
+                TemplatePackCatalog(Path(catalog_context.name) / "catalog")
+            )
+        try:
+            result = run_fuzz(
+                source,
+                iterations=arguments.iterations,
+                duration_seconds=arguments.duration_minutes * 60,
+                seed=arguments.seed,
+                output=arguments.output.resolve(),
+                checkpoint_every=arguments.checkpoint_every,
+                **options,
+            )
+        finally:
+            if catalog_context is not None:
+                catalog_context.cleanup()
     except (OSError, TemplatePackError, ValueError) as exc:
         print(f"Template Pack fuzz setup failed: {exc}", file=sys.stderr)
         return 2

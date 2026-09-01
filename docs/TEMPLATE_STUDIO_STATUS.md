@@ -442,6 +442,7 @@ cần frontend đang chạy tại localhost.
 | TS-17C | Cross-process catalog lock và seeded fuzz | Hoàn thành backend | Chưa benchmark 50k cho pack thực tế |
 | TS-17D | Reproducible fuzz/soak harness | Hoàn thành | Chờ chạy lại với pack thực tế |
 | TS-17E | Synthetic Profile Renderer capacity harness | Hoàn thành | Engineering-only, chưa thay benchmark khách hàng |
+| TS-17F | Nested DOCX/workspace/catalog fuzz | Hoàn thành synthetic | Chờ chạy lại với pack thực tế |
 | TS-18A | Administrator guide và migration/rollback contract | Hoàn thành | Chưa merge hoặc bật feature flag |
 | TS-18B | Automated merge-safety boundary | Hoàn thành | PR gate bảo vệ default flow |
 | TS-09 | Chuyển UI được duyệt thành React route tách biệt | Chưa bắt đầu | Cần hai lần duyệt UI |
@@ -628,6 +629,14 @@ pack thực tế và tối thiểu 10 trial tương thích trước khi công b�
 - Full release gate TS-17E: **351/351 backend tests**, **51/51 frontend tests**,
   merge boundary, Ruff check/format, ESLint, Prettier và production build 1.916
   modules đều đạt.
+- **TS-17F hoàn thành phần synthetic:** harness có thể giữ ZIP/checksum ngoài hợp
+  lệ rồi mutate trực tiếp `template.docx` trong Template Pack hoặc workspace
+  draft. Target catalog cài vào catalog tạm và so snapshot trước/sau mỗi rejection;
+  bất kỳ thay đổi state ngoài ý muốn đều là lỗi dừng có recipe replay.
+- Corpus TS-17F đạt **3.000/3.000 mutation** (1.000 nested pack, 1.000 nested
+  workspace, 1.000 catalog), không có unexpected exception hoặc catalog state
+  corruption. Kết quả chỉ là engineering synthetic; vẫn phải chạy lại bằng pack
+  thực tế đã được duyệt trước pilot.
 
 #### TS-18 — Release và merge gate
 
