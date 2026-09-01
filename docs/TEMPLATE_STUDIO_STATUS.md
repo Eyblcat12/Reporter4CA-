@@ -3,7 +3,7 @@
 > **Ngày chốt:** 01/09/2026
 > **Nhánh phát triển:** `codex/template-studio`
 > **Baseline ổn định:** `github/main` tại commit `ec5795d`
-> **Checkpoint mã nguồn Template Studio:** commit `be67f74`
+> **Checkpoint mã nguồn Template Studio:** commit `c6a2c73`
 > **Trạng thái tích hợp:** chưa nối vào luồng tạo report mặc định
 > **Feature flag:** `AUTO_REPORT_TEMPLATE_PACKS=0` theo mặc định
 
@@ -575,9 +575,17 @@ trước khi TS-15 được bật trong workflow chính.
 - Full release gate TS-16A: **364/364 backend tests**, **51/51 frontend tests**,
   merge boundary, Ruff check/format, ESLint, Prettier và production build 1.916
   modules đều đạt trên implementation commit `be67f74`.
-- **TS-16B tiếp theo:** preflight runner phải đọc record backend/benchmark thật,
-  tự suy ra gate thay vì chỉ tin cờ `passed` trong manifest, và tạo matrix tổng hợp
-  tối thiểu ba template.
+- **TS-16B hoàn thành phần offline:** preflight đọc chín record evidence đã xác
+  minh checksum và tự đối chiếu mapping, hai lượt validation, baseline binding,
+  golden, feature, visual, benchmark trial thô, recovery và quality gate thay vì
+  chỉ tin cờ `passed` trong manifest.
+- Matrix gate yêu cầu tối thiểu ba template/template structure khác nhau, phủ
+  `full`, `server_only`, `client_only`, cùng quality-gated commit và hợp lại chứng
+  minh đủ 12 capability Word. Kết quả chỉ là readiness, không publish/activate hay
+  nối vào Generate.
+- Full release gate TS-16B: **374/374 backend tests**, **51/51 frontend tests**,
+  merge boundary, Ruff check/format, ESLint, Prettier và production build 1.916
+  modules đều đạt trên implementation commit `c6a2c73`.
 - Ít nhất ba template khác cấu trúc do người dùng cung cấp.
 - Full/server/client trước; summary/technical/IR sau.
 - Mỗi template có fixture, golden, benchmark và hướng dẫn mapping.
@@ -704,13 +712,12 @@ merge-safety và full gate không cấp quyền nối Template Pack vào Generat
 ## 10. Thứ tự triển khai bắt buộc từ thời điểm này
 
 ```text
-1. Hoàn thiện TS-16B offline preflight và matrix contract
-2. Nhận tối thiểu ba template/fixture đã được phép sử dụng
-3. Chạy pilot thực tế, golden, benchmark, fuzz và recovery
-4. Người dùng review/chốt Workbench UI
-5. Commit prototype và triển khai React authoring UI riêng
-6. Người dùng duyệt prototype Preview/Generate với Template Pack
-7. TS-15 opt-in integration, full gate và merge review
+1. Nhận tối thiểu ba template/fixture đã được phép sử dụng
+2. Chạy pilot thực tế qua TS-16B preflight/matrix, golden, benchmark, fuzz và recovery
+3. Người dùng review/chốt Workbench UI
+4. Commit prototype và triển khai React authoring UI riêng
+5. Người dùng duyệt prototype Preview/Generate với Template Pack
+6. TS-15 opt-in integration, full gate và merge review
 ```
 
 TS-11–TS-14 đã hoàn thành backend tách biệt. Không đưa TS-15 lên trước pilot và
