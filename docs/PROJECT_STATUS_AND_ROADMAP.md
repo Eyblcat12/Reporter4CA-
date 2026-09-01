@@ -262,7 +262,9 @@ Ngoài ra, Elasticsearch là tích hợp tùy chọn nhưng dependency và quy t
   template đã hoàn thành, cùng API/UI và regression test lỗi giữa chừng.
 - Baseline tag v2.1.0 được tạo sau khi toàn bộ quality gate đạt.
 
-**Điều kiện hoàn thành:** clone sạch có thể cài, test và build bằng tài liệu; không cần thao tác ngầm ngoài hướng dẫn.
+**Điều kiện hoàn thành:** đã có automated clean-source gate trên exact Git ref:
+archive sạch có thể cài dependency khóa, prewarm đủ sáu template, build frontend
+và chạy backend health mà không dùng runtime artifact của workspace phát triển.
 
 ### Giai đoạn 1 — Production hardening cho local/desktop (2–4 tuần)
 

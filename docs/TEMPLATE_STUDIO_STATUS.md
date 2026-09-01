@@ -649,6 +649,18 @@ pack thực tế và tối thiểu 10 trial tương thích trước khi công b�
 - Full release gate TS-18B: **342/342 backend tests**, **51/51 frontend tests**,
   Ruff check/format, ESLint, Prettier và production build 1.916 modules đều đạt;
   diff gate với `github/main` xác nhận protected baseline không thay đổi.
+- **TS-18C hoàn thành:** release workflow tạo archive từ exact Git ref, kiểm tra
+  source contract, cài dependency khóa, build frontend, yêu cầu prewarm đủ sáu
+  template và gọi backend health bằng chính clean environment vừa tạo. Workspace
+  tạm chỉ được xóa khi gate đạt; bản lỗi được giữ để điều tra.
+- Clean-source smoke trên commit `14e7c5b` đạt với Python 3.13: **6/6** bundled
+  template prepared ở lượt đầu, **6/6** cache-hit verification, `npm ci` 270
+  package/0 vulnerability, production build 1.916 modules và `/api/health` đạt.
+  Gate đã phát hiện và sửa staging path vượt giới hạn Windows trong deep clone;
+  regression test riêng bảo vệ trường hợp này.
+- Full release gate TS-18C: **354/354 backend tests**, **51/51 frontend tests**,
+  merge boundary, Ruff check/format, ESLint, Prettier và production build 1.916
+  modules đều đạt sau bản sửa Windows path.
 - Full backend/frontend/E2E/golden/security/performance gate.
 - Branch review và merge có kiểm soát vào main.
 - Feature flag vẫn mặc định tắt trong lần merge đầu.
