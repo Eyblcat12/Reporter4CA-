@@ -48,6 +48,38 @@ Kết quả không chứa nội dung evidence. `ready=true` chỉ xuất hiện 
 blocker được giải quyết. Với `status=ready`, `integrationApproved` vẫn có thể là
 `false`; chỉ khi chuyển sang `approved` mới bắt buộc có phê duyệt opt-in.
 
+Validator trên kiểm tra schema, quan hệ giữa các gate, đường dẫn và checksum. Sau
+khi validator đạt, chạy evidence-derived preflight để đọc chín record JSON đã pin
+và tự đối chiếu giá trị thật thay vì tin cờ `passed` do người vận hành nhập:
+
+```powershell
+apps\backend\.venv\Scripts\python.exe scripts\preflight_template_pilot.py `
+  C:\pilot\manifest.json `
+  --evidence-root C:\pilot `
+  --output C:\pilot\preflight.json
+```
+
+Preflight đối chiếu revision và coverage mapping; identity của hai lượt
+validation; liên kết verification với baseline; golden, feature và visual
+artifact; các trial benchmark thô; recovery và quality gate. JSON evidence có
+field lặp, số `NaN`/`Infinity`, quá sâu, quá lớn hoặc checksum sai đều bị chặn.
+
+Sau khi có ba hồ sơ độc lập, chạy matrix offline:
+
+```powershell
+apps\backend\.venv\Scripts\python.exe scripts\preflight_template_pilot_matrix.py `
+  --pilot C:\pilot-full\manifest.json C:\pilot-full `
+  --pilot C:\pilot-server\manifest.json C:\pilot-server `
+  --pilot C:\pilot-client\manifest.json C:\pilot-client `
+  --output C:\pilot-matrix.json
+```
+
+Matrix chỉ đạt khi có tối thiểu ba template SHA và structural SHA khác nhau, phủ
+`full`, `server_only`, `client_only`, dùng cùng quality-gated commit và hợp lại
+chứng minh đủ 12 capability Word. `matrixReady=true` vẫn không publish, install,
+activate hay nối pack vào Generate. `integrationApproved=true` chỉ xuất hiện khi
+từng manifest đều có trạng thái `approved` với opt-in riêng.
+
 ## Quy tắc dữ liệu
 
 - Không commit DOCX, fixture, report hoặc evidence khách hàng.
@@ -57,6 +89,6 @@ blocker được giải quyết. Với `status=ready`, `integrationApproved` v�
 - Nếu template có capability hiện chưa được Profile Renderer hỗ trợ, ghi blocker;
   không đánh dấu `not_applicable` để lách kiểm thử.
 
-TS-16B sẽ đọc contract này và đối chiếu trực tiếp record backend/benchmark thay vì
-chỉ tin các cờ `passed` do người vận hành nhập. Pilot thực tế vẫn cần tối thiểu ba
-template khác cấu trúc, ưu tiên `full`, `server_only`, `client_only`.
+TS-16B đã cung cấp preflight và matrix offline. Pilot thực tế vẫn cần tối thiểu ba
+template khác cấu trúc do người dùng cho phép sử dụng; fixture, golden, visual,
+benchmark và recovery của chúng không được thay bằng evidence tổng hợp.

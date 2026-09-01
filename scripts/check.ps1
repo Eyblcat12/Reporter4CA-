@@ -64,6 +64,8 @@ if (-not $SkipBackend) {
         tests.test_template_pack_catalog `
         tests.test_template_pack_fuzz_harness `
         tests.test_template_pilot `
+        tests.test_template_pilot_matrix `
+        tests.test_template_pilot_preflight `
         tests.test_template_pack_preview `
         tests.test_template_pack_validation `
         tests.test_template_packs `

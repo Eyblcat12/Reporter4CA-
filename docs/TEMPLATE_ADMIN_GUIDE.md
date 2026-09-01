@@ -98,8 +98,11 @@ trình; sửa tay làm mất chuỗi kiểm chứng.
 ## Gate trước pilot
 
 Tạo một manifest theo [Template Studio pilot evidence contract](TEMPLATE_PILOT.md)
-cho từng template và chạy validator với `--evidence-root`. Trạng thái `ready` chỉ
-xác nhận hồ sơ đủ bằng chứng để review; nó không bật tích hợp hoặc Generate.
+cho từng template, chạy validator với `--evidence-root`, sau đó chạy
+`preflight_template_pilot.py` để đối chiếu record evidence thật. Khi có đủ ba
+template, chạy `preflight_template_pilot_matrix.py` cho full/server/client. Trạng
+thái `ready` hoặc `matrixReady` chỉ xác nhận hồ sơ đủ bằng chứng để review; chúng
+không bật tích hợp hoặc Generate.
 
 - Template và dữ liệu được phép sử dụng, đã loại thông tin nhạy cảm khỏi fixture.
 - Mapping 100%; hai lượt validation cùng workspace/template checksum.
