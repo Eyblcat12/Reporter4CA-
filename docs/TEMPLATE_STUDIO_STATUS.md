@@ -1,9 +1,9 @@
 # Template Studio — trạng thái triển khai và hồ sơ bàn giao
 
-> **Ngày chốt:** 31/08/2026
+> **Ngày chốt:** 01/09/2026
 > **Nhánh phát triển:** `codex/template-studio`
 > **Baseline ổn định:** `github/main` tại commit `ec5795d`
-> **Checkpoint mã nguồn Template Studio:** commit `6f52b7c`
+> **Checkpoint mã nguồn Template Studio:** commit `be67f74`
 > **Trạng thái tích hợp:** chưa nối vào luồng tạo report mặc định
 > **Feature flag:** `AUTO_REPORT_TEMPLATE_PACKS=0` theo mặc định
 
@@ -437,8 +437,9 @@ cần frontend đang chạy tại localhost.
 | TS-12 | Fixture/integrity/structural validation runner | Hoàn thành + nối TS-14 | Chưa nối UI/job/Generate |
 | TS-13 | Preview/diff và byte-for-byte promotion | Hoàn thành domain | Chưa nối API/job/UI/Generate |
 | TS-14 | Publish API với trusted two-pass evidence | Hoàn thành backend | Không activate hoặc nối Generate |
-| TS-17A | Catalog checksum, recovery và concurrent install | Hoàn thành backend | Chưa stress đa tiến trình |
-| TS-17B | Pack/OOXML corpus và concurrent publish/select | Hoàn thành backend | Chưa stress đa tiến trình |
+| TS-16A | Pilot manifest và evidence contract | Hoàn thành | Chưa chạy template khách hàng |
+| TS-17A | Catalog checksum, recovery và concurrent install | Hoàn thành backend | Đã có cross-process regression |
+| TS-17B | Pack/OOXML corpus và concurrent publish/select | Hoàn thành backend | Đã có concurrent regression |
 | TS-17C | Cross-process catalog lock và seeded fuzz | Hoàn thành backend | Chưa benchmark 50k cho pack thực tế |
 | TS-17D | Reproducible fuzz/soak harness | Hoàn thành | Chờ chạy lại với pack thực tế |
 | TS-17E | Synthetic Profile Renderer capacity harness | Hoàn thành | Engineering-only, chưa thay benchmark khách hàng |
@@ -565,6 +566,18 @@ trước khi TS-15 được bật trong workflow chính.
 
 #### TS-16 — Ma trận template thực tế
 
+- **TS-16A hoàn thành:** schema manifest đóng, validator offline, draft example và
+  checklist evidence cho từng template. `ready` chỉ có nghĩa đủ bằng chứng để
+  review; `approved` mới yêu cầu phê duyệt opt-in và vẫn không tự nối Generate.
+- Validator pin pack/template/workspace/fixture bằng SHA-256, kiểm hai lượt
+  validation, golden/integrity/visual, 12 capability Word, benchmark tối thiểu 10
+  trial, recovery, quality gate và chín evidence file trong root an toàn.
+- Full release gate TS-16A: **364/364 backend tests**, **51/51 frontend tests**,
+  merge boundary, Ruff check/format, ESLint, Prettier và production build 1.916
+  modules đều đạt trên implementation commit `be67f74`.
+- **TS-16B tiếp theo:** preflight runner phải đọc record backend/benchmark thật,
+  tự suy ra gate thay vì chỉ tin cờ `passed` trong manifest, và tạo matrix tổng hợp
+  tối thiểu ba template.
 - Ít nhất ba template khác cấu trúc do người dùng cung cấp.
 - Full/server/client trước; summary/technical/IR sau.
 - Mỗi template có fixture, golden, benchmark và hướng dẫn mapping.
@@ -691,20 +704,18 @@ merge-safety và full gate không cấp quyền nối Template Pack vào Generat
 ## 10. Thứ tự triển khai bắt buộc từ thời điểm này
 
 ```text
-1. Người dùng review Workbench
-2. Chỉnh và duyệt UI lần cuối
-3. Commit UI prototype checkpoint
-4. React authoring UI riêng + workspace lifecycle
-5. Profile Renderer tối thiểu
-6. Validation runner + golden/diff
-7. Publish API có trusted evidence
-8. Preview/Generate thử nghiệm với pack
-9. Pilot template thực tế
-10. Opt-in integration, full gate, merge review
+1. Hoàn thiện TS-16B offline preflight và matrix contract
+2. Nhận tối thiểu ba template/fixture đã được phép sử dụng
+3. Chạy pilot thực tế, golden, benchmark, fuzz và recovery
+4. Người dùng review/chốt Workbench UI
+5. Commit prototype và triển khai React authoring UI riêng
+6. Người dùng duyệt prototype Preview/Generate với Template Pack
+7. TS-15 opt-in integration, full gate và merge review
 ```
 
-Không đảo TS-15 lên trước TS-11/TS-12. Catalog có version/rollback không đồng nghĩa
-renderer đã đủ an toàn để sử dụng trong report thật.
+TS-11–TS-14 đã hoàn thành backend tách biệt. Không đưa TS-15 lên trước pilot và
+duyệt UI; catalog có version/rollback không đồng nghĩa renderer đã đủ an toàn để
+sử dụng trong report thật.
 
 ## 11. Điểm cần hỏi người dùng
 
