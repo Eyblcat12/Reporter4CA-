@@ -240,7 +240,11 @@ class PreparedTemplateCache:
         }
 
     def _write_bytes_atomic(self, target: Path, payload: bytes) -> None:
-        temporary = target.with_name(f".{target.name}.{uuid.uuid4().hex}.tmp")
+        # Keep the temporary basename short. On Windows the cache root can be
+        # nested below a long clone/release-verification path; repeating the
+        # target name plus a full UUID can cross the legacy MAX_PATH boundary
+        # even when the final artifact itself remains writable.
+        temporary = target.with_name(f".{uuid.uuid4().hex[:12]}.tmp")
         try:
             temporary.write_bytes(payload)
             os.replace(temporary, target)

@@ -195,6 +195,26 @@ class PreparedTemplateCacheTests(unittest.TestCase):
                 )
             self.assertFalse(any((root / "cache").glob("*/template.docx")))
 
+    @unittest.skipUnless(os.name == "nt", "Windows path-boundary regression")
+    def test_atomic_write_survives_a_deep_clean_clone_path(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "source.docx"
+            source.write_bytes(_docx_bytes("deep-clone"))
+            desired_cache_length = 169
+            padding = max(1, desired_cache_length - len(str(root)) - 1)
+            cache_root = root / ("x" * padding)
+            cache = PreparedTemplateCache(cache_root)
+
+            prepared = cache.get_or_compile(
+                source,
+                "full",
+                lambda payload: (payload, {"templateMode": "cover"}),
+            )
+
+            self.assertTrue(prepared.path.is_file())
+            self.assertLess(len(str(prepared.path)), 260)
+
 
 class PreparedTemplateIntegrationTests(unittest.TestCase):
     def test_bundled_warmup_resolves_categories_and_defers_individual_failures(self) -> None:
