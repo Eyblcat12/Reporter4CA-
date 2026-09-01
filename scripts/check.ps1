@@ -70,6 +70,7 @@ if (-not $SkipBackend) {
         tests.test_template_workspace_retention `
         tests.test_template_workspace_transfer `
         tests.test_compact_prototype_integration `
+        tests.test_clean_source_validator `
         tests.test_template_schema `
         tests.test_template_studio_documentation `
         tests.test_template_studio_merge_gate `

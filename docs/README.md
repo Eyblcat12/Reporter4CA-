@@ -15,6 +15,7 @@
 | [TEMPLATE_STUDIO_MIGRATION_ROLLBACK.md](TEMPLATE_STUDIO_MIGRATION_ROLLBACK.md) | Runbook migration, recovery và rollback |
 | [testing/template-pack-fuzz.md](testing/template-pack-fuzz.md) | Fuzz/soak Template Pack có seed và checkpoint |
 | [testing/profile-renderer-benchmark.md](testing/profile-renderer-benchmark.md) | Capacity benchmark Profile Renderer bằng fixture tổng hợp |
+| [testing/clean-source-smoke.md](testing/clean-source-smoke.md) | Gate clone/archive sạch, cài dependency, build và health smoke |
 
 Hướng dẫn cài đặt nằm tại [INSTALL.md](../INSTALL.md). Chính sách đóng góp và bảo
 mật nằm tại [CONTRIBUTING.md](../CONTRIBUTING.md) và [SECURITY.md](../SECURITY.md).
