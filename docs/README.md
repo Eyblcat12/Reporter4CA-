@@ -12,6 +12,7 @@
 | [TEMPLATE_STUDIO_STATUS.md](TEMPLATE_STUDIO_STATUS.md) | Trạng thái, backlog, invariant và hồ sơ bàn giao Template Studio |
 | [TEMPLATE_PACKS.md](TEMPLATE_PACKS.md) | Kiến trúc, schema và API Template Pack thử nghiệm |
 | [TEMPLATE_ADMIN_GUIDE.md](TEMPLATE_ADMIN_GUIDE.md) | Quy trình analyze, mapping, review và publish an toàn |
+| [TEMPLATE_PILOT.md](TEMPLATE_PILOT.md) | Pilot manifest, evidence checklist và readiness contract |
 | [TEMPLATE_STUDIO_MIGRATION_ROLLBACK.md](TEMPLATE_STUDIO_MIGRATION_ROLLBACK.md) | Runbook migration, recovery và rollback |
 | [testing/template-pack-fuzz.md](testing/template-pack-fuzz.md) | Fuzz/soak Template Pack có seed và checkpoint |
 | [testing/profile-renderer-benchmark.md](testing/profile-renderer-benchmark.md) | Capacity benchmark Profile Renderer bằng fixture tổng hợp |
