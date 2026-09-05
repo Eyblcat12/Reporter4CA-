@@ -77,6 +77,12 @@ Heading text and table order are not stable identifiers. A customer may rename a
 heading or move a table during document editing, so neither should be the primary
 mapping key.
 
+The analyzer recommendation is a ranking aid, not an allowlist. Template Studio
+offers every discovered content control, bookmark and token that occurs exactly
+once, so a customer-specific name can be mapped manually after review. Ambiguous
+anchors are excluded, and the same anchor cannot be assigned to two semantic
+blocks; both the UI and backend enforce this ownership rule.
+
 ## Meaning of 100% mapping
 
 Coverage is calculated from the canonical semantic catalog for the selected
@@ -136,7 +142,7 @@ starting the backend:
 - `GET /api/template-packs/workspaces/{id}` reads a draft without exposing its
   filesystem path.
 - `PUT /api/template-packs/workspaces/{id}/mappings/{semantic}` approves one
-  discovered, unique anchor and its required field mappings.
+  discovered, unique, currently unassigned anchor and its required field mappings.
 - `POST /api/template-packs/workspaces/{id}/mappings/{semantic}/remove` returns a
   semantic to the unmapped state.
 - Rename, clone and archive/restore endpoints provide non-destructive lifecycle
@@ -154,6 +160,17 @@ Every mapping command includes `expectedRevision`. A stale editor receives HTTP
 immutable; workspace JSON is written atomically and protected by a checksum.
 Reaching 100% mapping changes the draft to `mapping_complete`, but does not make
 it publishable until fixture, integrity and visual evidence are produced.
+
+The experimental React route mirrors this boundary. `Template mới` first reads
+only a non-empty `.docx` no larger than 20 MiB, calls the read-only analyzer and
+shows structural facts with `0%` approved mapping. Workspace creation remains a
+separate explicit action; changing the source or report type invalidates the
+analysis result. A created draft is opened only inside Template Studio and is
+not added to the default template selector or Generate workflow.
+The mapping inspector then lists all unique anchors, ranks analyzer suggestions
+first, marks anchors already owned by another semantic and requires an explicit
+`Duyệt ánh xạ` action. Draft edits are local until approval so exploratory choices
+cannot silently change workspace revision or audit history.
 
 ## Pack Builder and isolated version catalog
 
@@ -191,6 +208,9 @@ Additional feature-gated endpoints:
   stale tokens and incomplete/corrupt payload sets are rejected.
 - `POST /api/template-packs/workspaces/{id}/validation-runs` creates a baseline
   candidate or a second-pass run against an approved baseline.
+- `GET /api/template-packs/workspaces/{id}/validation-runs` lists sealed run
+  metadata for session recovery, marks records stale after workspace changes and
+  reports corrupt records without exposing storage paths.
 - `GET /api/template-packs/workspaces/{id}/validation-runs/{runId}/artifact`
   downloads the checksum-bound DOCX for review.
 - `POST .../{runId}/approve-baseline` records reviewer approval for the exact
@@ -271,6 +291,22 @@ selection or connection to the production Generate workflow.
 These endpoints do not appear in, or change, the current Configure/Preview/
 Generate workflow. Template Studio will call them from a separate experimental
 screen in a later phase.
+
+## Reproducible synthetic pilot templates
+
+The repository includes three customer-data-free DOCX fixtures under
+`tests/fixtures/template_studio/synthetic_templates/`. They cover `full`,
+`server_only`, and `client_only`, use distinct mixtures of token, bookmark, and
+content-control anchors, and are reproducible from a committed generator and
+checksum manifest.
+
+The regression suite drives every fixture through read-only analysis, explicit
+100% mapping, two-pass structural validation, publishable pack construction,
+isolated Preview, and byte-for-byte Generate promotion. These fixtures authorize
+a safe default-off merge of the authoring subsystem; they do not authorize a
+Template Pack in the production Generate selector. A customer template must
+repeat its own visual, compatibility, recovery, and performance pilot before
+that separate opt-in integration decision.
 
 An isolated UI proposal is available at
 [`template-studio-prototype.html`](template-studio-prototype.html). It contains
