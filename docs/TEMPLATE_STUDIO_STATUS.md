@@ -3,7 +3,7 @@
 > **Ngày chốt:** 05/09/2026
 > **Nhánh phát triển:** `codex/template-studio`
 > **Baseline ổn định:** `github/main` tại commit `ec5795d`
-> **Checkpoint mã nguồn Template Studio:** commit `f534a33`
+> **Checkpoint mã nguồn Template Studio:** commit `d06d9da` + clean-source verification
 > **Trạng thái tích hợp:** authoring route đã duyệt, chuẩn bị merge default-off; chưa nối Generate
 > **Feature flag:** `AUTO_REPORT_TEMPLATE_PACKS=0` theo mặc định
 
@@ -91,8 +91,8 @@ quyền thay template tạo report.
 |---|---|
 | `github/main` | Không thay đổi, đang ở `ec5795d` |
 | Nhánh làm việc | `codex/template-studio` |
-| Checkpoint đã commit | `f534a33 docs(template-studio): close TS-16B offline gates` |
-| Push nhánh lên remote | Đã push `github/codex/template-studio` |
+| Checkpoint đã commit | `d06d9da test(template-studio): certify distinct synthetic templates` |
+| Push nhánh lên remote | Remote đang ở `f534a33`; push sau merge gate |
 | UI Workbench V2 | React route đã được người dùng duyệt; được phép merge vào main theo cơ chế default-off |
 | `apps/backend/data/` | Runtime/user data, untracked; tuyệt đối không stage hoặc commit |
 
@@ -878,6 +878,12 @@ trước merge đạt **378/378 backend tests**, **105/105 frontend tests**, Tem
 Studio E2E **1/1**, Ruff, merge boundary, ESLint, Prettier và production build
 **1.929 modules**. Feature flag vẫn phải mặc định tắt và TS-15 Generate integration
 vẫn là công việc độc lập.
+
+Clean-source smoke trên exact commit `d06d9da` cũng đạt: archive chỉ chứa source
+được phép, dependency Python cài từ lockfile có hash, `npm ci` cài 270 package với
+0 vulnerability, production build 1.929 modules, 6/6 template mặc định prewarm và
+cache-hit, backend health trả `status=ok`. Lần chạy sandbox đầu bị chặn mạng; lần
+chạy lại có quyền tải dependency đã đạt và là kết quả phát hành có hiệu lực.
 
 ## 9. Những việc không làm trong chương trình hiện tại
 
