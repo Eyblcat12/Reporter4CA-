@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://reporter-pro.local/schema/template-pack/mapping-1.0.json",
+  "title": "Reporter Pro Template Pack mapping",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["profileId", "slots"],
+  "properties": {
+    "profileId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{1,127}$"},
+    "slots": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "source", "fields"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{1,127}$"},
+          "source": {"type": "string", "minLength": 1, "maxLength": 128},
+          "fields": {
+            "type": "array",
+            "maxItems": 64,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["source", "target"],
+              "properties": {
+                "source": {"type": "string", "minLength": 1, "maxLength": 128},
+                "target": {"type": "string", "minLength": 1, "maxLength": 128}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -166,6 +166,9 @@ Chi tiết thiết kế nằm trong [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 | Golden DOCX test | [docs/testing/golden-docx.md](docs/testing/golden-docx.md) |
 | Soak test | [docs/testing/soak-test.md](docs/testing/soak-test.md) |
 | Trạng thái và roadmap | [docs/PROJECT_STATUS_AND_ROADMAP.md](docs/PROJECT_STATUS_AND_ROADMAP.md) |
+| Template Studio đang phát triển | [docs/TEMPLATE_STUDIO_STATUS.md](docs/TEMPLATE_STUDIO_STATUS.md) |
+| Quản trị Template Studio | [docs/TEMPLATE_ADMIN_GUIDE.md](docs/TEMPLATE_ADMIN_GUIDE.md) |
+| Migration và rollback Template Studio | [docs/TEMPLATE_STUDIO_MIGRATION_ROLLBACK.md](docs/TEMPLATE_STUDIO_MIGRATION_ROLLBACK.md) |
 
 ## Phát triển và kiểm thử
 

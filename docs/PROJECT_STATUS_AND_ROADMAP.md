@@ -1,5 +1,11 @@
 # Báo cáo hiện trạng và kế hoạch phát triển Reporter Pro
 
+> **Cập nhật 27/08/2026:** tài liệu này là báo cáo tổng quan lịch sử lập ngày
+> 21/07/2026; các số lượng endpoint/test trong phần dưới không còn là số mới nhất.
+> Trạng thái đang triển khai, commit, quality gate, backlog và ranh giới an toàn của
+> chương trình Template Studio được quản lý tại
+> [TEMPLATE_STUDIO_STATUS.md](TEMPLATE_STUDIO_STATUS.md).
+
 **Ngày cập nhật:** 21/07/2026
 **Phạm vi:** mã nguồn, cấu trúc dữ liệu, giao diện, API, kiểm thử và quy trình chạy trong workspace hiện tại.
 
@@ -256,7 +262,9 @@ Ngoài ra, Elasticsearch là tích hợp tùy chọn nhưng dependency và quy t
   template đã hoàn thành, cùng API/UI và regression test lỗi giữa chừng.
 - Baseline tag v2.1.0 được tạo sau khi toàn bộ quality gate đạt.
 
-**Điều kiện hoàn thành:** clone sạch có thể cài, test và build bằng tài liệu; không cần thao tác ngầm ngoài hướng dẫn.
+**Điều kiện hoàn thành:** đã có automated clean-source gate trên exact Git ref:
+archive sạch có thể cài dependency khóa, prewarm đủ sáu template, build frontend
+và chạy backend health mà không dùng runtime artifact của workspace phát triển.
 
 ### Giai đoạn 1 — Production hardening cho local/desktop (2–4 tuần)
 

@@ -1,0 +1,221 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://reporter-pro.local/schema/template-pilot/manifest-1.0.json",
+  "title": "Reporter Pro Template Studio pilot evidence manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "pilotId",
+    "status",
+    "reportType",
+    "identity",
+    "fixture",
+    "gates",
+    "approvals",
+    "evidence"
+  ],
+  "properties": {
+    "schemaVersion": {"const": "1.0"},
+    "pilotId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$"},
+    "status": {"enum": ["draft", "ready", "approved", "rejected"]},
+    "reportType": {
+      "enum": ["full", "server_only", "client_only", "summary", "technical", "incident_response"]
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["packId", "packVersion", "packSha256", "templateSha256", "workspaceHash", "workspaceRevision"],
+      "properties": {
+        "packId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$"},
+        "packVersion": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?$"},
+        "packSha256": {"$ref": "#/$defs/sha256"},
+        "templateSha256": {"$ref": "#/$defs/sha256"},
+        "workspaceHash": {"$ref": "#/$defs/sha256"},
+        "workspaceRevision": {"type": "integer", "minimum": 1}
+      }
+    },
+    "fixture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fixtureId", "sourceSha256", "assetCount", "serverCount", "clientCount", "sanitized", "containsCustomerData"],
+      "properties": {
+        "fixtureId": {"type": "string", "minLength": 1, "maxLength": 256},
+        "sourceSha256": {"$ref": "#/$defs/sha256"},
+        "assetCount": {"type": "integer", "minimum": 0},
+        "serverCount": {"type": "integer", "minimum": 0},
+        "clientCount": {"type": "integer", "minimum": 0},
+        "sanitized": {"type": "boolean"},
+        "containsCustomerData": {"type": "boolean"}
+      }
+    },
+    "gates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mapping", "baseline", "verification", "golden", "integrity", "features", "visual", "benchmark", "recovery", "quality"],
+      "properties": {
+        "mapping": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["passed", "coveragePercent"],
+          "properties": {"passed": {"type": "boolean"}, "coveragePercent": {"type": "number", "minimum": 0, "maximum": 100}}
+        },
+        "baseline": {"$ref": "#/$defs/baselineRun"},
+        "verification": {"$ref": "#/$defs/verificationRun"},
+        "golden": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["passed", "unexpectedDiffCount"],
+          "properties": {"passed": {"type": "boolean"}, "unexpectedDiffCount": {"type": "integer", "minimum": 0}}
+        },
+        "integrity": {"$ref": "#/$defs/passGate"},
+        "features": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["splitRunToken", "bookmarkAnchor", "contentControlAnchor", "headerFooter", "tocFields", "numbering", "horizontalMergedCells", "verticalMergedCells", "pageBreaks", "sectionBreaks", "images", "relationships"],
+          "properties": {
+            "splitRunToken": {"$ref": "#/$defs/featureResult"},
+            "bookmarkAnchor": {"$ref": "#/$defs/featureResult"},
+            "contentControlAnchor": {"$ref": "#/$defs/featureResult"},
+            "headerFooter": {"$ref": "#/$defs/featureResult"},
+            "tocFields": {"$ref": "#/$defs/featureResult"},
+            "numbering": {"$ref": "#/$defs/featureResult"},
+            "horizontalMergedCells": {"$ref": "#/$defs/featureResult"},
+            "verticalMergedCells": {"$ref": "#/$defs/featureResult"},
+            "pageBreaks": {"$ref": "#/$defs/featureResult"},
+            "sectionBreaks": {"$ref": "#/$defs/featureResult"},
+            "images": {"$ref": "#/$defs/featureResult"},
+            "relationships": {"$ref": "#/$defs/featureResult"}
+          }
+        },
+        "visual": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["passed", "reviewer", "artifactSha256"],
+          "properties": {"passed": {"type": "boolean"}, "reviewer": {"type": "string", "minLength": 1}, "artifactSha256": {"$ref": "#/$defs/sha256"}}
+        },
+        "benchmark": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["passed", "outcome", "trials", "targetAssetCount", "p50Seconds", "p95Seconds", "peakRssMiB", "resourceLimited", "legacyRendererUsed"],
+          "properties": {
+            "passed": {"type": "boolean"},
+            "outcome": {"enum": ["passed", "failed", "resource_limited"]},
+            "trials": {"type": "integer", "minimum": 0},
+            "targetAssetCount": {"type": "integer", "minimum": 0},
+            "p50Seconds": {"type": "number", "minimum": 0},
+            "p95Seconds": {"type": "number", "minimum": 0},
+            "peakRssMiB": {"type": "number", "minimum": 0},
+            "resourceLimited": {"type": "boolean"},
+            "legacyRendererUsed": {"type": "boolean"}
+          }
+        },
+        "recovery": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["passed", "dryRunPassed", "rollbackPassed"],
+          "properties": {"passed": {"type": "boolean"}, "dryRunPassed": {"type": "boolean"}, "rollbackPassed": {"type": "boolean"}}
+        },
+        "quality": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["passed", "commitSha", "backendTests", "frontendTests", "productionBuildPassed"],
+          "properties": {
+            "passed": {"type": "boolean"},
+            "commitSha": {"type": "string", "pattern": "^[0-9a-f]{7,40}$"},
+            "backendTests": {"type": "integer", "minimum": 1},
+            "frontendTests": {"type": "integer", "minimum": 1},
+            "productionBuildPassed": {"type": "boolean"}
+          }
+        }
+      }
+    },
+    "approvals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["author", "reviewer", "publisher", "integrationApproved"],
+      "properties": {
+        "author": {"type": "string", "minLength": 1},
+        "reviewer": {"type": "string", "minLength": 1},
+        "publisher": {"type": "string", "minLength": 1},
+        "integrationApproved": {"type": "boolean"}
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "path", "sha256"],
+        "properties": {
+          "kind": {"enum": ["mapping", "baseline-validation", "verification-validation", "golden-diff", "feature-checklist", "visual-review", "benchmark", "recovery", "quality-gate"]},
+          "path": {"type": "string", "minLength": 1, "maxLength": 512},
+          "sha256": {"$ref": "#/$defs/sha256"}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "passGate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["passed"],
+      "properties": {"passed": {"type": "boolean"}}
+    },
+    "featureResult": {"enum": ["passed", "not_applicable"]},
+    "validationIdentity": {
+      "type": "object",
+      "properties": {
+        "runId": {"type": "string", "minLength": 1},
+        "templateSha256": {"$ref": "#/$defs/sha256"},
+        "workspaceHash": {"$ref": "#/$defs/sha256"},
+        "artifactSha256": {"$ref": "#/$defs/sha256"},
+        "structuralSha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "baselineRun": {
+      "allOf": [
+        {"$ref": "#/$defs/validationIdentity"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["runId", "templateSha256", "workspaceHash", "artifactSha256", "structuralSha256", "fixturePassed", "integrityPassed", "structuralPassed", "baselineApproved"],
+          "properties": {
+            "runId": true,
+            "templateSha256": true,
+            "workspaceHash": true,
+            "artifactSha256": true,
+            "structuralSha256": true,
+            "fixturePassed": {"type": "boolean"},
+            "integrityPassed": {"type": "boolean"},
+            "structuralPassed": {"type": "boolean"},
+            "baselineApproved": {"type": "boolean"}
+          }
+        }
+      ]
+    },
+    "verificationRun": {
+      "allOf": [
+        {"$ref": "#/$defs/validationIdentity"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["runId", "templateSha256", "workspaceHash", "artifactSha256", "structuralSha256", "fixturePassed", "integrityPassed", "structuralPassed"],
+          "properties": {
+            "runId": true,
+            "templateSha256": true,
+            "workspaceHash": true,
+            "artifactSha256": true,
+            "structuralSha256": true,
+            "fixturePassed": {"type": "boolean"},
+            "integrityPassed": {"type": "boolean"},
+            "structuralPassed": {"type": "boolean"}
+          }
+        }
+      ]
+    }
+  }
+}

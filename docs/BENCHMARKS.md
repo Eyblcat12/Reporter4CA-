@@ -19,6 +19,25 @@ phải cam kết hiệu năng cho mọi máy hoặc mọi template.
 Đợt đo được thực hiện trong tháng 07/2026. Số liệu được lấy từ JSON kết quả do
 supervisor của benchmark ghi lại, không ước lượng từ cảm nhận giao diện.
 
+## Template Studio — synthetic capacity smoke (01/09/2026)
+
+Phép đo này dùng Profile Renderer và Template Pack tổng hợp tối giản, tách hoàn
+toàn khỏi Legacy Renderer. Mỗi mốc chạy trong worker mới với watchdog 3 GiB và
+timeout 300 giây. Đây là kiểm tra capacity kỹ thuật, **không phải benchmark
+template khách hàng** và không thay thế baseline phát hành của Reporter Pro.
+
+| Tài sản | Wall time | Peak RSS | Kết quả |
+|---:|---:|---:|---|
+| 50 | 1,05 giây | 43,2 MiB | Pass |
+| 1.000 | 2,24 giây | 49,4 MiB | Pass |
+| 10.000 | 23,34 giây | 144,4 MiB | Pass |
+| 50.000 | 164,70 giây | 549,0 MiB | Pass |
+
+Mỗi mốc mới chạy một trial nên chưa có P50/P95. Template tổng hợp chỉ có anchor
+và bảng declarative cần thiết, không đại diện cho theme, hình ảnh, header/footer,
+numbering, section hoặc độ phức tạp OOXML của template thực tế. Harness nằm tại
+`scripts/benchmark_profile_renderer.py`; mốc trên 1.000 bắt buộc `--allow-large`.
+
 ## Baseline Phase 0 — `mixed/full`, 50 máy, 5 trial
 
 Baseline ngày 30/07/2026 dùng fixture `mixed-50`, template `full` mặc định và

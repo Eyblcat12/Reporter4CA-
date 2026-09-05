@@ -1,6 +1,9 @@
 import react from '@vitejs/plugin-react';
 import { createServer } from 'vite';
 
+// The E2E-only server exposes the isolated route; production remains default-off.
+process.env.VITE_TEMPLATE_STUDIO = '1';
+
 const shutdownPlugin = {
   name: 'reporter-e2e-shutdown',
   configureServer(devServer) {

@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import base64
 import io
+import os
 import sys
 import tempfile
 import time
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -21,6 +23,15 @@ from api.routes import router  # noqa: E402
 from core.database import Database  # noqa: E402
 from core.preview_artifacts import PreviewArtifactRegistry  # noqa: E402
 from core.report_jobs import ReportJobManager  # noqa: E402
+from core.template_mapping_workspace import (  # noqa: E402
+    TemplateStudioService,
+    set_mapping_workspace_archived,
+)
+from core.template_pack_catalog import TemplatePackCatalog  # noqa: E402
+from core.template_pack_publish import TemplatePackPublishService  # noqa: E402
+from core.template_workspace_retention import TemplateWorkspaceRetention  # noqa: E402
+
+from tests.test_profile_renderer import _complete_workspace, _template_for  # noqa: E402
 
 
 class ApiIntegrationTests(unittest.TestCase):
@@ -33,6 +44,14 @@ class ApiIntegrationTests(unittest.TestCase):
         self.template_root.mkdir(parents=True)
         self.jobs = ReportJobManager(max_workers=1, max_pending=2)
         self.preview_registry = PreviewArtifactRegistry(self.root / "preview-cache")
+        self.template_studio = TemplateStudioService(self.root / "studio")
+        self.template_pack_catalog = TemplatePackCatalog(self.root / "studio" / "catalog")
+        self.template_pack_publisher = TemplatePackPublishService(
+            self.root / "studio" / "validation",
+            self.template_studio,
+            self.template_pack_catalog,
+        )
+        self.template_workspace_retention = TemplateWorkspaceRetention(self.template_studio)
         self.patches = [
             patch("api.routes.get_db", return_value=self.database),
             patch("api.routes.TEMPLATES_DIR", self.template_root),
@@ -40,6 +59,10 @@ class ApiIntegrationTests(unittest.TestCase):
             patch("api.routes._preview_artifacts", self.preview_registry),
             patch("api.routes.preview_jobs_enabled", return_value=True),
             patch("api.routes.GENERATED_REPORTS_DIR", self.root / "generated"),
+            patch("api.routes._template_studio", self.template_studio),
+            patch("api.routes._template_pack_catalog", self.template_pack_catalog),
+            patch("api.routes._template_pack_publisher", self.template_pack_publisher),
+            patch("api.routes._template_workspace_retention", self.template_workspace_retention),
         ]
         for active in self.patches:
             active.start()
@@ -78,6 +101,608 @@ class ApiIntegrationTests(unittest.TestCase):
         rules = self.client.get("/api/rules")
         self.assertEqual(rules.status_code, 200)
         self.assertTrue(any(rule["id"] == "PROXY_TOOL_REVIEW" for rule in rules.json()["rules"]))
+
+    def test_template_pack_inspection_is_hidden_by_default(self) -> None:
+        encoded = base64.b64encode(b"not-a-template-pack").decode()
+
+        with patch("api.routes.template_packs_enabled", return_value=False):
+            response = self.client.post(
+                "/api/template-packs/inspect",
+                json={"filename": "draft.rptpack", "contentBase64": encoded},
+            )
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_enabled_template_pack_inspection_remains_read_only_validation(self) -> None:
+        encoded = base64.b64encode(b"not-a-template-pack").decode()
+
+        with patch("api.routes.template_packs_enabled", return_value=True):
+            response = self.client.post(
+                "/api/template-packs/inspect",
+                json={"filename": "draft.rptpack", "contentBase64": encoded},
+            )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("not a ZIP", response.json()["detail"])
+
+    def test_template_pack_catalog_is_isolated_and_feature_gated(self) -> None:
+        with patch("api.routes.template_packs_enabled", return_value=True):
+            catalog = self.client.get("/api/template-packs/catalog")
+            recovery = self.client.get("/api/template-packs/catalog/recovery")
+            invalid_install = self.client.post(
+                "/api/template-packs/catalog/install",
+                json={
+                    "filename": "customer.rptpack",
+                    "contentBase64": base64.b64encode(b"invalid").decode(),
+                    "expectedRevision": 0,
+                },
+            )
+
+        self.assertEqual(catalog.status_code, 200)
+        self.assertEqual(catalog.json()["revision"], 0)
+        self.assertFalse(catalog.json()["selectionIntegrated"])
+        self.assertTrue(catalog.json()["legacyRendererUnchanged"])
+        self.assertEqual(recovery.status_code, 200)
+        self.assertFalse(recovery.json()["canRecover"])
+        self.assertTrue(recovery.json()["legacyRendererUnchanged"])
+        self.assertEqual(invalid_install.status_code, 400)
+
+        with patch("api.routes.template_packs_enabled", return_value=False):
+            hidden = self.client.get("/api/template-packs/catalog")
+            hidden_recovery = self.client.get("/api/template-packs/catalog/recovery")
+        self.assertEqual(hidden.status_code, 404)
+        self.assertEqual(hidden_recovery.status_code, 404)
+
+    def test_template_pack_publish_api_requires_reviewed_two_pass_evidence(self) -> None:
+        template, anchors = _template_for("summary")
+        workspace = _complete_workspace(
+            self.template_studio,
+            template,
+            "summary",
+            anchors,
+        )
+        fixture = {
+            "rows": [
+                {
+                    "type": "server",
+                    "hostname": "SRV-API-001",
+                    "ip": "10.30.0.1",
+                    "os": "Windows Server 2022",
+                    "result": "Không phát hiện dấu hiệu bất thường",
+                },
+                {
+                    "type": "client",
+                    "hostname": "PC-API-001",
+                    "ip": "10.30.1.1",
+                    "os": "Windows 11",
+                    "result": "Ghi nhận dấu hiệu bất thường: ngrok.exe",
+                    "notes": "Phát hiện công cụ proxy ngrok.exe",
+                },
+            ],
+            "fixtureId": "summary-api-integration-v1",
+            "expectedWorkspaceRevision": workspace["revision"],
+        }
+
+        with patch("api.routes.template_packs_enabled", return_value=True):
+            baseline_response = self.client.post(
+                f"/api/template-packs/workspaces/{workspace['workspaceId']}/validation-runs",
+                json=fixture,
+            )
+            self.assertEqual(baseline_response.status_code, 201)
+            baseline = baseline_response.json()
+
+            history = self.client.get(
+                f"/api/template-packs/workspaces/{workspace['workspaceId']}/validation-runs"
+            )
+            self.assertEqual(history.status_code, 200)
+            self.assertEqual(history.json()["items"][0]["runId"], baseline["runId"])
+            self.assertFalse(history.json()["items"][0]["stale"])
+
+            premature = self.client.post(
+                f"/api/template-packs/workspaces/{workspace['workspaceId']}/validation-runs",
+                json={**fixture, "baselineRunId": baseline["runId"]},
+            )
+            self.assertEqual(premature.status_code, 400)
+
+            artifact = self.client.get(
+                f"/api/template-packs/workspaces/{workspace['workspaceId']}"
+                f"/validation-runs/{baseline['runId']}/artifact"
+            )
+            self.assertEqual(artifact.status_code, 200)
+            self.assertEqual(
+                artifact.headers["X-Artifact-SHA256"],
+                baseline["validation"]["artifactSha256"],
+            )
+
+            approval = self.client.post(
+                f"/api/template-packs/workspaces/{workspace['workspaceId']}"
+                f"/validation-runs/{baseline['runId']}/approve-baseline",
+                json={
+                    "expectedWorkspaceRevision": workspace["revision"],
+                    "reviewer": "api-reviewer@example.test",
+                    "artifactSha256": baseline["validation"]["artifactSha256"],
+                },
+            )
+            self.assertEqual(approval.status_code, 200)
+
+            verified_response = self.client.post(
+                f"/api/template-packs/workspaces/{workspace['workspaceId']}/validation-runs",
+                json={**fixture, "baselineRunId": baseline["runId"]},
+            )
+            self.assertEqual(verified_response.status_code, 201)
+            verified = verified_response.json()
+            self.assertTrue(verified["validation"]["readyForVisualReview"])
+
+            published = self.client.post(
+                f"/api/template-packs/workspaces/{workspace['workspaceId']}"
+                f"/validation-runs/{verified['runId']}/publish",
+                json={
+                    "expectedWorkspaceRevision": workspace["revision"],
+                    "expectedCatalogRevision": 0,
+                    "reviewer": "api-reviewer@example.test",
+                    "artifactSha256": verified["validation"]["artifactSha256"],
+                },
+            )
+            self.assertEqual(published.status_code, 201)
+            self.assertFalse(published.json()["selectionIntegrated"])
+
+        with patch("api.routes.template_packs_enabled", return_value=False):
+            hidden = self.client.post(
+                f"/api/template-packs/workspaces/{workspace['workspaceId']}/validation-runs",
+                json=fixture,
+            )
+            hidden_history = self.client.get(
+                f"/api/template-packs/workspaces/{workspace['workspaceId']}/validation-runs"
+            )
+        self.assertEqual(hidden.status_code, 404)
+        self.assertEqual(hidden_history.status_code, 404)
+
+    def test_profile_template_analysis_starts_with_zero_approved_mapping(self) -> None:
+        document = Document()
+        document.add_heading("Customer layout", level=1)
+        output = io.BytesIO()
+        document.save(output)
+
+        with patch("api.routes.template_packs_enabled", return_value=True):
+            response = self.client.post(
+                "/api/template-packs/analyze-template",
+                json={
+                    "filename": "customer.docx",
+                    "contentBase64": base64.b64encode(output.getvalue()).decode(),
+                    "reportType": "server_only",
+                },
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["mapping"]["coveragePercent"], 0.0)
+        self.assertEqual(response.json()["mapping"]["approvedCount"], 0)
+        self.assertEqual(response.json()["profileSeed"]["status"], "analyzed")
+
+    def test_template_mapping_workspace_revision_contract(self) -> None:
+        document = Document()
+        document.add_paragraph("{{REPORT_TITLE}}")
+        document.add_paragraph("{{OVERVIEW}}")
+        output = io.BytesIO()
+        document.save(output)
+        encoded = base64.b64encode(output.getvalue()).decode()
+
+        with patch("api.routes.template_packs_enabled", return_value=True):
+            created = self.client.post(
+                "/api/template-packs/workspaces",
+                json={
+                    "filename": "customer.docx",
+                    "contentBase64": encoded,
+                    "reportType": "server_only",
+                    "profileId": "customer-server",
+                    "displayName": "Customer Server",
+                },
+            )
+            self.assertEqual(created.status_code, 201)
+            workspace = created.json()
+            self.assertEqual(workspace["coveragePercent"], 0.0)
+
+            approved = self.client.put(
+                f"/api/template-packs/workspaces/{workspace['workspaceId']}/mappings/report.title",
+                json={
+                    "anchor": {"kind": "token", "value": "{{REPORT_TITLE}}"},
+                    "fields": [],
+                    "expectedRevision": workspace["revision"],
+                },
+            )
+            self.assertEqual(approved.status_code, 200)
+            self.assertEqual(approved.json()["revision"], 2)
+
+            duplicate_anchor = self.client.put(
+                f"/api/template-packs/workspaces/{workspace['workspaceId']}/mappings/overview",
+                json={
+                    "anchor": {"kind": "token", "value": "{{REPORT_TITLE}}"},
+                    "fields": [],
+                    "expectedRevision": approved.json()["revision"],
+                },
+            )
+            self.assertEqual(duplicate_anchor.status_code, 400)
+            self.assertIn("already mapped", duplicate_anchor.json()["detail"])
+
+            stale = self.client.put(
+                f"/api/template-packs/workspaces/{workspace['workspaceId']}/mappings/overview",
+                json={
+                    "anchor": {"kind": "token", "value": "{{OVERVIEW}}"},
+                    "fields": [],
+                    "expectedRevision": workspace["revision"],
+                },
+            )
+            self.assertEqual(stale.status_code, 409)
+
+            loaded = self.client.get(f"/api/template-packs/workspaces/{workspace['workspaceId']}")
+            self.assertEqual(loaded.status_code, 200)
+            self.assertEqual(loaded.json()["revision"], 2)
+
+    def test_template_mapping_workspace_index_is_filtered_paginated_and_public(self) -> None:
+        document = Document()
+        document.add_paragraph("{{REPORT_TITLE}}")
+        output = io.BytesIO()
+        document.save(output)
+        encoded = base64.b64encode(output.getvalue()).decode()
+
+        with patch("api.routes.template_packs_enabled", return_value=True):
+            created = []
+            for profile_id, report_type in (
+                ("customer-server-index", "server_only"),
+                ("customer-client-index", "client_only"),
+            ):
+                response = self.client.post(
+                    "/api/template-packs/workspaces",
+                    json={
+                        "filename": f"{profile_id}.docx",
+                        "contentBase64": encoded,
+                        "reportType": report_type,
+                        "profileId": profile_id,
+                        "displayName": profile_id.replace("-", " ").title(),
+                    },
+                )
+                self.assertEqual(response.status_code, 201)
+                created.append(response.json())
+
+            first_page = self.client.get(
+                "/api/template-packs/workspaces",
+                params={"limit": 1},
+            )
+            self.assertEqual(first_page.status_code, 200)
+            first_payload = first_page.json()
+            self.assertTrue(first_payload["hasMore"])
+            self.assertIsNotNone(first_payload["nextCursor"])
+            self.assertEqual(first_payload["skippedCorrupt"], 0)
+            self.assertRegex(first_payload["collectionFingerprint"], r"^[0-9a-f]{64}$")
+
+            second_page = self.client.get(
+                "/api/template-packs/workspaces",
+                params={"limit": 1, "cursor": first_payload["nextCursor"]},
+            )
+            self.assertEqual(second_page.status_code, 200)
+            second_payload = second_page.json()
+            self.assertFalse(second_payload["hasMore"])
+            self.assertIsNone(second_payload["nextCursor"])
+            self.assertEqual(
+                {
+                    first_payload["items"][0]["workspaceId"],
+                    second_payload["items"][0]["workspaceId"],
+                },
+                {item["workspaceId"] for item in created},
+            )
+
+            filtered = self.client.get(
+                "/api/template-packs/workspaces",
+                params={"status": "analyzed", "reportType": "server_only"},
+            )
+            self.assertEqual(filtered.status_code, 200)
+            self.assertEqual(len(filtered.json()["items"]), 1)
+            self.assertEqual(filtered.json()["items"][0]["reportType"], "server_only")
+
+            searched = self.client.get(
+                "/api/template-packs/workspaces",
+                params={"q": "CLIENT INDEX"},
+            )
+            self.assertEqual(searched.status_code, 200)
+            self.assertEqual(len(searched.json()["items"]), 1)
+            self.assertEqual(searched.json()["items"][0]["profileId"], "customer-client-index")
+
+            expected_fields = {
+                "workspaceId",
+                "profileId",
+                "displayName",
+                "version",
+                "reportType",
+                "status",
+                "archived",
+                "revision",
+                "coveragePercent",
+                "mappedCount",
+                "requiredCount",
+                "missingCount",
+                "createdAt",
+                "updatedAt",
+            }
+            for item in first_payload["items"] + second_payload["items"]:
+                self.assertEqual(set(item), expected_fields)
+                self.assertNotIn("analysis", item)
+                self.assertNotIn("slots", item)
+                self.assertNotIn("audit", item)
+                self.assertNotIn("path", item)
+                self.assertNotIn("contentBase64", item)
+
+            invalid_status = self.client.get(
+                "/api/template-packs/workspaces",
+                params={"status": "unknown"},
+            )
+            invalid_cursor = self.client.get(
+                "/api/template-packs/workspaces",
+                params={"cursor": "not-a-cursor"},
+            )
+            mismatched_cursor = self.client.get(
+                "/api/template-packs/workspaces",
+                params={
+                    "cursor": first_payload["nextCursor"],
+                    "q": "customer",
+                },
+            )
+            invalid_report_type = self.client.get(
+                "/api/template-packs/workspaces",
+                params={"reportType": "unsupported"},
+            )
+            invalid_limit = self.client.get(
+                "/api/template-packs/workspaces",
+                params={"limit": 101},
+            )
+            invalid_query = self.client.get(
+                "/api/template-packs/workspaces",
+                params={"q": "x" * 101},
+            )
+
+            changed = self.client.post(
+                "/api/template-packs/workspaces",
+                json={
+                    "filename": "customer-full-added.docx",
+                    "contentBase64": encoded,
+                    "reportType": "full",
+                    "profileId": "customer-full-added",
+                    "displayName": "Customer Full Added",
+                },
+            )
+            self.assertEqual(changed.status_code, 201)
+            changed_collection_cursor = self.client.get(
+                "/api/template-packs/workspaces",
+                params={"limit": 1, "cursor": first_payload["nextCursor"]},
+            )
+
+        self.assertEqual(invalid_status.status_code, 400)
+        self.assertEqual(invalid_cursor.status_code, 400)
+        self.assertEqual(mismatched_cursor.status_code, 400)
+        self.assertEqual(invalid_report_type.status_code, 422)
+        self.assertEqual(invalid_limit.status_code, 422)
+        self.assertEqual(invalid_query.status_code, 422)
+        self.assertEqual(changed_collection_cursor.status_code, 409)
+
+    def test_template_mapping_workspace_index_is_hidden_by_default(self) -> None:
+        with patch("api.routes.template_packs_enabled", return_value=False):
+            response = self.client.get("/api/template-packs/workspaces")
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_template_mapping_workspace_lifecycle_is_revisioned_and_feature_gated(self) -> None:
+        document = Document()
+        document.add_paragraph("{{REPORT_TITLE}}")
+        output = io.BytesIO()
+        document.save(output)
+        encoded = base64.b64encode(output.getvalue()).decode()
+
+        with patch("api.routes.template_packs_enabled", return_value=True):
+            created = self.client.post(
+                "/api/template-packs/workspaces",
+                json={
+                    "filename": "lifecycle.docx",
+                    "contentBase64": encoded,
+                    "reportType": "server_only",
+                    "profileId": "api-lifecycle-server",
+                    "displayName": "API Lifecycle Server",
+                },
+            )
+            self.assertEqual(created.status_code, 201)
+            workspace = created.json()
+
+            renamed = self.client.patch(
+                f"/api/template-packs/workspaces/{workspace['workspaceId']}/rename",
+                json={
+                    "displayName": "API Lifecycle Renamed",
+                    "expectedRevision": workspace["revision"],
+                },
+            )
+            self.assertEqual(renamed.status_code, 200)
+            self.assertEqual(renamed.json()["revision"], 2)
+
+            stale_rename = self.client.patch(
+                f"/api/template-packs/workspaces/{workspace['workspaceId']}/rename",
+                json={
+                    "displayName": "Stale Rename",
+                    "expectedRevision": workspace["revision"],
+                },
+            )
+            self.assertEqual(stale_rename.status_code, 409)
+
+            cloned = self.client.post(
+                f"/api/template-packs/workspaces/{workspace['workspaceId']}/clone",
+                json={
+                    "profileId": "api-lifecycle-copy",
+                    "displayName": "API Lifecycle Copy",
+                    "version": "0.2.0",
+                    "expectedRevision": renamed.json()["revision"],
+                },
+            )
+            self.assertEqual(cloned.status_code, 201)
+            self.assertNotEqual(cloned.json()["workspaceId"], workspace["workspaceId"])
+            self.assertEqual(cloned.json()["revision"], 1)
+
+            archived = self.client.post(
+                f"/api/template-packs/workspaces/{workspace['workspaceId']}/archive",
+                json={
+                    "archived": True,
+                    "expectedRevision": renamed.json()["revision"],
+                },
+            )
+            self.assertEqual(archived.status_code, 200)
+            self.assertTrue(archived.json()["archived"])
+
+            archived_index = self.client.get(
+                "/api/template-packs/workspaces",
+                params={"archived": "true"},
+            )
+            self.assertEqual(archived_index.status_code, 200)
+            self.assertEqual(len(archived_index.json()["items"]), 1)
+            self.assertEqual(
+                archived_index.json()["items"][0]["workspaceId"], workspace["workspaceId"]
+            )
+
+            restored = self.client.post(
+                f"/api/template-packs/workspaces/{workspace['workspaceId']}/archive",
+                json={
+                    "archived": False,
+                    "expectedRevision": archived.json()["revision"],
+                },
+            )
+            self.assertEqual(restored.status_code, 200)
+            self.assertFalse(restored.json()["archived"])
+
+        with patch("api.routes.template_packs_enabled", return_value=False):
+            hidden = self.client.post(
+                f"/api/template-packs/workspaces/{workspace['workspaceId']}/archive",
+                json={"archived": True, "expectedRevision": restored.json()["revision"]},
+            )
+        self.assertEqual(hidden.status_code, 404)
+
+    def test_template_mapping_workspace_export_import_roundtrip_is_portable(self) -> None:
+        document = Document()
+        document.add_paragraph("{{REPORT_TITLE}}")
+        output = io.BytesIO()
+        document.save(output)
+        encoded = base64.b64encode(output.getvalue()).decode()
+
+        with patch("api.routes.template_packs_enabled", return_value=True):
+            created = self.client.post(
+                "/api/template-packs/workspaces",
+                json={
+                    "filename": "portable.docx",
+                    "contentBase64": encoded,
+                    "reportType": "server_only",
+                    "profileId": "api-portable-server",
+                    "displayName": "API Portable Server",
+                },
+            )
+            self.assertEqual(created.status_code, 201)
+            original = created.json()
+
+            exported = self.client.get(
+                f"/api/template-packs/workspaces/{original['workspaceId']}/export"
+            )
+            self.assertEqual(exported.status_code, 200)
+            export_payload = exported.json()
+            self.assertTrue(export_payload["filename"].endswith(".rptdraft"))
+            self.assertRegex(export_payload["sha256"], r"^[0-9a-f]{64}$")
+            self.assertTrue(export_payload["legacyRendererUnchanged"])
+
+            imported = self.client.post(
+                "/api/template-packs/workspaces/import",
+                json={
+                    "filename": export_payload["filename"],
+                    "contentBase64": export_payload["contentBase64"],
+                },
+            )
+            self.assertEqual(imported.status_code, 201)
+            imported_payload = imported.json()
+            self.assertNotEqual(imported_payload["workspaceId"], original["workspaceId"])
+            self.assertEqual(imported_payload["revision"], 1)
+            self.assertEqual(imported_payload["profileId"], original["profileId"])
+            self.assertEqual(imported_payload["audit"][0]["action"], "workspace.imported")
+            self.assertEqual(
+                imported_payload["audit"][0]["sourceWorkspaceId"],
+                original["workspaceId"],
+            )
+            self.assertTrue(imported_payload["transfer"]["legacyRendererUnchanged"])
+            self.assertNotIn("path", imported_payload)
+
+        with patch("api.routes.template_packs_enabled", return_value=False):
+            hidden = self.client.get(
+                f"/api/template-packs/workspaces/{original['workspaceId']}/export"
+            )
+        self.assertEqual(hidden.status_code, 404)
+
+    def test_template_workspace_retention_requires_preview_and_is_recoverable(self) -> None:
+        document = Document()
+        document.add_paragraph("{{REPORT_TITLE}}")
+        output = io.BytesIO()
+        document.save(output)
+        encoded = base64.b64encode(output.getvalue()).decode()
+        old_time = datetime(2026, 1, 1, tzinfo=timezone.utc)
+        fixed_now = datetime(2026, 8, 28, tzinfo=timezone.utc)
+        self.template_workspace_retention._now = lambda: fixed_now
+
+        with patch("api.routes.template_packs_enabled", return_value=True):
+            created = self.client.post(
+                "/api/template-packs/workspaces",
+                json={
+                    "filename": "retention.docx",
+                    "contentBase64": encoded,
+                    "reportType": "server_only",
+                    "profileId": "api-retention-server",
+                    "displayName": "API Retention Server",
+                },
+            )
+            self.assertEqual(created.status_code, 201)
+            workspace = created.json()
+            archived = set_mapping_workspace_archived(
+                workspace,
+                archived=True,
+                expected_revision=workspace["revision"],
+                now=old_time,
+            )
+            self.template_studio.workspaces.save(archived)
+            source_path = self.template_studio.sources / f"{workspace['templateSha256']}.docx"
+            os.utime(source_path, (old_time.timestamp(), old_time.timestamp()))
+
+            preview = self.client.get(
+                "/api/template-packs/workspaces/retention/preview",
+                params={"retentionDays": 90},
+            )
+            self.assertEqual(preview.status_code, 200)
+            self.assertTrue(preview.json()["dryRun"])
+            self.assertFalse(preview.json()["permanentDelete"])
+            self.assertEqual(preview.json()["candidateWorkspaceCount"], 1)
+            self.assertEqual(preview.json()["candidateSourceCount"], 1)
+
+            applied = self.client.post(
+                "/api/template-packs/workspaces/retention/apply",
+                json={"confirmationToken": preview.json()["confirmationToken"]},
+            )
+            self.assertEqual(applied.status_code, 200)
+            self.assertTrue(applied.json()["recoverable"])
+            self.assertFalse(applied.json()["permanentDelete"])
+
+            unavailable = self.client.get(
+                f"/api/template-packs/workspaces/{workspace['workspaceId']}"
+            )
+            self.assertEqual(unavailable.status_code, 404)
+
+            restored = self.client.post(
+                f"/api/template-packs/workspaces/retention/{applied.json()['quarantineId']}/restore"
+            )
+            self.assertEqual(restored.status_code, 200)
+            self.assertTrue(restored.json()["restored"])
+            available = self.client.get(
+                f"/api/template-packs/workspaces/{workspace['workspaceId']}"
+            )
+            self.assertEqual(available.status_code, 200)
+
+        with patch("api.routes.template_packs_enabled", return_value=False):
+            hidden = self.client.get("/api/template-packs/workspaces/retention/preview")
+        self.assertEqual(hidden.status_code, 404)
 
     def test_workspace_backup_dry_run_and_confirmed_restore_contract(self) -> None:
         template_path = self.template_root / "summary" / "summary.docx"

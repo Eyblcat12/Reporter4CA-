@@ -1,0 +1,104 @@
+{
+  "schemaVersion": "1.0",
+  "pilotId": "draft-template-v1",
+  "status": "draft",
+  "reportType": "full",
+  "identity": {
+    "packId": "replace-me",
+    "packVersion": "0.1.0",
+    "packSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "templateSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "workspaceHash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "workspaceRevision": 1
+  },
+  "fixture": {
+    "fixtureId": "sanitized-fixture",
+    "sourceSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "assetCount": 0,
+    "serverCount": 0,
+    "clientCount": 0,
+    "sanitized": true,
+    "containsCustomerData": false
+  },
+  "gates": {
+    "mapping": {"passed": false, "coveragePercent": 0},
+    "baseline": {
+      "runId": "pending-baseline-run",
+      "templateSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "workspaceHash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "artifactSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "structuralSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "fixturePassed": false,
+      "integrityPassed": false,
+      "structuralPassed": false,
+      "baselineApproved": false
+    },
+    "verification": {
+      "runId": "pending-verification-run",
+      "templateSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "workspaceHash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "artifactSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "structuralSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "fixturePassed": false,
+      "integrityPassed": false,
+      "structuralPassed": false
+    },
+    "golden": {"passed": false, "unexpectedDiffCount": 0},
+    "integrity": {"passed": false},
+    "features": {
+      "splitRunToken": "not_applicable",
+      "bookmarkAnchor": "not_applicable",
+      "contentControlAnchor": "not_applicable",
+      "headerFooter": "not_applicable",
+      "tocFields": "not_applicable",
+      "numbering": "not_applicable",
+      "horizontalMergedCells": "not_applicable",
+      "verticalMergedCells": "not_applicable",
+      "pageBreaks": "not_applicable",
+      "sectionBreaks": "not_applicable",
+      "images": "not_applicable",
+      "relationships": "not_applicable"
+    },
+    "visual": {
+      "passed": false,
+      "reviewer": "pending-reviewer",
+      "artifactSha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "benchmark": {
+      "passed": false,
+      "outcome": "failed",
+      "trials": 0,
+      "targetAssetCount": 0,
+      "p50Seconds": 0,
+      "p95Seconds": 0,
+      "peakRssMiB": 0,
+      "resourceLimited": false,
+      "legacyRendererUsed": false
+    },
+    "recovery": {"passed": false, "dryRunPassed": false, "rollbackPassed": false},
+    "quality": {
+      "passed": false,
+      "commitSha": "0000000",
+      "backendTests": 1,
+      "frontendTests": 1,
+      "productionBuildPassed": false
+    }
+  },
+  "approvals": {
+    "author": "pending-author",
+    "reviewer": "pending-reviewer",
+    "publisher": "pending-publisher",
+    "integrationApproved": false
+  },
+  "evidence": [
+    {"kind": "mapping", "path": "evidence/mapping.json", "sha256": "0000000000000000000000000000000000000000000000000000000000000000"},
+    {"kind": "baseline-validation", "path": "evidence/baseline-validation.json", "sha256": "0000000000000000000000000000000000000000000000000000000000000000"},
+    {"kind": "verification-validation", "path": "evidence/verification-validation.json", "sha256": "0000000000000000000000000000000000000000000000000000000000000000"},
+    {"kind": "golden-diff", "path": "evidence/golden-diff.json", "sha256": "0000000000000000000000000000000000000000000000000000000000000000"},
+    {"kind": "feature-checklist", "path": "evidence/feature-checklist.json", "sha256": "0000000000000000000000000000000000000000000000000000000000000000"},
+    {"kind": "visual-review", "path": "evidence/visual-review.json", "sha256": "0000000000000000000000000000000000000000000000000000000000000000"},
+    {"kind": "benchmark", "path": "evidence/benchmark.json", "sha256": "0000000000000000000000000000000000000000000000000000000000000000"},
+    {"kind": "recovery", "path": "evidence/recovery.json", "sha256": "0000000000000000000000000000000000000000000000000000000000000000"},
+    {"kind": "quality-gate", "path": "evidence/quality-gate.json", "sha256": "0000000000000000000000000000000000000000000000000000000000000000"}
+  ]
+}

@@ -252,6 +252,136 @@ class TemplateVersionRequest(BaseModel):
     model_config = {"populate_by_name": True}
 
 
+class TemplatePackInspectRequest(BaseModel):
+    """Read-only inspection request for an experimental Template Pack."""
+
+    filename: str = ""
+    content_base64: str = Field(alias="contentBase64", default="")
+    require_publishable: bool = Field(alias="requirePublishable", default=False)
+
+    model_config = {"populate_by_name": True}
+
+
+class TemplatePackInstallRequest(BaseModel):
+    """Install one immutable, publication-ready pack into Template Studio."""
+
+    filename: str = ""
+    content_base64: str = Field(alias="contentBase64", default="")
+    expected_revision: int = Field(alias="expectedRevision", ge=0)
+
+    model_config = {"populate_by_name": True}
+
+
+class TemplatePackSelectRequest(BaseModel):
+    """Revision-safe activation or rollback inside the isolated pack catalog."""
+
+    version: str = Field(min_length=1, max_length=64)
+    expected_revision: int = Field(alias="expectedRevision", ge=0)
+
+    model_config = {"populate_by_name": True}
+
+
+class TemplatePackRecoveryRequest(BaseModel):
+    """Restore a catalog only from an unchanged, previewed checkpoint."""
+
+    confirmation_token: str = Field(alias="confirmationToken", min_length=64, max_length=64)
+
+    model_config = {"populate_by_name": True}
+
+
+class TemplateProfileAnalyzeRequest(BaseModel):
+    """Read-only DOCX analysis request for experimental Template Studio."""
+
+    filename: str = ""
+    content_base64: str = Field(alias="contentBase64", default="")
+    report_type: ReportType = Field(alias="reportType", default=ReportType.FULL)
+
+    model_config = {"populate_by_name": True}
+
+
+class TemplateWorkspaceCreateRequest(BaseModel):
+    filename: str = ""
+    content_base64: str = Field(alias="contentBase64", default="")
+    report_type: ReportType = Field(alias="reportType", default=ReportType.FULL)
+    profile_id: str = Field(alias="profileId", min_length=2, max_length=128)
+    display_name: str = Field(alias="displayName", min_length=1, max_length=200)
+    version: str = Field(default="0.1.0", min_length=1, max_length=64)
+
+    model_config = {"populate_by_name": True}
+
+
+class TemplateWorkspaceMappingRequest(BaseModel):
+    anchor: dict[str, str] = Field(default_factory=dict)
+    fields: list[dict[str, str]] = Field(default_factory=list)
+    expected_revision: int = Field(alias="expectedRevision", ge=1)
+
+    model_config = {"populate_by_name": True}
+
+
+class TemplateWorkspaceRevisionRequest(BaseModel):
+    expected_revision: int = Field(alias="expectedRevision", ge=1)
+
+    model_config = {"populate_by_name": True}
+
+
+class TemplateWorkspaceRenameRequest(TemplateWorkspaceRevisionRequest):
+    display_name: str = Field(alias="displayName", min_length=1, max_length=200)
+
+
+class TemplateWorkspaceCloneRequest(TemplateWorkspaceRevisionRequest):
+    profile_id: str = Field(alias="profileId", min_length=2, max_length=128)
+    display_name: str = Field(alias="displayName", min_length=1, max_length=200)
+    version: str = Field(default="0.1.0", min_length=1, max_length=64)
+
+
+class TemplateWorkspaceArchiveRequest(TemplateWorkspaceRevisionRequest):
+    archived: bool = True
+
+
+class TemplateWorkspaceImportRequest(BaseModel):
+    filename: str = ""
+    content_base64: str = Field(alias="contentBase64", default="")
+
+    model_config = {"populate_by_name": True}
+
+
+class TemplateWorkspaceRetentionApplyRequest(BaseModel):
+    confirmation_token: str = Field(alias="confirmationToken", min_length=1, max_length=4096)
+
+    model_config = {"populate_by_name": True}
+
+
+class TemplatePackValidationRequest(BaseModel):
+    """Run a server-owned fixture against one revisioned mapping workspace."""
+
+    rows: list[dict[str, Any]] = Field(default_factory=list)
+    fixture_id: str = Field(alias="fixtureId", min_length=1, max_length=128)
+    expected_workspace_revision: int = Field(alias="expectedWorkspaceRevision", ge=1)
+    baseline_run_id: str = Field(alias="baselineRunId", default="", max_length=64)
+    title: str = DEFAULT_REPORT_TITLE
+    organization: str = ""
+    assessment_date: str = Field(alias="assessmentDate", default="")
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    model_config = {"populate_by_name": True}
+
+
+class TemplatePackBaselineApprovalRequest(BaseModel):
+    """Approve the checksum of an exact first-pass validation artifact."""
+
+    expected_workspace_revision: int = Field(alias="expectedWorkspaceRevision", ge=1)
+    reviewer: str = Field(min_length=1, max_length=128)
+    artifact_sha256: str = Field(alias="artifactSha256", min_length=64, max_length=64)
+
+    model_config = {"populate_by_name": True}
+
+
+class TemplatePackPublishRequest(TemplatePackBaselineApprovalRequest):
+    """Publish an exact reviewed second-pass run with catalog revision control."""
+
+    expected_catalog_revision: int = Field(alias="expectedCatalogRevision", ge=0)
+
+
 class TemplateAnalysis(BaseModel):
     """Detailed template analysis result."""
 

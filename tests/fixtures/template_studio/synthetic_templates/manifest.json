@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "fixtures": {
+    "full": {
+      "file": "cross_platform_assessment_full.docx",
+      "sha256": "10310fd90bdeefee72dac560aceb87dae9d5e4d6e60326395b9e71ae3031d794",
+      "sizeBytes": 38797,
+      "anchors": {
+        "report.title": {
+          "kind": "bookmark",
+          "value": "report_title"
+        },
+        "overview": {
+          "kind": "content_control",
+          "value": "overview"
+        },
+        "inventory.server": {
+          "kind": "token",
+          "value": "{{SERVER_INVENTORY}}"
+        },
+        "inventory.client": {
+          "kind": "token",
+          "value": "{{CLIENT_INVENTORY}}"
+        },
+        "results.server": {
+          "kind": "content_control",
+          "value": "server_results"
+        },
+        "results.client": {
+          "kind": "content_control",
+          "value": "client_results"
+        },
+        "investigation": {
+          "kind": "bookmark",
+          "value": "investigation"
+        },
+        "remediation": {
+          "kind": "token",
+          "value": "{{REMEDIATION_REGISTER}}"
+        },
+        "ioc": {
+          "kind": "content_control",
+          "value": "ioc_register"
+        },
+        "recommendations": {
+          "kind": "bookmark",
+          "value": "recommendations"
+        }
+      }
+    },
+    "server_only": {
+      "file": "infrastructure_review_server.docx",
+      "sha256": "48b4a7b25d503cd02ff2cd71dce6fe1ff8696c9fda85ae568f66bc433dedec80",
+      "sizeBytes": 38725,
+      "anchors": {
+        "report.title": {
+          "kind": "content_control",
+          "value": "report_title"
+        },
+        "overview": {
+          "kind": "bookmark",
+          "value": "overview"
+        },
+        "inventory.server": {
+          "kind": "content_control",
+          "value": "server_inventory"
+        },
+        "results.server": {
+          "kind": "token",
+          "value": "{{SERVER_RESULTS}}"
+        },
+        "investigation": {
+          "kind": "content_control",
+          "value": "investigation"
+        },
+        "remediation": {
+          "kind": "bookmark",
+          "value": "remediation"
+        },
+        "ioc": {
+          "kind": "token",
+          "value": "{{IOC_REGISTER}}"
+        },
+        "recommendations": {
+          "kind": "content_control",
+          "value": "recommendations"
+        }
+      }
+    },
+    "client_only": {
+      "file": "endpoint_assurance_client.docx",
+      "sha256": "b0e248837dd0046314c20b0b9b3f2027ddb634c649a0d32acc828a58e2efedad",
+      "sizeBytes": 38876,
+      "anchors": {
+        "report.title": {
+          "kind": "token",
+          "value": "{{REPORT_TITLE}}"
+        },
+        "overview": {
+          "kind": "content_control",
+          "value": "overview"
+        },
+        "inventory.client": {
+          "kind": "bookmark",
+          "value": "client_inventory"
+        },
+        "results.client": {
+          "kind": "content_control",
+          "value": "client_results"
+        },
+        "investigation": {
+          "kind": "token",
+          "value": "{{INVESTIGATION}}"
+        },
+        "remediation": {
+          "kind": "content_control",
+          "value": "remediation"
+        },
+        "ioc": {
+          "kind": "bookmark",
+          "value": "ioc_register"
+        },
+        "recommendations": {
+          "kind": "token",
+          "value": "{{RECOMMENDATIONS}}"
+        }
+      }
+    }
+  }
+}

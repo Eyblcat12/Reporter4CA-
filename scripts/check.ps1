@@ -25,6 +25,11 @@ if (-not $SkipBackend) {
     if ($LASTEXITCODE -ne 0) {
         throw "Python format check failed with exit code $LASTEXITCODE."
     }
+    Write-Step "Checking Template Studio merge boundary..."
+    & $Python (Join-Path $Root "scripts\check_template_studio_merge.py")
+    if ($LASTEXITCODE -ne 0) {
+        throw "Template Studio merge boundary failed with exit code $LASTEXITCODE."
+    }
     Write-Step "Running backend regression suite..."
     & $Python -m unittest -v `
         tests.test_api_import `
@@ -42,6 +47,8 @@ if (-not $SkipBackend) {
         tests.test_prepared_template `
         tests.test_preview_benchmark_summary `
         tests.test_preview_artifacts `
+        tests.test_profile_renderer_benchmark `
+        tests.test_profile_renderer `
         tests.test_report_jobs `
         tests.test_report_generator `
         tests.test_report_integrity `
@@ -51,10 +58,26 @@ if (-not $SkipBackend) {
         tests.test_scheduled_backup `
         tests.test_system_health `
         tests.test_soak_harness `
+        tests.test_synthetic_template_pilot `
         tests.test_template_categories `
         tests.test_template_blueprint `
+        tests.test_template_mapping_workspace `
+        tests.test_template_pack_catalog `
+        tests.test_template_pack_fuzz_harness `
+        tests.test_template_pilot `
+        tests.test_template_pilot_matrix `
+        tests.test_template_pilot_preflight `
+        tests.test_template_pack_preview `
+        tests.test_template_pack_validation `
+        tests.test_template_packs `
+        tests.test_template_studio_prototype `
+        tests.test_template_workspace_retention `
+        tests.test_template_workspace_transfer `
         tests.test_compact_prototype_integration `
+        tests.test_clean_source_validator `
         tests.test_template_schema `
+        tests.test_template_studio_documentation `
+        tests.test_template_studio_merge_gate `
         tests.test_threat_intelligence `
         tests.test_tracking_import `
         tests.test_upload_limits `

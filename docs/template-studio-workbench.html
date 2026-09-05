@@ -1,0 +1,1475 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reporter Pro — Template Studio Workbench</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b0d12;
+        --sidebar: #0f1218;
+        --surface: #141820;
+        --surface-2: #191e28;
+        --surface-3: #202632;
+        --border: #343c49;
+        --border-strong: #657083;
+        --text: #f0f2f7;
+        --muted: #929baa;
+        --faint: #aab2c0;
+        --accent: #a28fff;
+        --accent-solid: #7258d9;
+        --accent-soft: rgba(139, 108, 255, 0.12);
+        --green: #46d6a6;
+        --green-soft: rgba(70, 214, 166, 0.12);
+        --amber: #f2bd5a;
+        --amber-soft: rgba(242, 189, 90, 0.12);
+        --red: #ff7d86;
+        --shadow: 0 18px 50px rgba(0, 0, 0, 0.24);
+      }
+
+      [data-theme='light'] {
+        color-scheme: light;
+        --bg: #f3f5f8;
+        --sidebar: #ffffff;
+        --surface: #ffffff;
+        --surface-2: #f8f9fb;
+        --surface-3: #eef1f5;
+        --border: #d3d9e2;
+        --border-strong: #7d899a;
+        --text: #161a22;
+        --muted: #647082;
+        --faint: #687386;
+        --accent: #6044c8;
+        --accent-solid: #6044c8;
+        --accent-soft: rgba(109, 78, 232, 0.09);
+        --green: #087e60;
+        --green-soft: rgba(8, 126, 96, 0.09);
+        --amber: #9b6400;
+        --amber-soft: rgba(155, 100, 0, 0.09);
+        --red: #c13f4b;
+        --shadow: 0 18px 50px rgba(29, 39, 54, 0.1);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-width: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-size: 14px;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      button {
+        color: inherit;
+      }
+
+      .app {
+        min-height: 100vh;
+        display: grid;
+        min-width: 0;
+        grid-template-columns: 232px minmax(0, 1fr);
+        grid-template-rows: 58px 1fr 34px;
+      }
+
+      .topbar {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        padding: 0 20px;
+        border-bottom: 1px solid var(--border);
+        background: var(--sidebar);
+      }
+
+      .brand {
+        width: 212px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      .brand-mark {
+        display: grid;
+        width: 30px;
+        height: 30px;
+        place-items: center;
+        border-radius: 8px;
+        background: var(--accent-solid);
+        color: white;
+        box-shadow: 0 8px 20px rgba(112, 80, 240, 0.24);
+      }
+
+      .product-context {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+      }
+
+      .product-context strong {
+        font-size: 13px;
+      }
+
+      .slash {
+        color: var(--faint);
+      }
+
+      .pack-name {
+        max-width: 280px;
+        overflow: hidden;
+        color: var(--muted);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .top-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: auto;
+      }
+
+      .badge,
+      .status {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .badge {
+        padding: 6px 10px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--muted);
+      }
+
+      .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+
+      .icon-button,
+      .button {
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text);
+        cursor: pointer;
+        font: inherit;
+        transition: 140ms ease;
+      }
+
+      .icon-button:focus-visible,
+      .button:focus-visible,
+      .filter-button:focus-visible,
+      .row-select:focus-visible,
+      .search input:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      .icon-button:hover,
+      .button:hover {
+        border-color: var(--border-strong);
+        background: var(--surface-2);
+      }
+
+      .icon-button {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+      }
+
+      .button {
+        height: 36px;
+        padding: 0 13px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 650;
+      }
+
+      .button.primary {
+        border-color: var(--accent-solid);
+        background: var(--accent-solid);
+        color: white;
+      }
+
+      .button.primary:hover {
+        background: #8068e0;
+      }
+
+      .button:disabled,
+      .icon-button:disabled {
+        border-color: var(--border);
+        background: var(--surface-2);
+        color: var(--faint);
+        cursor: not-allowed;
+        opacity: 0.72;
+      }
+
+      .button.danger:not(:disabled) {
+        color: var(--red);
+      }
+
+      .sidebar {
+        padding: 20px 14px;
+        border-right: 1px solid var(--border);
+        background: var(--sidebar);
+      }
+
+      .nav-label {
+        padding: 0 10px 10px;
+        color: var(--faint);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .steps {
+        display: grid;
+        gap: 5px;
+        padding: 0;
+        margin: 0;
+        list-style: none;
+      }
+
+      .step {
+        position: relative;
+        display: grid;
+        grid-template-columns: 28px 1fr auto;
+        align-items: center;
+        gap: 10px;
+        min-height: 48px;
+        padding: 0 10px;
+        border: 1px solid transparent;
+        border-radius: 9px;
+        color: var(--muted);
+      }
+
+      .step.active {
+        border-color: rgba(139, 108, 255, 0.26);
+        background: var(--accent-soft);
+        color: var(--text);
+      }
+
+      .step-index {
+        display: grid;
+        width: 25px;
+        height: 25px;
+        place-items: center;
+        border: 1px solid var(--border-strong);
+        border-radius: 50%;
+        color: var(--faint);
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .step.done .step-index {
+        border-color: var(--green);
+        background: var(--green-soft);
+        color: var(--green);
+      }
+
+      .step.active .step-index {
+        border-color: var(--accent-solid);
+        background: var(--accent-solid);
+        color: white;
+      }
+
+      .step strong {
+        display: block;
+        margin-bottom: 2px;
+        color: inherit;
+        font-size: 13px;
+      }
+
+      .step small {
+        color: var(--faint);
+        font-size: 11px;
+      }
+
+      .step-count {
+        color: var(--amber);
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .workspace {
+        position: relative;
+        min-width: 0;
+        overflow: hidden;
+      }
+
+      .content {
+        height: calc(100vh - 92px);
+        padding: 28px 30px 36px;
+        overflow: auto;
+        transition: padding-right 180ms ease;
+      }
+
+      @media (min-width: 1440px) {
+        .workspace.drawer-open .content {
+          padding-right: 410px;
+        }
+      }
+
+      .page-head {
+        display: flex;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin-bottom: 22px;
+      }
+
+      .eyebrow {
+        margin-bottom: 7px;
+        color: var(--faint);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 24px;
+        letter-spacing: -0.035em;
+      }
+
+      .page-head p {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .page-actions {
+        display: flex;
+        gap: 8px;
+        margin-left: auto;
+      }
+
+      .summary-strip {
+        display: grid;
+        grid-template-columns: minmax(220px, 1fr) 130px;
+        min-height: 78px;
+        margin-bottom: 16px;
+        border: 1px solid var(--border);
+        border-radius: 11px;
+        background: var(--surface);
+        overflow: hidden;
+      }
+
+      .coverage {
+        display: grid;
+        grid-template-columns: 1fr 84px;
+        align-items: center;
+        gap: 20px;
+        padding: 15px 18px;
+      }
+
+      .coverage strong {
+        font-size: 13px;
+      }
+
+      .coverage span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .progress {
+        height: 5px;
+        margin-top: 10px;
+        border-radius: 10px;
+        background: var(--surface-3);
+        overflow: hidden;
+      }
+
+      .progress > i {
+        display: block;
+        width: 60%;
+        height: 100%;
+        border-radius: inherit;
+        background: var(--accent-solid);
+        transition: width 180ms ease;
+      }
+
+      .coverage-value {
+        color: var(--accent);
+        font-size: 24px;
+        font-weight: 760;
+        letter-spacing: -0.04em;
+        text-align: right;
+      }
+
+      .metric {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 0 17px;
+        border-left: 1px solid var(--border);
+      }
+
+      .metric b {
+        margin-bottom: 4px;
+        font-size: 20px;
+      }
+
+      .metric span {
+        color: var(--faint);
+        font-size: 11px;
+      }
+
+      .metric.warning b {
+        color: var(--amber);
+      }
+
+      .toolbar {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        margin-bottom: 10px;
+      }
+
+      .search {
+        position: relative;
+        width: min(330px, 32vw);
+      }
+
+      .search input {
+        width: 100%;
+        height: 36px;
+        padding: 0 12px 0 34px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        outline: none;
+        background: var(--surface);
+        color: var(--text);
+      }
+
+      .search input:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-soft);
+      }
+
+      .search::before {
+        position: absolute;
+        z-index: 1;
+        top: 9px;
+        left: 12px;
+        color: var(--faint);
+        content: '⌕';
+        font-size: 18px;
+      }
+
+      .filter-button {
+        height: 36px;
+        padding: 0 12px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--muted);
+        cursor: pointer;
+        font: inherit;
+      }
+
+      .filter-button.active {
+        border-color: rgba(139, 108, 255, 0.3);
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+
+      .toolbar-meta {
+        margin-left: auto;
+        color: var(--faint);
+        font-size: 12px;
+      }
+
+      .table-shell {
+        border: 1px solid var(--border);
+        border-radius: 11px;
+        background: var(--surface);
+        overflow: auto;
+        box-shadow: var(--shadow);
+      }
+
+      table {
+        width: 100%;
+        min-width: 790px;
+        border-collapse: collapse;
+        table-layout: fixed;
+      }
+
+      thead {
+        background: var(--surface-2);
+      }
+
+      th {
+        position: sticky;
+        z-index: 2;
+        top: 0;
+        height: 40px;
+        padding: 0 15px;
+        color: var(--faint);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-align: left;
+        text-transform: uppercase;
+      }
+
+      td {
+        height: 62px;
+        padding: 0 15px;
+        border-top: 1px solid var(--border);
+        vertical-align: middle;
+      }
+
+      tbody tr {
+        cursor: pointer;
+        transition: background 120ms ease;
+      }
+
+      tbody tr:hover {
+        background: var(--surface-2);
+      }
+
+      tbody tr.selected {
+        background: var(--accent-soft);
+        box-shadow: inset 3px 0 var(--accent);
+      }
+
+      .row-select {
+        width: 100%;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+        font: inherit;
+        text-align: left;
+      }
+
+      .block-cell {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+      }
+
+      .block-icon {
+        display: grid;
+        flex: 0 0 auto;
+        width: 30px;
+        height: 30px;
+        place-items: center;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        background: var(--surface-2);
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 750;
+      }
+
+      .cell-main {
+        display: block;
+        overflow: hidden;
+        color: var(--text);
+        font-size: 13px;
+        font-weight: 650;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .cell-sub {
+        display: block;
+        margin-top: 4px;
+        overflow: hidden;
+        color: var(--faint);
+        font-family: "Cascadia Code", Consolas, monospace;
+        font-size: 10px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .status {
+        width: max-content;
+        padding: 5px 8px;
+      }
+
+      .status.mapped {
+        background: var(--green-soft);
+        color: var(--green);
+      }
+
+      .status.missing {
+        background: var(--amber-soft);
+        color: var(--amber);
+      }
+
+      .chevron {
+        color: var(--faint);
+        text-align: right;
+      }
+
+      .drawer {
+        position: absolute;
+        z-index: 5;
+        top: 0;
+        right: 0;
+        width: 380px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        border-left: 1px solid var(--border);
+        background: var(--sidebar);
+        box-shadow: -20px 0 50px rgba(0, 0, 0, 0.18);
+        transform: translateX(100%);
+        transition: transform 180ms ease;
+      }
+
+      .workspace.drawer-open .drawer {
+        transform: translateX(0);
+      }
+
+      .drawer-head {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 22px 20px 18px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .drawer-head h2 {
+        margin: 0;
+        font-size: 16px;
+        letter-spacing: -0.02em;
+      }
+
+      .drawer-head p {
+        margin: 5px 0 0;
+        color: var(--faint);
+        font-size: 11px;
+        font-family: "Cascadia Code", Consolas, monospace;
+      }
+
+      .drawer-close {
+        margin-left: auto;
+      }
+
+      .drawer-body {
+        flex: 1;
+        min-height: 0;
+        padding: 20px;
+        overflow: auto;
+      }
+
+      .field {
+        margin-bottom: 18px;
+      }
+
+      .field label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 7px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 650;
+      }
+
+      .read-only-field,
+      .select {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 40px;
+        padding: 0 11px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--text);
+        font-size: 12px;
+      }
+
+      select.select {
+        width: 100%;
+        border-color: var(--border-strong);
+        appearance: auto;
+      }
+
+      select.select:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      .read-only-field code,
+      .select code {
+        color: var(--accent);
+        font-family: "Cascadia Code", Consolas, monospace;
+        font-size: 10px;
+      }
+
+      .mini-table {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .mini-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        min-height: 37px;
+        border-top: 1px solid var(--border);
+      }
+
+      .mini-row:first-child {
+        border-top: 0;
+      }
+
+      .mini-row span {
+        display: flex;
+        align-items: center;
+        padding: 0 10px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .mini-row span + span {
+        border-left: 1px solid var(--border);
+        color: var(--text);
+        font-family: "Cascadia Code", Consolas, monospace;
+        font-size: 10px;
+      }
+
+      .validation {
+        display: flex;
+        gap: 10px;
+        padding: 11px;
+        border: 1px solid rgba(70, 214, 166, 0.23);
+        border-radius: 8px;
+        background: var(--green-soft);
+      }
+
+      .validation.warning {
+        border-color: rgba(242, 189, 90, 0.36);
+        background: var(--amber-soft);
+      }
+
+      .validation.warning b {
+        color: var(--amber);
+      }
+
+      .validation.error {
+        border-color: rgba(255, 125, 134, 0.34);
+        background: rgba(255, 125, 134, 0.1);
+      }
+
+      .validation.error b {
+        color: var(--red);
+      }
+
+      .validation b {
+        display: block;
+        margin-bottom: 3px;
+        color: var(--green);
+        font-size: 11px;
+      }
+
+      .validation span {
+        color: var(--muted);
+        font-size: 10px;
+        line-height: 1.4;
+      }
+
+      .drawer-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        height: 72px;
+        padding: 17px 20px;
+        border-top: 1px solid var(--border);
+        background: var(--sidebar);
+      }
+
+      .footer {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 0 18px;
+        border-top: 1px solid var(--border);
+        background: var(--sidebar);
+        color: var(--faint);
+        font-size: 11px;
+      }
+
+      .footer .safe {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        color: var(--green);
+      }
+
+      .footer .revision {
+        margin-left: auto;
+        font-family: "Cascadia Code", Consolas, monospace;
+      }
+
+      .state-banner {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 16px;
+        padding: 12px 14px;
+        border: 1px solid var(--border-strong);
+        border-radius: 9px;
+        background: var(--surface);
+      }
+
+      .state-banner[hidden] {
+        display: none;
+      }
+
+      .state-banner strong,
+      .state-banner span {
+        display: block;
+      }
+
+      .state-banner strong {
+        margin-bottom: 3px;
+        font-size: 12px;
+      }
+
+      .state-banner span {
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .state-banner .button {
+        flex: 0 0 auto;
+        margin-left: auto;
+      }
+
+      .state-banner.warning {
+        border-color: rgba(242, 189, 90, 0.42);
+        background: var(--amber-soft);
+      }
+
+      .state-banner.warning > span {
+        color: var(--amber);
+      }
+
+      .state-banner.error {
+        border-color: rgba(255, 125, 134, 0.42);
+        background: rgba(255, 125, 134, 0.1);
+      }
+
+      .state-banner.error > span {
+        color: var(--red);
+      }
+
+      .state-banner.ready {
+        border-color: rgba(70, 214, 166, 0.36);
+        background: var(--green-soft);
+      }
+
+      .state-banner.ready > span {
+        color: var(--green);
+      }
+
+      .empty {
+        padding: 45px;
+        color: var(--muted);
+        text-align: center;
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          transition-duration: 0.01ms !important;
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+        }
+      }
+
+      @media (max-width: 1100px) {
+        .app {
+          grid-template-columns: 72px minmax(0, 1fr);
+        }
+
+        .brand {
+          width: 52px;
+        }
+
+        .brand > span:last-child,
+        .nav-label,
+        .step > div,
+        .step-count {
+          display: none;
+        }
+
+        .sidebar {
+          padding-inline: 10px;
+        }
+
+        .step {
+          grid-template-columns: 1fr;
+          justify-items: center;
+          padding: 0;
+        }
+
+        .content {
+          padding-inline: 20px;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .app {
+          grid-template-columns: minmax(0, 1fr);
+          grid-template-rows: 58px 48px minmax(0, 1fr) 34px;
+        }
+
+        .topbar,
+        .footer {
+          grid-column: 1;
+        }
+
+        .sidebar {
+          grid-row: 2;
+          display: flex;
+          align-items: center;
+          padding: 5px 12px;
+          border-right: 0;
+          border-bottom: 1px solid var(--border);
+          overflow-x: auto;
+        }
+
+        .steps {
+          display: flex;
+          width: 100%;
+          justify-content: center;
+        }
+
+        .step {
+          width: 44px;
+          min-height: 36px;
+        }
+
+        .workspace {
+          grid-row: 3;
+        }
+
+        .content {
+          height: calc(100vh - 140px);
+          padding: 20px 16px 28px;
+        }
+
+        .drawer {
+          width: min(380px, 100%);
+        }
+
+        .footer {
+          grid-row: 4;
+        }
+
+        .footer > span:not(.safe):not(.revision) {
+          display: none;
+        }
+
+        .pack-name {
+          display: none;
+        }
+      }
+
+      @media (max-width: 620px) {
+        .summary-strip {
+          grid-template-columns: 1fr;
+        }
+
+        .metric {
+          min-height: 58px;
+          border-top: 1px solid var(--border);
+          border-left: 0;
+        }
+
+        .toolbar {
+          flex-wrap: wrap;
+        }
+
+        .search {
+          width: 100%;
+        }
+
+        .toolbar-meta {
+          margin-left: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark">R</span>
+          <span>Reporter Pro</span>
+        </div>
+        <div class="product-context">
+          <strong>Template Studio</strong>
+          <span class="slash">/</span>
+          <span class="pack-name">Customer Security Assessment</span>
+        </div>
+        <div class="top-actions">
+          <span class="badge"><span class="dot" style="color: var(--amber)"></span>Draft</span>
+          <button class="icon-button" id="themeToggle" aria-label="Light theme" aria-pressed="false">☼</button>
+        </div>
+      </header>
+
+      <aside class="sidebar">
+        <div class="nav-label">Workflow</div>
+        <nav aria-label="Template authoring workflow">
+          <ol class="steps">
+          <li class="step done">
+            <span class="step-index">✓</span>
+            <div><strong>Analyze</strong><small>Structure captured</small></div>
+          </li>
+          <li class="step active" aria-current="step">
+            <span class="step-index">2</span>
+            <div><strong>Map</strong><small>Assign report blocks</small></div>
+            <span class="step-count" id="stepCount">4 left</span>
+          </li>
+          <li class="step">
+            <span class="step-index">3</span>
+            <div><strong>Review</strong><small>Resolve blockers</small></div>
+          </li>
+          <li class="step">
+            <span class="step-index">4</span>
+            <div><strong>Test</strong><small>Fixture & integrity</small></div>
+          </li>
+          <li class="step">
+            <span class="step-index">5</span>
+            <div><strong>Publish</strong><small>Versioned pack</small></div>
+          </li>
+          </ol>
+        </nav>
+      </aside>
+
+      <main class="workspace drawer-open" id="workspace">
+        <section class="content">
+          <div class="page-head">
+            <div>
+              <div class="eyebrow">Mapping workspace · v1.0.0</div>
+              <h1>Map template structure</h1>
+              <p>Connect analyzed Word regions to normalized report data.</p>
+            </div>
+            <div class="page-actions">
+              <button class="button primary" id="primaryAction">Review 4 blockers</button>
+            </div>
+          </div>
+
+          <div class="state-banner" id="stateBanner" role="alert" hidden>
+            <span id="stateIcon" aria-hidden="true">!</span>
+            <div><strong id="stateTitle"></strong><span id="stateMessage"></span></div>
+            <button class="button" id="stateAction" type="button">Retry</button>
+          </div>
+
+          <section class="summary-strip">
+            <div class="coverage">
+              <div>
+                <strong>Semantic coverage</strong>
+                <span id="coverageLabel"> · 6 of 10 blocks mapped</span>
+                <div class="progress" role="progressbar" aria-label="Semantic coverage" aria-valuemin="0" aria-valuemax="100" aria-valuenow="60"><i id="coverageBar"></i></div>
+              </div>
+              <div class="coverage-value" id="coverageValue">60%</div>
+            </div>
+            <div class="metric warning"><b id="blockerCount">4</b><span>Blockers</span></div>
+          </section>
+
+          <div class="toolbar">
+            <div class="search">
+              <label class="sr-only" for="search">Search mapping blocks</label>
+              <input id="search" type="search" placeholder="Search blocks, sources or anchors" aria-describedby="resultCount" />
+            </div>
+            <button class="filter-button active" data-filter="all" aria-pressed="true">All <span data-count="all">10</span></button>
+            <button class="filter-button" data-filter="mapped" aria-pressed="false">Mapped <span data-count="mapped">6</span></button>
+            <button class="filter-button" data-filter="missing" aria-pressed="false">Unmapped <span data-count="missing">4</span></button>
+            <span class="toolbar-meta" id="resultCount" role="status" aria-live="polite">10 blocks</span>
+          </div>
+
+          <div class="table-shell">
+            <table>
+              <caption class="sr-only">Template semantic mapping blocks</caption>
+              <colgroup>
+                <col style="width: 29%" />
+                <col style="width: 25%" />
+                <col style="width: 27%" />
+                <col style="width: 14%" />
+                <col style="width: 5%" />
+              </colgroup>
+              <thead>
+                <tr><th scope="col">Report block</th><th scope="col">Data source</th><th scope="col">Word anchor</th><th scope="col">Status</th><th scope="col"><span class="sr-only">Open mapping</span></th></tr>
+              </thead>
+              <tbody id="mappingRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <aside class="drawer" id="drawer" aria-labelledby="drawerTitle" aria-describedby="drawerSemantic" aria-hidden="false">
+          <div class="drawer-head">
+            <div>
+              <h2 id="drawerTitle">Server inventory</h2>
+              <p id="drawerSemantic">inventory.server</p>
+            </div>
+            <button class="icon-button drawer-close" id="drawerClose" aria-label="Close mapping details">×</button>
+          </div>
+          <div class="drawer-body">
+            <div class="field">
+              <label>Renderer <span>Required</span></label>
+              <div class="read-only-field"><span id="drawerRenderer">Asset table</span><code id="drawerRendererCode">asset_table</code></div>
+            </div>
+            <div class="field">
+              <label>Data source <span>Normalized</span></label>
+              <div class="read-only-field"><code id="drawerSource">assets.servers</code><span>Locked</span></div>
+            </div>
+            <div class="field">
+              <label for="anchorSelect">Word anchor <span id="anchorMeta">Unique match</span></label>
+              <select class="select" id="anchorSelect"></select>
+            </div>
+            <div class="field" id="fieldMapping">
+              <label>Field mapping <span id="fieldCount">3 fields</span></label>
+              <div class="mini-table" id="fieldRows"></div>
+            </div>
+            <div class="validation" id="validationPanel" role="status" aria-live="polite">
+              <span id="validationIcon" aria-hidden="true">✓</span>
+              <div><b id="validationTitle">Mapping is structurally valid</b><span id="validationMessage">The anchor occurs exactly once in the checksum-locked template.</span></div>
+            </div>
+          </div>
+          <div class="drawer-footer">
+            <button class="button danger" id="removeMapping" type="button">Unmap block</button>
+            <button class="button primary" id="approveMapping" type="button">Approve mapping</button>
+          </div>
+        </aside>
+      </main>
+
+      <footer class="footer">
+        <span class="safe"><span class="dot"></span>Legacy flow protected</span>
+        <span>Source checksum verified</span>
+        <span id="syncStatus" role="status" aria-live="polite">Saved 14:32</span>
+        <span class="revision" id="revisionValue">workspace rev. 12</span>
+      </footer>
+    </div>
+
+    <script>
+      const rows = [
+        { semantic: 'report.title', label: 'Report title', source: 'metadata.title', anchor: '{{REPORT_TITLE}}', status: 'mapped', renderer: 'Text', rendererCode: 'text', fields: [], candidates: ['{{REPORT_TITLE}}'] },
+        { semantic: 'overview', label: 'Overview', source: 'analysis.overview', anchor: 'REPORTER_OVERVIEW', status: 'mapped', renderer: 'Rich text', rendererCode: 'rich_text', fields: [], candidates: ['REPORTER_OVERVIEW'] },
+        { semantic: 'inventory.server', label: 'Server inventory', source: 'assets.servers', anchor: 'REPORTER_SERVER_INVENTORY', status: 'mapped', renderer: 'Asset table', rendererCode: 'asset_table', fields: [['Hostname', 'hostname'], ['IP address', 'ip'], ['Operating system', 'os']], candidates: ['REPORTER_SERVER_INVENTORY'] },
+        { semantic: 'inventory.client', label: 'Client inventory', source: 'assets.clients', anchor: 'REPORTER_CLIENT_INVENTORY', status: 'mapped', renderer: 'Asset table', rendererCode: 'asset_table', fields: [['Hostname', 'hostname'], ['IP address', 'ip'], ['Operating system', 'os']], candidates: ['REPORTER_CLIENT_INVENTORY'] },
+        { semantic: 'results.server', label: 'Server results', source: 'analysis.server_results', anchor: 'REPORTER_SERVER_RESULTS', status: 'mapped', renderer: 'Result table', rendererCode: 'result_table', fields: [['Hostname', 'hostname'], ['Result', 'result'], ['Analyst note', 'note']], candidates: ['REPORTER_SERVER_RESULTS'] },
+        { semantic: 'results.client', label: 'Client results', source: 'analysis.client_results', anchor: 'REPORTER_CLIENT_RESULTS', status: 'mapped', renderer: 'Result table', rendererCode: 'result_table', fields: [['Hostname', 'hostname'], ['Result', 'result'], ['Analyst note', 'note']], candidates: ['REPORTER_CLIENT_RESULTS'] },
+        { semantic: 'investigation', label: 'Investigation', source: 'analysis.findings', anchor: '', status: 'missing', renderer: 'Finding sections', rendererCode: 'finding_sections', fields: [], candidates: ['REPORTER_INVESTIGATION', 'REPORTER_FINDINGS'] },
+        { semantic: 'remediation', label: 'Malware remediation', source: 'analysis.affected_assets', anchor: '', status: 'missing', renderer: 'Remediation table', rendererCode: 'remediation_table', fields: [['Hostname', 'hostname'], ['IP address', 'ip'], ['Removal status', 'status']], candidates: ['REPORTER_REMEDIATION', 'REPORTER_MALWARE_REMOVAL'] },
+        { semantic: 'ioc', label: 'Indicators of compromise', source: 'analysis.iocs', anchor: '', status: 'missing', renderer: 'IoC table', rendererCode: 'ioc_table', fields: [['Type', 'type'], ['Indicator', 'value'], ['Confidence', 'confidence']], candidates: ['REPORTER_IOC_TABLE', 'REPORTER_INDICATORS'] },
+        { semantic: 'recommendations', label: 'Recommendations', source: 'analysis.recommendations', anchor: '', status: 'missing', renderer: 'Rich text', rendererCode: 'rich_text', fields: [], candidates: ['REPORTER_RECOMMENDATIONS'] },
+      ];
+
+      const body = document.querySelector('#mappingRows');
+      const workspace = document.querySelector('#workspace');
+      const drawer = document.querySelector('#drawer');
+      const anchorSelect = document.querySelector('#anchorSelect');
+      const search = document.querySelector('#search');
+      let filter = 'all';
+      let selected = 'inventory.server';
+      let lastTriggerId = selected;
+      let drawerOpen = true;
+      let revision = 12;
+
+      function counts() {
+        const mapped = rows.filter((row) => row.status === 'mapped').length;
+        return { all: rows.length, mapped, missing: rows.length - mapped };
+      }
+
+      function visibleRows() {
+        const query = search.value.trim().toLowerCase();
+        return rows.filter((row) => {
+          const matchesFilter = filter === 'all' || row.status === filter;
+          const matchesSearch = [row.semantic, row.label, row.source, row.anchor].join(' ').toLowerCase().includes(query);
+          return matchesFilter && matchesSearch;
+        });
+      }
+
+      function updateSummary() {
+        const totals = counts();
+        const coverage = Math.round((totals.mapped / totals.all) * 100);
+        document.querySelector('#coverageLabel').textContent = ` · ${totals.mapped} of ${totals.all} blocks mapped`;
+        document.querySelector('#coverageValue').textContent = `${coverage}%`;
+        document.querySelector('#coverageBar').style.width = `${coverage}%`;
+        document.querySelector('.progress').setAttribute('aria-valuenow', String(coverage));
+        document.querySelector('#blockerCount').textContent = totals.missing;
+        document.querySelector('#stepCount').textContent = totals.missing ? `${totals.missing} left` : 'Ready';
+        document.querySelectorAll('[data-count]').forEach((item) => {
+          item.textContent = totals[item.dataset.count];
+        });
+        const primary = document.querySelector('#primaryAction');
+        primary.textContent = totals.missing ? `Review ${totals.missing} blockers` : 'Continue to review';
+      }
+
+      function updateDrawer(row) {
+        document.querySelector('#drawerTitle').textContent = row.label;
+        document.querySelector('#drawerSemantic').textContent = row.semantic;
+        document.querySelector('#drawerRenderer').textContent = row.renderer;
+        document.querySelector('#drawerRendererCode').textContent = row.rendererCode;
+        document.querySelector('#drawerSource').textContent = row.source;
+        document.querySelector('#fieldMapping').hidden = !row.fields.length;
+        document.querySelector('#fieldCount').textContent = `${row.fields.length} ${row.fields.length === 1 ? 'field' : 'fields'}`;
+        document.querySelector('#fieldRows').innerHTML = row.fields
+          .map(([label, source]) => `<div class="mini-row"><span>${label}</span><span>${source}</span></div>`)
+          .join('');
+
+        anchorSelect.innerHTML = '<option value="">Select an analyzed anchor</option>' + row.candidates.map((anchor) => `<option value="${anchor}">${anchor}</option>`).join('');
+        anchorSelect.value = row.draftAnchor ?? row.anchor;
+        updateValidation(row);
+      }
+
+      function updateValidation(row) {
+        const candidate = anchorSelect.value;
+        const panel = document.querySelector('#validationPanel');
+        const title = document.querySelector('#validationTitle');
+        const message = document.querySelector('#validationMessage');
+        const icon = document.querySelector('#validationIcon');
+        const remove = document.querySelector('#removeMapping');
+        const approve = document.querySelector('#approveMapping');
+        panel.classList.remove('warning', 'error');
+        remove.disabled = row.status !== 'mapped';
+
+        if (!candidate) {
+          panel.classList.add('warning');
+          icon.textContent = '!';
+          title.textContent = 'Mapping required';
+          message.textContent = 'Select one unique, stable anchor before approving this block.';
+          approve.disabled = true;
+          return;
+        }
+
+        if (row.status === 'mapped' && candidate === row.anchor) {
+          icon.textContent = '✓';
+          title.textContent = 'Mapping is structurally valid';
+          message.textContent = 'The anchor occurs exactly once in the checksum-locked template.';
+          approve.disabled = true;
+          return;
+        }
+
+        panel.classList.add('warning');
+        icon.textContent = '•';
+        title.textContent = 'Ready for approval';
+        message.textContent = 'The candidate is unique. Approval will create a new workspace revision.';
+        approve.disabled = false;
+      }
+
+      function syncDrawerVisibility(hasRows = true) {
+        const visible = drawerOpen && hasRows;
+        workspace.classList.toggle('drawer-open', visible);
+        drawer.toggleAttribute('inert', !visible);
+        drawer.setAttribute('aria-hidden', String(!visible));
+      }
+
+      function renderRows() {
+        updateSummary();
+        const visible = visibleRows();
+        document.querySelector('#resultCount').textContent = `${visible.length} ${visible.length === 1 ? 'block' : 'blocks'}`;
+
+        if (!visible.length) {
+          body.innerHTML = `<tr><td colspan="5" class="empty">${search.value ? 'No blocks match this search' : 'No blocks in this filter'}</td></tr>`;
+          syncDrawerVisibility(false);
+          return;
+        }
+
+        if (!visible.some((row) => row.semantic === selected)) {
+          selected = visible[0].semantic;
+        }
+        body.innerHTML = visible
+          .map(
+            (row) => `
+              <tr data-id="${row.semantic}" class="${drawerOpen && selected === row.semantic ? 'selected' : ''}">
+                <td><button type="button" class="row-select" data-row-id="${row.semantic}" aria-controls="drawer" aria-expanded="${drawerOpen && selected === row.semantic}"><span class="block-cell"><span class="block-icon">${row.renderer.slice(0, 2).toUpperCase()}</span><span><span class="cell-main">${row.label}</span><span class="cell-sub">${row.semantic}</span></span></span></button></td>
+                <td><span class="cell-main">${row.source.split('.').pop().replaceAll('_', ' ')}</span><span class="cell-sub">${row.source}</span></td>
+                <td><span class="cell-main">${row.anchor || 'Not assigned'}</span><span class="cell-sub">${row.status === 'mapped' ? 'content_control · exact match' : 'Select a stable anchor'}</span></td>
+                <td><span class="status ${row.status}"><span class="dot"></span>${row.status === 'mapped' ? 'Mapped' : 'Unmapped'}</span></td>
+                <td class="chevron">›</td>
+              </tr>`,
+          )
+          .join('');
+
+        updateDrawer(rows.find((row) => row.semantic === selected));
+        syncDrawerVisibility();
+        body.querySelectorAll('tr[data-id]').forEach((element) => {
+          element.addEventListener('click', () => selectRow(element.dataset.id));
+        });
+        body.querySelectorAll('.row-select').forEach((button) => {
+          button.addEventListener('click', (event) => {
+            event.stopPropagation();
+            selectRow(button.dataset.rowId, true);
+          });
+        });
+      }
+
+      function selectRow(id, moveFocus = false) {
+        selected = id;
+        lastTriggerId = id;
+        drawerOpen = true;
+        renderRows();
+        if (moveFocus) anchorSelect.focus();
+      }
+
+      function setFilter(nextFilter) {
+        filter = nextFilter;
+        document.querySelectorAll('[data-filter]').forEach((item) => {
+          const isActive = item.dataset.filter === filter;
+          item.classList.toggle('active', isActive);
+          item.setAttribute('aria-pressed', String(isActive));
+        });
+        renderRows();
+      }
+
+      function closeDrawer() {
+        drawerOpen = false;
+        renderRows();
+        (body.querySelector(`[data-row-id="${lastTriggerId}"]`) || search).focus();
+      }
+
+      function showBanner(kind, title, message, actionLabel) {
+        const banner = document.querySelector('#stateBanner');
+        banner.hidden = false;
+        banner.dataset.kind = kind;
+        banner.classList.remove('warning', 'error', 'ready');
+        banner.classList.add(kind);
+        document.querySelector('#stateIcon').textContent = kind === 'error' ? '×' : '!';
+        document.querySelector('#stateTitle').textContent = title;
+        document.querySelector('#stateMessage').textContent = message;
+        document.querySelector('#stateAction').textContent = actionLabel;
+      }
+
+      function setSavingState(label) {
+        document.querySelector('#syncStatus').textContent = label;
+      }
+
+      document.querySelectorAll('[data-filter]').forEach((button) => {
+        button.addEventListener('click', () => setFilter(button.dataset.filter));
+      });
+      search.addEventListener('input', renderRows);
+      anchorSelect.addEventListener('change', () => {
+        const row = rows.find((item) => item.semantic === selected);
+        row.draftAnchor = anchorSelect.value;
+        updateValidation(row);
+      });
+      document.querySelector('#drawerClose').addEventListener('click', closeDrawer);
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && drawerOpen) closeDrawer();
+      });
+      document.querySelector('#primaryAction').addEventListener('click', () => {
+        const missing = rows.filter((row) => row.status === 'missing');
+        if (missing.length) {
+          setFilter('missing');
+          selectRow(missing[0].semantic, true);
+        } else {
+          showBanner('ready', 'Ready for review', 'All required semantics are mapped. Test and Publish remain gated.', 'Dismiss');
+        }
+      });
+      document.querySelector('#approveMapping').addEventListener('click', () => {
+        const row = rows.find((item) => item.semantic === selected);
+        if (!row.draftAnchor) return;
+        row.anchor = row.draftAnchor;
+        row.status = 'mapped';
+        setSavingState('Saving…');
+        renderRows();
+        window.setTimeout(() => {
+          revision += 1;
+          setSavingState('Saved just now');
+          document.querySelector('#revisionValue').textContent = `workspace rev. ${revision}`;
+        }, 450);
+      });
+      document.querySelector('#removeMapping').addEventListener('click', () => {
+        const row = rows.find((item) => item.semantic === selected);
+        row.anchor = '';
+        row.draftAnchor = '';
+        row.status = 'missing';
+        setSavingState('Unsaved change');
+        renderRows();
+        anchorSelect.focus();
+      });
+
+      const root = document.documentElement;
+      const themeToggle = document.querySelector('#themeToggle');
+      let storedTheme = null;
+      try {
+        storedTheme = localStorage.getItem('reporter-template-studio-theme');
+      } catch {
+        storedTheme = null;
+      }
+      if (storedTheme === 'light' || storedTheme === 'dark') root.dataset.theme = storedTheme;
+      themeToggle.setAttribute('aria-pressed', String(root.dataset.theme === 'light'));
+      themeToggle.addEventListener('click', () => {
+        root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+        const isLight = root.dataset.theme === 'light';
+        themeToggle.setAttribute('aria-pressed', String(isLight));
+        try {
+          localStorage.setItem('reporter-template-studio-theme', root.dataset.theme);
+        } catch {
+          // The standalone file can run in a storage-restricted browser context.
+        }
+      });
+
+      const requestedState = new URLSearchParams(window.location.search).get('state');
+      if (requestedState === 'conflict') {
+        showBanner('warning', 'Workspace changed in another session', 'Your local edits are preserved. Revision 13 is available for comparison.', 'Keep editing');
+      } else if (requestedState === 'load-error') {
+        showBanner('error', 'Workspace could not be loaded', 'The default report workflow is unaffected. Retry this isolated workspace.', 'Retry');
+      } else if (requestedState === 'save-timeout') {
+        showBanner('warning', 'Saving is taking longer than expected', 'Your edit remains local and can be retried without remapping.', 'Retry save');
+      }
+      document.querySelector('#stateAction').addEventListener('click', () => {
+        document.querySelector('#stateBanner').hidden = true;
+        if (requestedState === 'conflict') {
+          setSavingState('Local edits preserved');
+        } else if (requestedState === 'load-error') {
+          setSavingState('Workspace loaded after retry');
+        } else if (requestedState === 'save-timeout') {
+          setSavingState('Saved after retry');
+        } else {
+          setSavingState('Saved just now');
+        }
+      });
+
+      renderRows();
+    </script>
+  </body>
+</html>
