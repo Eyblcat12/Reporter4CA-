@@ -1,0 +1,1839 @@
+<!doctype html>
+<html lang="vi" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reporter Pro — Template Studio Workbench V2</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #090a10;
+        --rail: #0d0f17;
+        --surface: #121520;
+        --surface-2: #171b27;
+        --surface-3: #1e2432;
+        --border: #303747;
+        --border-strong: #69768a;
+        --text: #eef1f7;
+        --muted: #a6afbf;
+        --subtle: #8792a6;
+        --accent: #6f50dc;
+        --accent-hover: #5e40c6;
+        --accent-text: #b9a9ff;
+        --accent-soft: rgba(111, 80, 220, 0.14);
+        --success: #45d7a6;
+        --success-soft: rgba(69, 215, 166, 0.12);
+        --warning: #f1ba54;
+        --warning-soft: rgba(241, 186, 84, 0.12);
+        --danger: #ff7c88;
+        --danger-soft: rgba(255, 124, 136, 0.11);
+        --info: #7cb9ff;
+        --info-soft: rgba(124, 185, 255, 0.11);
+        --focus: #c5b7ff;
+        --shadow: 0 18px 46px rgba(0, 0, 0, 0.28);
+        --radius-sm: 6px;
+        --radius: 9px;
+        --radius-lg: 12px;
+      }
+
+      [data-theme='light'] {
+        color-scheme: light;
+        --bg: #f4f6f9;
+        --rail: #ffffff;
+        --surface: #ffffff;
+        --surface-2: #f7f8fa;
+        --surface-3: #eceff4;
+        --border: #d4dae4;
+        --border-strong: #778499;
+        --text: #171b23;
+        --muted: #5f6b7d;
+        --subtle: #68758a;
+        --accent: #5b3fc4;
+        --accent-hover: #4b31ad;
+        --accent-text: #5b3fc4;
+        --accent-soft: rgba(91, 63, 196, 0.09);
+        --success: #087a5d;
+        --success-soft: rgba(8, 122, 93, 0.09);
+        --warning: #925b00;
+        --warning-soft: rgba(146, 91, 0, 0.09);
+        --danger: #b92f40;
+        --danger-soft: rgba(185, 47, 64, 0.08);
+        --info: #165fa8;
+        --info-soft: rgba(22, 95, 168, 0.08);
+        --focus: #5b3fc4;
+        --shadow: 0 18px 46px rgba(22, 31, 45, 0.12);
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        min-width: 0;
+        min-height: 100%;
+      }
+
+      body {
+        margin: 0;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-size: 14px;
+      }
+
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+
+      button,
+      select {
+        color: inherit;
+      }
+
+      button {
+        cursor: pointer;
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+      }
+
+      :focus-visible {
+        outline: 2px solid var(--focus);
+        outline-offset: 2px;
+      }
+
+      .app {
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: 68px minmax(0, 1fr);
+        grid-template-rows: 56px 52px minmax(0, 1fr) 32px;
+      }
+
+      .rail {
+        grid-row: 1 / -1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 9px;
+        border-right: 1px solid var(--border);
+        background: var(--rail);
+      }
+
+      .logo {
+        width: 38px;
+        height: 38px;
+        display: grid;
+        place-items: center;
+        margin-bottom: 12px;
+        border-radius: 10px;
+        background: var(--accent);
+        color: #fff;
+        font-size: 16px;
+        font-weight: 800;
+        box-shadow: 0 8px 24px rgba(91, 63, 196, 0.28);
+      }
+
+      .rail-item {
+        position: relative;
+        width: 42px;
+        height: 42px;
+        display: grid;
+        place-items: center;
+        border: 1px solid transparent;
+        border-radius: var(--radius);
+        color: var(--subtle);
+      }
+
+      .rail-item.active {
+        border-color: rgba(111, 80, 220, 0.34);
+        background: var(--accent-soft);
+        color: var(--accent-text);
+      }
+
+      .rail-item.active::before {
+        position: absolute;
+        left: -10px;
+        width: 3px;
+        height: 22px;
+        border-radius: 0 3px 3px 0;
+        background: var(--accent);
+        content: '';
+      }
+
+      .rail-item svg,
+      .icon-button svg,
+      .button svg {
+        width: 18px;
+        height: 18px;
+        fill: none;
+        stroke: currentColor;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1.8;
+      }
+
+      .rail-spacer {
+        flex: 1;
+      }
+
+      .topbar {
+        grid-column: 2;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 20px;
+        border-bottom: 1px solid var(--border);
+        background: var(--rail);
+      }
+
+      .crumbs {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .crumbs strong {
+        color: var(--text);
+        font-weight: 680;
+      }
+
+      .crumbs .current {
+        max-width: 310px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .top-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: auto;
+      }
+
+      .badge,
+      .status-chip,
+      .requirement {
+        width: max-content;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .badge {
+        height: 28px;
+        padding: 0 10px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--muted);
+      }
+
+      .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+
+      .scenario {
+        height: 34px;
+        max-width: 138px;
+        padding: 0 28px 0 10px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .icon-button,
+      .button,
+      .filter {
+        min-height: 36px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--text);
+        transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+      }
+
+      .icon-button {
+        width: 36px;
+        display: inline-grid;
+        place-items: center;
+        padding: 0;
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        padding: 0 13px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .icon-button:hover,
+      .button:hover:not(:disabled),
+      .filter:hover {
+        border-color: var(--border-strong);
+        background: var(--surface-2);
+      }
+
+      .button.primary {
+        border-color: var(--accent);
+        background: var(--accent);
+        color: #fff;
+      }
+
+      .button.primary:hover:not(:disabled) {
+        border-color: var(--accent-hover);
+        background: var(--accent-hover);
+      }
+
+      .button.quiet {
+        border-color: transparent;
+        background: transparent;
+        color: var(--muted);
+      }
+
+      .button.danger {
+        color: var(--danger);
+      }
+
+      .button:disabled,
+      .icon-button:disabled {
+        opacity: 0.56;
+      }
+
+      .workflow {
+        grid-column: 2;
+        display: flex;
+        align-items: center;
+        gap: 0;
+        padding: 0 20px;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+      }
+
+      .workflow ol {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        padding: 0;
+        margin: 0;
+        list-style: none;
+      }
+
+      .workflow-step {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--subtle);
+        font-size: 12px;
+        font-weight: 650;
+      }
+
+      .workflow-step::after {
+        width: 36px;
+        height: 1px;
+        margin: 0 12px;
+        background: var(--border);
+        content: '';
+      }
+
+      .workflow-step:last-child::after {
+        display: none;
+      }
+
+      .step-mark {
+        width: 24px;
+        height: 24px;
+        display: grid;
+        place-items: center;
+        border: 1px solid var(--border-strong);
+        border-radius: 50%;
+        font-size: 10px;
+      }
+
+      .workflow-step.done {
+        color: var(--success);
+      }
+
+      .workflow-step.done .step-mark {
+        border-color: var(--success);
+        background: var(--success-soft);
+      }
+
+      .workflow-step.current {
+        color: var(--text);
+      }
+
+      .workflow-step.current .step-mark {
+        border-color: var(--accent);
+        background: var(--accent);
+        color: #fff;
+      }
+
+      .workflow-meta {
+        margin-left: auto;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .work-area {
+        position: relative;
+        grid-column: 2;
+        min-width: 0;
+        min-height: 0;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 370px;
+        overflow: hidden;
+      }
+
+      .primary-pane {
+        min-width: 0;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        padding: 20px;
+        overflow: hidden;
+      }
+
+      .page-head {
+        display: flex;
+        align-items: flex-start;
+        gap: 18px;
+        margin-bottom: 16px;
+      }
+
+      .page-head h1 {
+        margin: 0;
+        font-size: 22px;
+        letter-spacing: -0.035em;
+      }
+
+      .page-head p {
+        margin: 5px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .page-actions {
+        margin-left: auto;
+      }
+
+      .message-bar {
+        display: grid;
+        grid-template-columns: 24px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 10px;
+        min-height: 52px;
+        margin-bottom: 12px;
+        padding: 8px 10px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--surface);
+      }
+
+      .message-bar[hidden] {
+        display: none;
+      }
+
+      .message-bar.warning {
+        border-color: rgba(241, 186, 84, 0.42);
+        background: var(--warning-soft);
+      }
+
+      .message-bar.info {
+        border-color: rgba(111, 80, 220, 0.42);
+        background: var(--accent-soft);
+      }
+
+      .message-bar.error {
+        border-color: rgba(255, 124, 136, 0.4);
+        background: var(--danger-soft);
+      }
+
+      .message-bar strong,
+      .message-bar span {
+        display: block;
+      }
+
+      .message-bar strong {
+        margin-bottom: 3px;
+        font-size: 12px;
+      }
+
+      .message-bar span {
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .coverage-row {
+        display: grid;
+        grid-template-columns: minmax(190px, 1fr) auto;
+        align-items: end;
+        gap: 16px;
+        margin-bottom: 12px;
+      }
+
+      .coverage-copy {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+
+      .coverage-copy strong {
+        font-size: 12px;
+      }
+
+      .coverage-copy span {
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .progress {
+        height: 5px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: var(--surface-3);
+      }
+
+      .progress > i {
+        display: block;
+        width: 60%;
+        height: 100%;
+        border-radius: inherit;
+        background: var(--accent);
+        transition: width 180ms ease;
+      }
+
+      .coverage-stats {
+        display: flex;
+        gap: 14px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .coverage-stats b {
+        margin-right: 3px;
+        color: var(--text);
+        font-size: 15px;
+      }
+
+      .coverage-stats .blockers b {
+        color: var(--warning);
+      }
+
+      .toolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 42px;
+        padding: 0 10px;
+        border: 1px solid var(--border);
+        border-bottom: 0;
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        background: var(--surface);
+      }
+
+      .search {
+        position: relative;
+        width: min(310px, 34vw);
+      }
+
+      .search svg {
+        position: absolute;
+        top: 9px;
+        left: 10px;
+        width: 15px;
+        height: 15px;
+        fill: none;
+        stroke: var(--subtle);
+        stroke-width: 1.8;
+      }
+
+      .search input {
+        width: 100%;
+        height: 32px;
+        padding: 0 10px 0 32px;
+        border: 1px solid transparent;
+        border-radius: 7px;
+        outline: 0;
+        background: var(--surface-2);
+        color: var(--text);
+        font-size: 12px;
+      }
+
+      .search input:focus-visible {
+        border-color: var(--focus);
+        outline: 2px solid var(--focus);
+        outline-offset: 0;
+      }
+
+      .filter {
+        min-height: 30px;
+        padding: 0 10px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .filter.active {
+        border-color: rgba(111, 80, 220, 0.38);
+        background: var(--accent-soft);
+        color: var(--accent-text);
+      }
+
+      .result-count {
+        margin-left: auto;
+        color: var(--subtle);
+        font-size: 11px;
+      }
+
+      .table-wrap {
+        flex: 1;
+        min-height: 0;
+        overflow: auto;
+        border: 1px solid var(--border);
+        border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+        background: var(--surface);
+        box-shadow: var(--shadow);
+      }
+
+      table {
+        width: 100%;
+        min-width: 690px;
+        border-collapse: collapse;
+        table-layout: fixed;
+      }
+
+      thead {
+        background: var(--surface-2);
+      }
+
+      th {
+        position: sticky;
+        z-index: 2;
+        top: 0;
+        height: 38px;
+        padding: 0 13px;
+        border-bottom: 1px solid var(--border);
+        color: var(--subtle);
+        font-size: 10px;
+        font-weight: 750;
+        letter-spacing: 0.05em;
+        text-align: left;
+        text-transform: uppercase;
+      }
+
+      td {
+        height: 58px;
+        padding: 0 13px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: middle;
+      }
+
+      tbody tr:last-child td {
+        border-bottom: 0;
+      }
+
+      tbody tr {
+        transition: background 120ms ease;
+      }
+
+      tbody tr:hover {
+        background: var(--surface-2);
+      }
+
+      tbody tr.selected {
+        background: var(--accent-soft);
+        box-shadow: inset 3px 0 var(--accent);
+      }
+
+      .row-button {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        text-align: left;
+      }
+
+      .block-mark {
+        width: 30px;
+        height: 30px;
+        display: grid;
+        flex: 0 0 auto;
+        place-items: center;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        background: var(--surface-2);
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 800;
+      }
+
+      .cell-main,
+      .cell-sub {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .cell-main {
+        color: var(--text);
+        font-size: 12px;
+        font-weight: 680;
+      }
+
+      .cell-sub {
+        margin-top: 4px;
+        color: var(--subtle);
+        font-size: 10px;
+      }
+
+      .mono {
+        font-family: "Cascadia Code", Consolas, monospace;
+      }
+
+      .status-chip {
+        min-height: 25px;
+        padding: 0 8px;
+      }
+
+      .status-chip.mapped {
+        background: var(--success-soft);
+        color: var(--success);
+      }
+
+      .status-chip.missing {
+        background: var(--warning-soft);
+        color: var(--warning);
+      }
+
+      .status-chip.optional {
+        background: var(--info-soft);
+        color: var(--info);
+      }
+
+      .empty-state {
+        min-height: 330px;
+        display: grid;
+        place-items: center;
+        padding: 30px;
+        text-align: center;
+      }
+
+      .empty-state[hidden] {
+        display: none;
+      }
+
+      .empty-state strong {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 13px;
+      }
+
+      .empty-state span {
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .skeleton {
+        display: grid;
+        gap: 9px;
+        padding: 15px;
+      }
+
+      .skeleton[hidden] {
+        display: none;
+      }
+
+      .skeleton i {
+        display: block;
+        height: 42px;
+        border-radius: 7px;
+        background: linear-gradient(90deg, var(--surface-2), var(--surface-3), var(--surface-2));
+        background-size: 200% 100%;
+        animation: shimmer 1.4s linear infinite;
+      }
+
+      .inspector {
+        z-index: 5;
+        min-width: 0;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        border-left: 1px solid var(--border);
+        background: var(--rail);
+      }
+
+      .inspector[aria-hidden='true'] {
+        display: none;
+      }
+
+      .inspector-head {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        min-height: 74px;
+        padding: 16px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .inspector-title {
+        min-width: 0;
+      }
+
+      .inspector-title h2 {
+        margin: 0;
+        font-size: 15px;
+        letter-spacing: -0.02em;
+      }
+
+      .inspector-title p {
+        margin: 5px 0 0;
+        color: var(--subtle);
+        font-family: "Cascadia Code", Consolas, monospace;
+        font-size: 10px;
+      }
+
+      .requirement {
+        min-height: 22px;
+        margin-left: auto;
+        padding: 0 7px;
+        border: 1px solid var(--border);
+        color: var(--muted);
+      }
+
+      .inspector-close {
+        margin-left: 2px;
+      }
+
+      .inspector-body {
+        flex: 1;
+        min-height: 0;
+        padding: 16px;
+        overflow: auto;
+      }
+
+      .field {
+        margin-bottom: 16px;
+      }
+
+      .field label,
+      .field-label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 6px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 680;
+      }
+
+      .field label span,
+      .field-label span {
+        color: var(--subtle);
+        font-size: 10px;
+        font-weight: 500;
+      }
+
+      .control,
+      .readonly {
+        width: 100%;
+        min-height: 39px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--text);
+        font-size: 11px;
+      }
+
+      .control {
+        padding: 0 10px;
+      }
+
+      .readonly {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 0 10px;
+      }
+
+      .readonly code {
+        overflow: hidden;
+        color: var(--accent-text);
+        font-family: "Cascadia Code", Consolas, monospace;
+        font-size: 10px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .field-table {
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+      }
+
+      .field-row {
+        display: grid;
+        grid-template-columns: 1fr 18px 1fr;
+        align-items: center;
+        min-height: 36px;
+        border-top: 1px solid var(--border);
+      }
+
+      .field-row:first-child {
+        border-top: 0;
+      }
+
+      .field-row span,
+      .field-row code {
+        min-width: 0;
+        overflow: hidden;
+        padding: 0 8px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .field-row span {
+        color: var(--muted);
+        font-size: 10px;
+      }
+
+      .field-row code {
+        color: var(--text);
+        font-family: "Cascadia Code", Consolas, monospace;
+        font-size: 9px;
+      }
+
+      .field-row i {
+        color: var(--subtle);
+        font-size: 10px;
+        font-style: normal;
+        text-align: center;
+      }
+
+      .validation {
+        display: grid;
+        grid-template-columns: 20px 1fr;
+        gap: 8px;
+        padding: 10px;
+        border-left: 3px solid var(--success);
+        border-radius: 6px;
+        background: var(--success-soft);
+      }
+
+      .validation.warning {
+        border-left-color: var(--warning);
+        background: var(--warning-soft);
+      }
+
+      .validation.error {
+        border-left-color: var(--danger);
+        background: var(--danger-soft);
+      }
+
+      .validation strong,
+      .validation span {
+        display: block;
+      }
+
+      .validation strong {
+        margin-bottom: 3px;
+        font-size: 11px;
+      }
+
+      .validation span {
+        color: var(--muted);
+        font-size: 10px;
+        line-height: 1.45;
+      }
+
+      details {
+        margin-top: 15px;
+        border-top: 1px solid var(--border);
+        padding-top: 12px;
+      }
+
+      summary {
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 11px;
+        font-weight: 680;
+      }
+
+      .technical-grid {
+        display: grid;
+        gap: 7px;
+        margin-top: 10px;
+      }
+
+      .technical-grid div {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        color: var(--subtle);
+        font-size: 10px;
+      }
+
+      .technical-grid code {
+        color: var(--muted);
+        font-family: "Cascadia Code", Consolas, monospace;
+      }
+
+      .confirm-remove {
+        margin: 0 16px 12px;
+        padding: 10px;
+        border: 1px solid rgba(255, 124, 136, 0.38);
+        border-radius: 8px;
+        background: var(--danger-soft);
+      }
+
+      .confirm-remove[hidden] {
+        display: none;
+      }
+
+      .confirm-remove strong,
+      .confirm-remove span {
+        display: block;
+      }
+
+      .confirm-remove strong {
+        margin-bottom: 3px;
+        font-size: 11px;
+      }
+
+      .confirm-remove span {
+        color: var(--muted);
+        font-size: 10px;
+      }
+
+      .confirm-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 6px;
+        margin-top: 9px;
+      }
+
+      .inspector-footer {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+        min-height: 64px;
+        padding: 12px 16px;
+        border-top: 1px solid var(--border);
+        background: var(--rail);
+      }
+
+      .save-inline {
+        margin-right: auto;
+        color: var(--muted);
+        font-size: 10px;
+      }
+
+      .scrim {
+        display: none;
+      }
+
+      .statusbar {
+        grid-column: 2;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 0 16px;
+        border-top: 1px solid var(--border);
+        background: var(--rail);
+        color: var(--subtle);
+        font-size: 10px;
+      }
+
+      .statusbar .safe {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--success);
+      }
+
+      .statusbar .revision {
+        margin-left: auto;
+        font-family: "Cascadia Code", Consolas, monospace;
+      }
+
+      .toast {
+        position: fixed;
+        z-index: 30;
+        right: 18px;
+        bottom: 46px;
+        min-width: 280px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border: 1px solid var(--border-strong);
+        border-radius: 9px;
+        background: var(--surface-2);
+        box-shadow: var(--shadow);
+        color: var(--text);
+        font-size: 11px;
+      }
+
+      .toast[hidden] {
+        display: none;
+      }
+
+      .toast .button {
+        min-height: 30px;
+        margin-left: auto;
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      @keyframes shimmer {
+        to {
+          background-position: -200% 0;
+        }
+      }
+
+      @media (max-width: 1120px) {
+        .work-area {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        .inspector {
+          position: absolute;
+          top: 0;
+          right: 0;
+          bottom: 0;
+          width: min(420px, calc(100% - 40px));
+          border-left: 1px solid var(--border);
+          box-shadow: -18px 0 42px rgba(0, 0, 0, 0.32);
+        }
+
+        .scrim.visible {
+          position: absolute;
+          z-index: 4;
+          inset: 0;
+          display: block;
+          border: 0;
+          background: rgba(4, 6, 11, 0.56);
+        }
+      }
+
+      @media (max-width: 820px) {
+        .app {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        .rail {
+          display: none;
+        }
+
+        .topbar,
+        .workflow,
+        .work-area,
+        .statusbar {
+          grid-column: 1;
+        }
+
+        .workflow-step::after {
+          width: 18px;
+          margin-inline: 8px;
+        }
+
+        .workflow-step > span:last-child,
+        .workflow-meta,
+        .badge {
+          display: none;
+        }
+
+        .scenario {
+          max-width: 112px;
+        }
+      }
+
+      @media (max-width: 650px) {
+        .topbar {
+          padding-inline: 12px;
+        }
+
+        .crumbs .current,
+        .crumbs .slash {
+          display: none;
+        }
+
+        .workflow {
+          justify-content: center;
+          padding-inline: 8px;
+        }
+
+        .primary-pane {
+          padding: 16px 12px;
+        }
+
+        .page-head {
+          align-items: center;
+        }
+
+        .page-head p,
+        .coverage-copy span {
+          display: none;
+        }
+
+        .coverage-row {
+          grid-template-columns: 1fr;
+        }
+
+        .toolbar {
+          flex-wrap: wrap;
+          height: auto;
+          padding-block: 7px;
+        }
+
+        .search {
+          width: 100%;
+        }
+
+        .result-count {
+          margin-left: 0;
+        }
+
+        .inspector {
+          width: 100%;
+        }
+
+        .statusbar > span:not(.safe):not(.revision) {
+          display: none;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          transition-duration: 0.01ms !important;
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <aside class="rail" aria-label="Điều hướng Reporter Pro">
+        <div class="logo" aria-label="Reporter Pro">R</div>
+        <span class="rail-item" title="Tổng quan" aria-hidden="true">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h6V4H4v9Zm10 7h6V11h-6v9ZM4 20h6v-3H4v3Zm10-13h6V4h-6v3Z" /></svg>
+        </span>
+        <span class="rail-item" title="Tạo báo cáo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0-12 4 4m-4-4L8 7M5 14v5h14v-5" /></svg>
+        </span>
+        <span class="rail-item active" title="Template Studio" aria-hidden="true">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h5" /></svg>
+        </span>
+        <span class="rail-spacer"></span>
+        <span class="rail-item" title="Lưu cục bộ" aria-hidden="true">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5zM8 5v5h8V5M8 19v-5h8v5" /></svg>
+        </span>
+      </aside>
+
+      <header class="topbar">
+        <div class="crumbs">
+          <strong>Template Studio</strong>
+          <span class="slash">/</span>
+          <span class="current">Customer Security Assessment</span>
+        </div>
+        <div class="top-actions">
+          <span class="badge"><span class="dot" style="color: var(--warning)"></span>Bản nháp</span>
+          <label class="sr-only" for="scenarioSelect">Trạng thái demo</label>
+          <select class="scenario" id="scenarioSelect" title="Trạng thái demo">
+            <option value="normal">Bình thường</option>
+            <option value="loading">Đang tải</option>
+            <option value="conflict">Xung đột</option>
+            <option value="save-error">Lỗi lưu</option>
+            <option value="empty">Trống</option>
+          </select>
+          <button class="icon-button" id="themeToggle" type="button" aria-label="Chuyển sang giao diện sáng" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>
+          </button>
+        </div>
+      </header>
+
+      <nav class="workflow" aria-label="Quy trình chuẩn hóa template">
+        <ol>
+          <li class="workflow-step done"><span class="step-mark">✓</span><span>Phân tích</span></li>
+          <li class="workflow-step current" aria-current="step"><span class="step-mark">2</span><span>Ánh xạ</span></li>
+          <li class="workflow-step"><span class="step-mark">3</span><span>Rà soát</span></li>
+          <li class="workflow-step"><span class="step-mark">4</span><span>Kiểm thử</span></li>
+          <li class="workflow-step"><span class="step-mark">5</span><span>Phát hành</span></li>
+        </ol>
+        <span class="workflow-meta">Full report · v1.0.0</span>
+      </nav>
+
+      <main class="work-area" id="workArea">
+        <section class="primary-pane" id="primaryPane" aria-labelledby="pageTitle">
+          <div class="page-head">
+            <div>
+              <h1 id="pageTitle">Ánh xạ template</h1>
+              <p>Kết nối các vùng Word đã phân tích với dữ liệu báo cáo chuẩn hóa.</p>
+            </div>
+            <div class="page-actions">
+              <button class="button quiet" id="nextBlocker" type="button">
+                Blocker tiếp theo
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="message-bar" id="messageBar" hidden>
+            <span id="messageIcon" aria-hidden="true">!</span>
+            <div><strong id="messageTitle"></strong><span id="messageBody"></span></div>
+            <button class="button" id="messageAction" type="button">Thử lại</button>
+          </div>
+
+          <div class="coverage-row">
+            <div>
+              <div class="coverage-copy"><strong>Độ phủ bắt buộc</strong><span id="coverageText">6/10 block đã ánh xạ</span></div>
+              <div class="progress" role="progressbar" aria-label="Độ phủ semantic bắt buộc" aria-valuemin="0" aria-valuemax="100" aria-valuenow="60"><i id="coverageBar"></i></div>
+            </div>
+            <div class="coverage-stats">
+              <span><b id="mappedCount">6</b>Đã ánh xạ</span>
+              <span class="blockers"><b id="blockerCount">4</b>Blocker</span>
+              <span><b id="optionalCount">2</b>Tùy chọn</span>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <div class="search">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg>
+              <label class="sr-only" for="searchInput">Tìm block ánh xạ</label>
+              <input id="searchInput" type="search" placeholder="Tìm block, nguồn hoặc anchor" aria-describedby="resultCount" />
+            </div>
+            <button class="filter active" type="button" data-filter="all" aria-pressed="true">Tất cả</button>
+            <button class="filter" type="button" data-filter="missing" aria-pressed="false">Blocker</button>
+            <button class="filter" type="button" data-filter="mapped" aria-pressed="false">Đã xong</button>
+            <button class="filter" type="button" data-filter="optional" aria-pressed="false">Tùy chọn</button>
+            <span class="result-count" id="resultCount" role="status" aria-live="polite">12 block</span>
+          </div>
+
+          <div class="table-wrap" id="tableWrap">
+            <table id="mappingTable">
+              <caption class="sr-only">Các block semantic trong template</caption>
+              <colgroup><col style="width: 34%" /><col style="width: 25%" /><col style="width: 27%" /><col style="width: 14%" /></colgroup>
+              <thead><tr><th scope="col">Block báo cáo</th><th scope="col">Nguồn dữ liệu</th><th scope="col">Word anchor</th><th scope="col">Trạng thái</th></tr></thead>
+              <tbody id="mappingRows"></tbody>
+            </table>
+            <div class="skeleton" id="loadingRows" role="status" aria-live="polite" hidden><span class="sr-only">Đang tải workspace</span><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="empty-state" id="emptyState" hidden><div><strong id="emptyTitle">Chưa có block để ánh xạ</strong><span id="emptyBody">Chạy lại bước phân tích hoặc kiểm tra bộ lọc hiện tại.</span></div></div>
+          </div>
+        </section>
+
+        <button class="scrim" id="scrim" type="button" aria-label="Đóng chi tiết ánh xạ"></button>
+        <aside class="inspector" id="inspector" aria-labelledby="inspectorTitle" aria-describedby="inspectorSemantic" aria-hidden="false">
+          <div class="inspector-head">
+            <div class="inspector-title">
+              <h2 id="inspectorTitle" tabindex="-1">Danh sách máy chủ</h2>
+              <p id="inspectorSemantic">inventory.server</p>
+            </div>
+            <span class="requirement" id="requirementBadge">Bắt buộc</span>
+            <button class="icon-button inspector-close" id="inspectorClose" type="button" aria-label="Đóng chi tiết ánh xạ">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+            </button>
+          </div>
+          <div class="inspector-body">
+            <div class="field">
+              <label for="anchorSelect">Word anchor <span id="anchorMeta">Khớp duy nhất</span></label>
+              <select class="control" id="anchorSelect"></select>
+            </div>
+            <div class="field">
+              <div class="field-label">Nguồn dữ liệu <span>Chỉ đọc</span></div>
+              <div class="readonly"><code id="sourceValue">assets.servers</code><span>Đã khóa</span></div>
+            </div>
+            <div class="field" id="fieldMapping">
+              <div class="field-label">Ánh xạ cột <span id="fieldCount">3 trường</span></div>
+              <div class="field-table" id="fieldRows"></div>
+            </div>
+            <div class="validation" id="validationPanel" role="status" aria-live="polite">
+              <span id="validationIcon" aria-hidden="true">✓</span>
+              <div><strong id="validationTitle">Ánh xạ hợp lệ</strong><span id="validationBody">Anchor tồn tại đúng một lần trong template đã khóa checksum.</span></div>
+            </div>
+            <details>
+              <summary>Chi tiết kỹ thuật</summary>
+              <div class="technical-grid">
+                <div><span>Renderer</span><code id="rendererValue">asset_table</code></div>
+                <div><span>Anchor type</span><code>content_control</code></div>
+                <div><span>Workspace revision</span><code id="technicalRevision">12</code></div>
+              </div>
+            </details>
+          </div>
+          <div class="confirm-remove" id="removeConfirm" hidden>
+            <strong>Gỡ ánh xạ block này?</strong>
+            <span>Block bắt buộc sẽ trở thành blocker. Bạn có thể hoàn tác sau khi gỡ.</span>
+            <div class="confirm-actions">
+              <button class="button quiet" id="cancelRemove" type="button">Giữ lại</button>
+              <button class="button danger" id="confirmRemove" type="button">Gỡ ánh xạ</button>
+            </div>
+          </div>
+          <div class="inspector-footer">
+            <span class="save-inline" id="saveInline">Đã lưu</span>
+            <button class="button danger" id="removeMapping" type="button">Gỡ</button>
+            <button class="button primary" id="approveMapping" type="button">Duyệt ánh xạ</button>
+          </div>
+        </aside>
+      </main>
+
+      <footer class="statusbar">
+        <span class="safe"><span class="dot"></span>Luồng mặc định được bảo vệ</span>
+        <span>Template checksum đã xác minh</span>
+        <span id="syncStatus" role="status" aria-live="polite">Đã lưu lúc 14:32</span>
+        <span class="revision" id="revisionValue">workspace rev. 12</span>
+      </footer>
+    </div>
+
+    <div class="toast" id="undoToast" role="status" aria-live="polite" hidden>
+      <span>Đã gỡ ánh xạ.</span><button class="button" id="undoRemove" type="button">Hoàn tác</button>
+    </div>
+    <div class="sr-only" id="liveRegion" role="status" aria-live="polite"></div>
+
+    <script>
+      const rows = [
+        { semantic: 'report.title', label: 'Tiêu đề báo cáo', source: 'metadata.title', anchor: '{{REPORT_TITLE}}', status: 'mapped', required: true, renderer: 'text', fields: [], candidates: ['{{REPORT_TITLE}}'] },
+        { semantic: 'overview', label: 'Tổng quan', source: 'analysis.overview', anchor: 'REPORTER_OVERVIEW', status: 'mapped', required: true, renderer: 'rich_text', fields: [], candidates: ['REPORTER_OVERVIEW'] },
+        { semantic: 'inventory.server', label: 'Danh sách máy chủ', source: 'assets.servers', anchor: 'REPORTER_SERVER_INVENTORY', status: 'mapped', required: true, renderer: 'asset_table', fields: [['Hostname', 'hostname'], ['Địa chỉ IP', 'ip'], ['Hệ điều hành', 'os']], candidates: ['REPORTER_SERVER_INVENTORY'] },
+        { semantic: 'inventory.client', label: 'Danh sách máy trạm', source: 'assets.clients', anchor: 'REPORTER_CLIENT_INVENTORY', status: 'mapped', required: true, renderer: 'asset_table', fields: [['Hostname', 'hostname'], ['Địa chỉ IP', 'ip'], ['Hệ điều hành', 'os']], candidates: ['REPORTER_CLIENT_INVENTORY'] },
+        { semantic: 'results.server', label: 'Kết quả máy chủ', source: 'analysis.server_results', anchor: 'REPORTER_SERVER_RESULTS', status: 'mapped', required: true, renderer: 'result_table', fields: [['Hostname', 'hostname'], ['Kết quả', 'result'], ['Ghi chú', 'note']], candidates: ['REPORTER_SERVER_RESULTS'] },
+        { semantic: 'results.client', label: 'Kết quả máy trạm', source: 'analysis.client_results', anchor: 'REPORTER_CLIENT_RESULTS', status: 'mapped', required: true, renderer: 'result_table', fields: [['Hostname', 'hostname'], ['Kết quả', 'result'], ['Ghi chú', 'note']], candidates: ['REPORTER_CLIENT_RESULTS'] },
+        { semantic: 'investigation', label: 'Phân tích và điều tra', source: 'analysis.findings', anchor: '', status: 'missing', required: true, renderer: 'finding_sections', fields: [], candidates: ['REPORTER_INVESTIGATION', 'REPORTER_FINDINGS'] },
+        { semantic: 'remediation', label: 'Gỡ bỏ mã độc', source: 'analysis.affected_assets', anchor: '', status: 'missing', required: true, renderer: 'remediation_table', fields: [['Máy', 'hostname'], ['Địa chỉ IP', 'ip'], ['Trạng thái', 'status']], candidates: ['REPORTER_REMEDIATION', 'REPORTER_MALWARE_REMOVAL'] },
+        { semantic: 'recommendations', label: 'Khuyến nghị', source: 'analysis.recommendations', anchor: '', status: 'missing', required: true, renderer: 'rich_text', fields: [], candidates: ['REPORTER_RECOMMENDATIONS'] },
+        { semantic: 'conclusion', label: 'Kết luận', source: 'analysis.conclusion', anchor: '', status: 'missing', required: true, renderer: 'rich_text', fields: [], candidates: ['REPORTER_CONCLUSION'] },
+        { semantic: 'ioc', label: 'Chỉ dấu xâm nhập', source: 'analysis.iocs', anchor: '', status: 'optional', required: false, renderer: 'ioc_table', fields: [['Loại', 'type'], ['Giá trị', 'value'], ['Độ tin cậy', 'confidence']], candidates: ['REPORTER_IOC_TABLE', 'REPORTER_INDICATORS'] },
+        { semantic: 'mitre', label: 'MITRE ATT&CK', source: 'analysis.mitre', anchor: '', status: 'optional', required: false, renderer: 'mitre_table', fields: [['Technique', 'technique'], ['Tactic', 'tactic'], ['Evidence', 'evidence']], candidates: ['REPORTER_MITRE', 'REPORTER_ATTACK'] },
+      ];
+
+      const state = {
+        filter: 'all',
+        selected: 'inventory.server',
+        inspectorOpen: true,
+        revision: 12,
+        scenario: 'normal',
+        saving: false,
+        lastTrigger: null,
+        removedSnapshot: null,
+      };
+
+      const refs = {
+        rows: document.querySelector('#mappingRows'),
+        table: document.querySelector('#mappingTable'),
+        loading: document.querySelector('#loadingRows'),
+        empty: document.querySelector('#emptyState'),
+        search: document.querySelector('#searchInput'),
+        inspector: document.querySelector('#inspector'),
+        primary: document.querySelector('#primaryPane'),
+        scrim: document.querySelector('#scrim'),
+        anchor: document.querySelector('#anchorSelect'),
+        approve: document.querySelector('#approveMapping'),
+        remove: document.querySelector('#removeMapping'),
+        confirm: document.querySelector('#removeConfirm'),
+        scenario: document.querySelector('#scenarioSelect'),
+      };
+
+      const selectedRow = () => rows.find((row) => row.semantic === state.selected);
+      const requiredRows = () => rows.filter((row) => row.required);
+      const blockers = () => requiredRows().filter((row) => row.status !== 'mapped');
+      const isOverlay = () => window.matchMedia('(max-width: 1120px)').matches;
+
+      function visibleRows() {
+        const query = refs.search.value.trim().toLocaleLowerCase('vi');
+        return rows.filter((row) => {
+          const matchesFilter = state.filter === 'all' || row.status === state.filter;
+          const haystack = [row.label, row.semantic, row.source, row.anchor].join(' ').toLocaleLowerCase('vi');
+          return matchesFilter && haystack.includes(query);
+        });
+      }
+
+      function updateSummary() {
+        const required = requiredRows();
+        const mapped = required.filter((row) => row.status === 'mapped').length;
+        const missing = required.length - mapped;
+        const optional = rows.filter((row) => !row.required).length;
+        const coverage = Math.round((mapped / required.length) * 100);
+        document.querySelector('#coverageText').textContent = `${mapped}/${required.length} block đã ánh xạ`;
+        document.querySelector('#coverageBar').style.width = `${coverage}%`;
+        document.querySelector('.progress').setAttribute('aria-valuenow', String(coverage));
+        document.querySelector('#mappedCount').textContent = mapped;
+        document.querySelector('#blockerCount').textContent = missing;
+        document.querySelector('#optionalCount').textContent = optional;
+        const next = document.querySelector('#nextBlocker');
+        next.firstChild.textContent = missing ? 'Blocker tiếp theo ' : 'Chuyển sang rà soát ';
+      }
+
+      function statusMarkup(row) {
+        if (row.status === 'mapped') return '<span class="status-chip mapped"><span aria-hidden="true">✓</span>Đã xong</span>';
+        if (row.status === 'optional') return '<span class="status-chip optional"><span aria-hidden="true">○</span>Tùy chọn</span>';
+        return '<span class="status-chip missing"><span aria-hidden="true">!</span>Blocker</span>';
+      }
+
+      function renderRows() {
+        updateSummary();
+        const items = visibleRows();
+        document.querySelector('#resultCount').textContent = `${items.length} block`;
+        refs.rows.innerHTML = items
+          .map(
+            (row) => `<tr class="${state.inspectorOpen && row.semantic === state.selected ? 'selected' : ''}" data-row="${row.semantic}">
+              <td><button class="row-button" type="button" data-select="${row.semantic}" aria-controls="inspector" aria-expanded="${state.inspectorOpen && row.semantic === state.selected}"><span class="block-mark">${row.renderer.slice(0, 2).toUpperCase()}</span><span><span class="cell-main">${row.label}</span><span class="cell-sub">${row.required ? 'Bắt buộc' : 'Không chặn phát hành'}</span></span></button></td>
+              <td><span class="cell-main">${row.source.split('.').pop().replaceAll('_', ' ')}</span><span class="cell-sub mono">${row.source}</span></td>
+              <td><span class="cell-main">${row.anchor || 'Chưa chọn'}</span><span class="cell-sub">${row.anchor ? 'Khớp duy nhất' : 'Chọn anchor ổn định'}</span></td>
+              <td>${statusMarkup(row)}</td>
+            </tr>`,
+          )
+          .join('');
+        refs.rows.querySelectorAll('[data-select]').forEach((button) => {
+          button.addEventListener('click', () => openInspector(button.dataset.select, button));
+        });
+        const constrained = Boolean(refs.search.value.trim()) || state.filter !== 'all';
+        document.querySelector('#emptyTitle').textContent = constrained ? 'Không tìm thấy block phù hợp' : 'Chưa có block để ánh xạ';
+        document.querySelector('#emptyBody').textContent = constrained ? 'Thử từ khóa khác hoặc đặt lại bộ lọc.' : 'Chạy lại bước phân tích để tạo danh sách block.';
+        refs.empty.hidden = items.length > 0;
+        refs.table.hidden = items.length === 0;
+      }
+
+      function updateInspector() {
+        const row = selectedRow();
+        if (!row) return;
+        document.querySelector('#inspectorTitle').textContent = row.label;
+        document.querySelector('#inspectorSemantic').textContent = row.semantic;
+        document.querySelector('#sourceValue').textContent = row.source;
+        document.querySelector('#rendererValue').textContent = row.renderer;
+        document.querySelector('#requirementBadge').textContent = row.required ? 'Bắt buộc' : 'Tùy chọn';
+        document.querySelector('#fieldMapping').hidden = row.fields.length === 0;
+        document.querySelector('#fieldCount').textContent = `${row.fields.length} trường`;
+        document.querySelector('#fieldRows').innerHTML = row.fields.map(([target, source]) => `<div class="field-row"><span>${target}</span><i>→</i><code>${source}</code></div>`).join('');
+        refs.anchor.innerHTML = '<option value="">Chọn anchor đã phân tích</option>' + row.candidates.map((candidate) => `<option value="${candidate}">${candidate}</option>`).join('');
+        refs.anchor.value = row.draftAnchor ?? row.anchor;
+        refs.remove.disabled = row.status !== 'mapped' || state.saving;
+        updateValidation();
+      }
+
+      function updateValidation(kind) {
+        const row = selectedRow();
+        const candidate = refs.anchor.value;
+        const panel = document.querySelector('#validationPanel');
+        const icon = document.querySelector('#validationIcon');
+        const title = document.querySelector('#validationTitle');
+        const body = document.querySelector('#validationBody');
+        panel.classList.remove('warning', 'error');
+        if (kind === 'save-error') {
+          panel.classList.add('error');
+          icon.textContent = '×';
+          title.textContent = 'Chưa lưu được thay đổi';
+          body.textContent = 'Draft vẫn được giữ trên máy. Thử lưu lại khi backend sẵn sàng.';
+          refs.approve.textContent = 'Thử lưu lại';
+          refs.approve.disabled = false;
+          return;
+        }
+        if (!candidate) {
+          panel.classList.add('warning');
+          icon.textContent = '!';
+          title.textContent = row.required ? 'Cần chọn anchor' : 'Chưa ánh xạ block tùy chọn';
+          body.textContent = row.required ? 'Block này phải có một anchor duy nhất trước khi kiểm thử.' : 'Có thể bỏ qua hoặc chọn một anchor phù hợp.';
+          refs.approve.textContent = 'Duyệt ánh xạ';
+          refs.approve.disabled = true;
+          return;
+        }
+        if (row.status === 'mapped' && candidate === row.anchor) {
+          icon.textContent = '✓';
+          title.textContent = 'Ánh xạ hợp lệ';
+          body.textContent = 'Anchor tồn tại đúng một lần trong template đã khóa checksum.';
+          refs.approve.textContent = 'Đã duyệt';
+          refs.approve.disabled = true;
+          return;
+        }
+        panel.classList.add('warning');
+        icon.textContent = '•';
+        title.textContent = 'Sẵn sàng duyệt';
+        body.textContent = 'Lưu thay đổi sẽ tạo một workspace revision mới.';
+        refs.approve.textContent = 'Duyệt ánh xạ';
+        refs.approve.disabled = state.saving;
+      }
+
+      function syncInspector() {
+        refs.inspector.setAttribute('aria-hidden', String(!state.inspectorOpen));
+        refs.scrim.classList.toggle('visible', state.inspectorOpen && isOverlay());
+        if (isOverlay()) refs.primary.toggleAttribute('inert', state.inspectorOpen);
+        else refs.primary.removeAttribute('inert');
+        const pageAction = document.querySelector('#nextBlocker');
+        pageAction.classList.toggle('primary', !state.inspectorOpen);
+        pageAction.classList.toggle('quiet', state.inspectorOpen);
+      }
+
+      function openInspector(semantic, trigger) {
+        state.selected = semantic;
+        state.inspectorOpen = true;
+        state.lastTrigger = trigger || state.lastTrigger;
+        refs.confirm.hidden = true;
+        renderRows();
+        updateInspector();
+        syncInspector();
+        if (trigger && isOverlay()) document.querySelector('#inspectorTitle').focus();
+      }
+
+      function closeInspector() {
+        state.inspectorOpen = false;
+        refs.confirm.hidden = true;
+        renderRows();
+        syncInspector();
+        (state.lastTrigger || document.querySelector('#nextBlocker')).focus();
+        document.querySelector('#syncStatus').textContent = 'Draft được giữ nguyên';
+      }
+
+      function setSaving(label) {
+        state.saving = label === 'Đang lưu…';
+        document.querySelector('#saveInline').textContent = label;
+        document.querySelector('#syncStatus').textContent = label;
+        refs.anchor.disabled = state.saving;
+        refs.remove.disabled = state.saving || selectedRow().status !== 'mapped';
+      }
+
+      function saveMapping() {
+        const row = selectedRow();
+        const candidate = refs.anchor.value;
+        if (!candidate || state.saving) return;
+        row.draftAnchor = candidate;
+        setSaving('Đang lưu…');
+        updateValidation();
+        window.setTimeout(() => {
+          if (state.scenario === 'save-error') {
+            setSaving('Chưa lưu · draft còn nguyên');
+            updateValidation('save-error');
+            announce('Không lưu được ánh xạ. Draft vẫn được giữ.');
+            return;
+          }
+          row.anchor = candidate;
+          row.status = 'mapped';
+          delete row.draftAnchor;
+          state.revision += 1;
+          setSaving('Đã lưu');
+          updateRevision();
+          renderRows();
+          updateInspector();
+          announce('Đã lưu ánh xạ và tạo revision mới.');
+        }, 720);
+      }
+
+      function updateRevision() {
+        document.querySelector('#revisionValue').textContent = `workspace rev. ${state.revision}`;
+        document.querySelector('#technicalRevision').textContent = state.revision;
+      }
+
+      function requestRemove() {
+        refs.confirm.hidden = false;
+        document.querySelector('#cancelRemove').focus();
+      }
+
+      function removeMapping() {
+        const row = selectedRow();
+        state.removedSnapshot = { semantic: row.semantic, anchor: row.anchor, status: row.status };
+        row.anchor = '';
+        row.draftAnchor = '';
+        row.status = row.required ? 'missing' : 'optional';
+        state.revision += 1;
+        refs.confirm.hidden = true;
+        updateRevision();
+        renderRows();
+        updateInspector();
+        document.querySelector('#undoToast').hidden = false;
+        announce('Đã gỡ ánh xạ. Có thể hoàn tác.');
+      }
+
+      function undoRemove() {
+        const snapshot = state.removedSnapshot;
+        if (!snapshot) return;
+        const row = rows.find((item) => item.semantic === snapshot.semantic);
+        row.anchor = snapshot.anchor;
+        row.status = snapshot.status;
+        delete row.draftAnchor;
+        state.revision += 1;
+        state.removedSnapshot = null;
+        document.querySelector('#undoToast').hidden = true;
+        updateRevision();
+        renderRows();
+        updateInspector();
+        announce('Đã hoàn tác việc gỡ ánh xạ.');
+      }
+
+      function showMessage(kind, title, body, action) {
+        const bar = document.querySelector('#messageBar');
+        bar.hidden = false;
+        bar.className = `message-bar ${kind}`;
+        bar.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+        document.querySelector('#messageIcon').textContent = kind === 'error' ? '×' : kind === 'warning' ? '!' : 'i';
+        document.querySelector('#messageTitle').textContent = title;
+        document.querySelector('#messageBody').textContent = body;
+        document.querySelector('#messageAction').textContent = action;
+      }
+
+      function hideMessage() {
+        document.querySelector('#messageBar').hidden = true;
+      }
+
+      function applyScenario(value) {
+        state.scenario = value;
+        hideMessage();
+        refs.loading.hidden = true;
+        refs.table.hidden = false;
+        refs.empty.hidden = true;
+        refs.search.disabled = false;
+        if (value === 'loading') {
+          state.inspectorOpen = false;
+          syncInspector();
+          refs.rows.innerHTML = '';
+          refs.table.hidden = true;
+          refs.loading.hidden = false;
+          refs.search.disabled = true;
+          document.querySelector('#resultCount').textContent = 'Đang tải…';
+          announce('Đang tải workspace.');
+          return;
+        }
+        if (value === 'empty') {
+          state.inspectorOpen = false;
+          syncInspector();
+          refs.rows.innerHTML = '';
+          refs.table.hidden = true;
+          refs.empty.hidden = false;
+          refs.search.disabled = true;
+          document.querySelector('#resultCount').textContent = '0 block';
+          document.querySelector('#emptyTitle').textContent = 'Workspace chưa có block';
+          document.querySelector('#emptyBody').textContent = 'Quay lại bước Phân tích để tạo cấu trúc semantic đầu tiên.';
+          return;
+        }
+        renderRows();
+        if (value === 'conflict') {
+          showMessage('warning', 'Workspace có revision mới', 'Draft của bạn vẫn được giữ. So sánh trước khi tiếp tục lưu.', 'So sánh');
+        } else if (value === 'save-error') {
+          showMessage('error', 'Backend tạm thời không phản hồi', 'Thay đổi sẽ được giữ cục bộ và chỉ gửi lại khi bạn bấm lưu.', 'Thử lại');
+        }
+      }
+
+      function announce(message) {
+        const live = document.querySelector('#liveRegion');
+        live.textContent = '';
+        window.setTimeout(() => { live.textContent = message; }, 10);
+      }
+
+      function trapOverlayFocus(event) {
+        if (!state.inspectorOpen || !isOverlay() || event.key !== 'Tab') return;
+        const focusable = [...refs.inspector.querySelectorAll('button:not(:disabled), select:not(:disabled), summary, [tabindex]:not([tabindex="-1"])')].filter((item) => !item.closest('[hidden]'));
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
+
+      document.querySelectorAll('[data-filter]').forEach((button) => {
+        button.addEventListener('click', () => {
+          state.filter = button.dataset.filter;
+          document.querySelectorAll('[data-filter]').forEach((item) => {
+            const active = item === button;
+            item.classList.toggle('active', active);
+            item.setAttribute('aria-pressed', String(active));
+          });
+          renderRows();
+        });
+      });
+
+      refs.search.addEventListener('input', renderRows);
+      refs.anchor.addEventListener('change', () => {
+        selectedRow().draftAnchor = refs.anchor.value;
+        updateValidation();
+        document.querySelector('#saveInline').textContent = 'Chưa lưu';
+      });
+      refs.approve.addEventListener('click', saveMapping);
+      refs.remove.addEventListener('click', requestRemove);
+      document.querySelector('#cancelRemove').addEventListener('click', () => { refs.confirm.hidden = true; refs.remove.focus(); });
+      document.querySelector('#confirmRemove').addEventListener('click', removeMapping);
+      document.querySelector('#undoRemove').addEventListener('click', undoRemove);
+      document.querySelector('#inspectorClose').addEventListener('click', closeInspector);
+      refs.scrim.addEventListener('click', closeInspector);
+      document.querySelector('#nextBlocker').addEventListener('click', () => {
+        const next = blockers()[0];
+        if (next) openInspector(next.semantic, document.querySelector('#nextBlocker'));
+        else showMessage('info', 'Sẵn sàng rà soát', 'Tất cả block bắt buộc đã được ánh xạ. Kiểm thử vẫn chưa chạy.', 'Đóng');
+      });
+      document.querySelector('#messageAction').addEventListener('click', () => {
+        if (state.scenario === 'conflict') {
+          document.querySelector('#syncStatus').textContent = 'Đang so sánh revision 12 và 13';
+          announce('Đã mở chế độ so sánh revision.');
+        } else {
+          state.scenario = 'normal';
+          refs.scenario.value = 'normal';
+          applyScenario('normal');
+          document.querySelector('#syncStatus').textContent = 'Kết nối đã phục hồi';
+        }
+        hideMessage();
+      });
+      refs.scenario.addEventListener('change', () => applyScenario(refs.scenario.value));
+
+      const root = document.documentElement;
+      const themeToggle = document.querySelector('#themeToggle');
+      themeToggle.addEventListener('click', () => {
+        const light = root.dataset.theme !== 'light';
+        root.dataset.theme = light ? 'light' : 'dark';
+        themeToggle.setAttribute('aria-pressed', String(light));
+        themeToggle.setAttribute('aria-label', light ? 'Chuyển sang giao diện tối' : 'Chuyển sang giao diện sáng');
+      });
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && state.inspectorOpen) closeInspector();
+        trapOverlayFocus(event);
+      });
+      window.addEventListener('resize', syncInspector);
+
+      renderRows();
+      updateInspector();
+      syncInspector();
+    </script>
+  </body>
+</html>
