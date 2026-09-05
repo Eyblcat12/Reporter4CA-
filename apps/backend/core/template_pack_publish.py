@@ -109,6 +109,56 @@ class TemplatePackPublishService:
             stored = self._store_run(record, run.artifact_bytes, run.structural_snapshot)
             return self._public_record(stored)
 
+    def list_runs(self, workspace_id: str, *, limit: int = 100) -> dict[str, Any]:
+        """List resumable validation metadata without trusting cached client state."""
+
+        if isinstance(limit, bool) or not 1 <= limit <= 100:
+            raise TemplatePackPublishError("Validation run limit must be between 1 and 100.")
+        with self._lock:
+            workspace = self.studio.get(workspace_id)
+            if not self.runs_root.exists():
+                return {
+                    "items": [],
+                    "total": 0,
+                    "hasMore": False,
+                    "skippedCorrupt": 0,
+                    "currentWorkspaceRevision": workspace["revision"],
+                }
+            records: list[dict[str, Any]] = []
+            skipped_corrupt = 0
+            try:
+                children = tuple(self.runs_root.iterdir())
+            except OSError as exc:
+                raise TemplatePackPublishError("Validation run store is unavailable.") from exc
+            for child in children:
+                if child.is_symlink() or not child.is_dir():
+                    continue
+                try:
+                    record = self._load_record(child.name)
+                except TemplatePackPublishError:
+                    skipped_corrupt += 1
+                    continue
+                if record.get("workspaceId") != workspace_id:
+                    continue
+                item = self._public_record(record)
+                item["stale"] = bool(
+                    record.get("workspaceRevision") != workspace.get("revision")
+                    or record.get("workspaceSha256") != canonical_sha256(workspace)
+                    or record.get("templateSha256") != workspace.get("templateSha256")
+                )
+                records.append(item)
+            records.sort(
+                key=lambda item: (item.get("createdAt", ""), item.get("runId", "")),
+                reverse=True,
+            )
+            return {
+                "items": records[:limit],
+                "total": len(records),
+                "hasMore": len(records) > limit,
+                "skippedCorrupt": skipped_corrupt,
+                "currentWorkspaceRevision": workspace["revision"],
+            }
+
     def approve_baseline(
         self,
         workspace_id: str,

@@ -149,6 +149,23 @@ class TemplateMappingWorkspaceTests(unittest.TestCase):
                 expected_revision=1,
             )
 
+    def test_anchor_cannot_be_reused_by_another_semantic(self) -> None:
+        workspace = create_mapping_workspace(
+            _analysis(), profile_id="customer-full", display_name="Customer Full"
+        )
+        workspace = _approve(workspace, "report.title", 0)
+        original = copy.deepcopy(workspace)
+
+        with self.assertRaisesRegex(TemplateMappingWorkspaceError, "already mapped"):
+            approve_semantic_mapping(
+                workspace,
+                semantic="overview",
+                anchor={"kind": "content_control", "value": "REPORTER_SLOT_0"},
+                expected_revision=workspace["revision"],
+            )
+
+        self.assertEqual(workspace, original)
+
     def test_required_fields_must_be_complete_and_unique(self) -> None:
         workspace = create_mapping_workspace(
             _analysis(), profile_id="customer-full", display_name="Customer Full"

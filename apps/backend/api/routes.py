@@ -2538,6 +2538,22 @@ async def create_template_pack_validation_run(
         raise HTTPException(status_code, str(exc)) from exc
 
 
+@router.get("/template-packs/workspaces/{workspace_id}/validation-runs")
+async def list_template_pack_validation_runs(
+    workspace_id: str,
+    limit: int = Query(default=100, ge=1, le=100),
+):
+    """List checksum-verified validation records so the UI can resume safely."""
+
+    if not template_packs_enabled():
+        raise HTTPException(404, "Template Pack API is not enabled.")
+    try:
+        return _template_pack_publisher.list_runs(workspace_id, limit=limit)
+    except (TemplatePackPublishError, TemplateMappingWorkspaceError) as exc:
+        status_code = 404 if "not found" in str(exc).lower() else 400
+        raise HTTPException(status_code, str(exc)) from exc
+
+
 @router.get("/template-packs/workspaces/{workspace_id}/validation-runs/{run_id}/artifact")
 async def download_template_pack_validation_artifact(workspace_id: str, run_id: str):
     """Download the exact checksum-bound DOCX that a reviewer must inspect."""

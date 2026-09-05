@@ -91,6 +91,50 @@ class TemplatePackPublishTests(unittest.TestCase):
         self.assertFalse(published["selectionIntegrated"])
         self.assertTrue(published["legacyRendererUnchanged"])
 
+    def test_validation_history_resumes_state_and_isolates_corrupt_records(self) -> None:
+        baseline = self.publisher.validate(
+            self.workspace["workspaceId"],
+            self.prepared,
+            fixture_id="summary-history-v1",
+            expected_workspace_revision=self.workspace["revision"],
+        )
+        self.publisher.approve_baseline(
+            self.workspace["workspaceId"],
+            baseline["runId"],
+            expected_workspace_revision=self.workspace["revision"],
+            reviewer="template-admin@example.test",
+            artifact_sha256=baseline["validation"]["artifactSha256"],
+        )
+        corrupt = self.publisher.runs_root / ("f" * 64)
+        corrupt.mkdir(parents=True)
+        (corrupt / "record.json").write_text("{broken", encoding="utf-8")
+
+        history = self.publisher.list_runs(self.workspace["workspaceId"])
+
+        self.assertEqual(history["total"], 1)
+        self.assertEqual(history["items"][0]["state"], "baseline_approved")
+        self.assertFalse(history["items"][0]["stale"])
+        self.assertEqual(history["skippedCorrupt"], 1)
+        self.assertEqual(history["currentWorkspaceRevision"], self.workspace["revision"])
+
+    def test_validation_history_marks_runs_stale_after_workspace_change(self) -> None:
+        baseline = self.publisher.validate(
+            self.workspace["workspaceId"],
+            self.prepared,
+            fixture_id="summary-stale-history-v1",
+            expected_workspace_revision=self.workspace["revision"],
+        )
+        self.studio.rename(
+            self.workspace["workspaceId"],
+            display_name="Renamed after validation",
+            expected_revision=self.workspace["revision"],
+        )
+
+        history = self.publisher.list_runs(self.workspace["workspaceId"])
+
+        self.assertEqual(history["items"][0]["runId"], baseline["runId"])
+        self.assertTrue(history["items"][0]["stale"])
+
     def test_unapproved_baseline_and_stale_workspace_are_rejected(self) -> None:
         baseline = self.publisher.validate(
             self.workspace["workspaceId"],

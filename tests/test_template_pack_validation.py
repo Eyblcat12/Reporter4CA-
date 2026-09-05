@@ -5,6 +5,7 @@ import io
 import sys
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 
 from docx import Document
@@ -35,6 +36,35 @@ from tests.test_profile_renderer import _complete_workspace, _prepared, _templat
 
 
 class TemplatePackValidationTests(unittest.TestCase):
+    def test_validation_artifact_uses_deterministic_docx_metadata(self) -> None:
+        template, anchors = _template_for("summary")
+        with tempfile.TemporaryDirectory() as temporary:
+            service = TemplateStudioService(Path(temporary) / "studio")
+            workspace = _complete_workspace(service, template, "summary", anchors)
+            prepared = _prepared("summary", template, _payload())
+            first = run_template_pack_validation(
+                workspace,
+                template,
+                prepared,
+                fixture_id="deterministic-v1",
+                structural_baseline=None,
+            )
+            second = run_template_pack_validation(
+                workspace,
+                template,
+                prepared,
+                fixture_id="deterministic-v1",
+                structural_baseline=None,
+            )
+
+        self.assertEqual(first.run_id, second.run_id)
+        self.assertEqual(first.artifact_bytes, second.artifact_bytes)
+        with zipfile.ZipFile(io.BytesIO(first.artifact_bytes)) as archive:
+            self.assertTrue(archive.infolist())
+            self.assertTrue(
+                all(member.date_time == (1980, 1, 1, 0, 0, 0) for member in archive.infolist())
+            )
+
     def test_candidate_is_non_publishable_and_rejected_by_normal_renderer(self) -> None:
         template, anchors = _template_for("summary")
         with tempfile.TemporaryDirectory() as temporary:

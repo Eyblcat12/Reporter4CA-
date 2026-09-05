@@ -191,6 +191,13 @@ class ApiIntegrationTests(unittest.TestCase):
             self.assertEqual(baseline_response.status_code, 201)
             baseline = baseline_response.json()
 
+            history = self.client.get(
+                f"/api/template-packs/workspaces/{workspace['workspaceId']}/validation-runs"
+            )
+            self.assertEqual(history.status_code, 200)
+            self.assertEqual(history.json()["items"][0]["runId"], baseline["runId"])
+            self.assertFalse(history.json()["items"][0]["stale"])
+
             premature = self.client.post(
                 f"/api/template-packs/workspaces/{workspace['workspaceId']}/validation-runs",
                 json={**fixture, "baselineRunId": baseline["runId"]},
@@ -244,7 +251,11 @@ class ApiIntegrationTests(unittest.TestCase):
                 f"/api/template-packs/workspaces/{workspace['workspaceId']}/validation-runs",
                 json=fixture,
             )
+            hidden_history = self.client.get(
+                f"/api/template-packs/workspaces/{workspace['workspaceId']}/validation-runs"
+            )
         self.assertEqual(hidden.status_code, 404)
+        self.assertEqual(hidden_history.status_code, 404)
 
     def test_profile_template_analysis_starts_with_zero_approved_mapping(self) -> None:
         document = Document()
@@ -300,6 +311,17 @@ class ApiIntegrationTests(unittest.TestCase):
             )
             self.assertEqual(approved.status_code, 200)
             self.assertEqual(approved.json()["revision"], 2)
+
+            duplicate_anchor = self.client.put(
+                f"/api/template-packs/workspaces/{workspace['workspaceId']}/mappings/overview",
+                json={
+                    "anchor": {"kind": "token", "value": "{{REPORT_TITLE}}"},
+                    "fields": [],
+                    "expectedRevision": approved.json()["revision"],
+                },
+            )
+            self.assertEqual(duplicate_anchor.status_code, 400)
+            self.assertIn("already mapped", duplicate_anchor.json()["detail"])
 
             stale = self.client.put(
                 f"/api/template-packs/workspaces/{workspace['workspaceId']}/mappings/overview",

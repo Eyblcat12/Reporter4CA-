@@ -149,7 +149,7 @@ def run_template_pack_validation(
     _check_cancelled(check_cancelled)
     output = io.BytesIO()
     rendered.document.save(output)
-    artifact = output.getvalue()
+    artifact = _deterministic_docx(output.getvalue())
     artifact_sha256 = _sha256(artifact)
     progress(75, "artifact.saved")
 
@@ -594,6 +594,31 @@ def _canonical_sha256(value: Any) -> str:
 
 def _sha256(payload: bytes) -> str:
     return hashlib.sha256(payload).hexdigest()
+
+
+def _deterministic_docx(payload: bytes) -> bytes:
+    """Normalize generated ZIP metadata so identical validation runs keep one identity."""
+
+    source = io.BytesIO(payload)
+    target = io.BytesIO()
+    try:
+        with (
+            zipfile.ZipFile(source, "r") as reader,
+            zipfile.ZipFile(
+                target,
+                "w",
+                zipfile.ZIP_DEFLATED,
+                compresslevel=6,
+            ) as writer,
+        ):
+            for member in sorted(reader.infolist(), key=lambda item: item.filename):
+                info = zipfile.ZipInfo(member.filename, date_time=(1980, 1, 1, 0, 0, 0))
+                info.compress_type = zipfile.ZIP_DEFLATED
+                info.external_attr = member.external_attr
+                writer.writestr(info, reader.read(member))
+    except (OSError, zipfile.BadZipFile, RuntimeError) as exc:
+        raise TemplatePackValidationError("Generated DOCX package is invalid.") from exc
+    return target.getvalue()
 
 
 def _timestamp() -> str:

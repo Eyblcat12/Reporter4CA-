@@ -137,6 +137,14 @@ def approve_semantic_mapping(
         )
     requirement = COMMON_REQUIREMENTS[semantic]
     validated_anchor = _validate_discovered_anchor(draft["analysis"], anchor)
+    for existing_slot in draft["slots"]:
+        if existing_slot.get("semantic") == semantic:
+            continue
+        if existing_slot.get("anchor") == validated_anchor:
+            raise TemplateMappingWorkspaceError(
+                "Anchor is already mapped to semantic "
+                f"{existing_slot.get('semantic', 'unknown')!r}."
+            )
     validated_fields = _validate_field_mapping(requirement.required_fields, fields or [])
     slot = {
         "id": semantic.replace(".", "_"),
