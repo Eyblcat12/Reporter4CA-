@@ -71,7 +71,10 @@ class TemplateStudioMergeGateTests(unittest.TestCase):
     def test_static_contract_detects_enabled_default_and_runtime_import(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            (root / ".env.example").write_text("AUTO_REPORT_TEMPLATE_PACKS=1\n", encoding="utf-8")
+            (root / ".env.example").write_text(
+                "AUTO_REPORT_TEMPLATE_PACKS=1\nVITE_TEMPLATE_STUDIO=1\n",
+                encoding="utf-8",
+            )
             config = root / "apps/backend/core/config.py"
             config.parent.mkdir(parents=True)
             config.write_text('os.getenv("AUTO_REPORT_TEMPLATE_PACKS", "1")\n', encoding="utf-8")
@@ -84,9 +87,14 @@ class TemplateStudioMergeGateTests(unittest.TestCase):
                 path.write_text(
                     "from core.template_pack import inspect_template_pack\n", encoding="utf-8"
                 )
+            app = root / "apps/frontend/src/App.jsx"
+            app.parent.mkdir(parents=True)
+            app.write_text("const enabled = true;\n", encoding="utf-8")
             violations = static_contract_violations(root)
-        self.assertEqual(5, len(violations))
+        self.assertEqual(7, len(violations))
         self.assertTrue(any("AUTO_REPORT_TEMPLATE_PACKS=0" in item for item in violations))
+        self.assertTrue(any("VITE_TEMPLATE_STUDIO=0" in item for item in violations))
+        self.assertTrue(any("explicit 1" in item for item in violations))
         self.assertTrue(any("fallback" in item for item in violations))
         self.assertEqual(3, sum("Legacy module" in item for item in violations))
 

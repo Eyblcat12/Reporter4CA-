@@ -6,8 +6,9 @@ báo cáo `full`, `server_only`, `client_only` và những report type mặc đ�
 
 ## Trạng thái và phạm vi
 
-- Template Studio chỉ hiện diện khi khởi động backend với
-  `AUTO_REPORT_TEMPLATE_PACKS=1`; giá trị mặc định trong `.env.example` là `0`.
+- Template Studio chỉ hiện diện khi backend chạy với
+  `AUTO_REPORT_TEMPLATE_PACKS=1` **và** frontend được build với
+  `VITE_TEMPLATE_STUDIO=1`; cả hai mặc định là `0` trong `.env.example`.
 - Việc bật flag chỉ mở API quản trị. Template Pack **không xuất hiện trong
   Generate** và catalog trả `selectionIntegrated: false`.
 - “Active” chỉ là phiên bản được chọn bên trong catalog thử nghiệm. Legacy
@@ -45,8 +46,9 @@ DOCX mới
 ```
 
 1. Tạo Workspace Backup của Reporter Pro và lưu riêng DOCX nguồn.
-2. Bật `AUTO_REPORT_TEMPLATE_PACKS=1`, khởi động lại backend và dùng Swagger tại
-   `/docs` hoặc client quản trị đã được duyệt.
+2. Đặt `AUTO_REPORT_TEMPLATE_PACKS=1` và `VITE_TEMPLATE_STUDIO=1` trong `.env`,
+   chạy lại `setup.bat` để frontend nhận build-time flag, rồi khởi động Reporter
+   Pro. Mở `/?view=template-studio`; Swagger `/docs` vẫn dùng được cho kiểm tra API.
 3. Gọi `POST /api/template-packs/analyze-template`. Xem anchor trùng, token,
    heading, bảng, section, header/footer và relationship; analyzer chỉ gợi ý.
 4. Gọi `POST /api/template-packs/workspaces`, sau đó duyệt từng mapping bằng
@@ -83,7 +85,8 @@ DOCX mới
 
 | Hiện tượng | Xử lý an toàn |
 |---|---|
-| API trả 404 | Kiểm tra flag, khởi động lại backend; không sửa router |
+| API trả 404 | Kiểm tra backend flag và khởi động lại; không sửa router |
+| Route vẫn mở dashboard | Kiểm tra frontend flag, rebuild bằng `setup.bat`, rồi mở lại URL |
 | HTTP 409 | Tải workspace/catalog mới, so sánh thay đổi rồi thử lại |
 | Workspace/checksum lỗi | Dừng publish; dùng bản export/backup đã xác minh |
 | Baseline khác DOCX đã xem | Không approve; tải lại artifact và đối chiếu SHA-256 |

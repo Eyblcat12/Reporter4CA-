@@ -75,10 +75,16 @@ def static_contract_violations(root: Path = ROOT) -> list[str]:
     env_text = (root / ".env.example").read_text(encoding="utf-8")
     if not re.search(r"(?m)^AUTO_REPORT_TEMPLATE_PACKS=0$", env_text):
         violations.append(".env.example must keep AUTO_REPORT_TEMPLATE_PACKS=0")
+    if not re.search(r"(?m)^VITE_TEMPLATE_STUDIO=0$", env_text):
+        violations.append(".env.example must keep VITE_TEMPLATE_STUDIO=0")
 
     config_text = (root / "apps/backend/core/config.py").read_text(encoding="utf-8")
     if not re.search(r'os\.getenv\(\s*"AUTO_REPORT_TEMPLATE_PACKS"\s*,\s*"0"\s*\)', config_text):
         violations.append("Backend feature-flag fallback must remain disabled (0)")
+
+    app_text = (root / "apps/frontend/src/App.jsx").read_text(encoding="utf-8")
+    if "import.meta.env.VITE_TEMPLATE_STUDIO === '1'" not in app_text:
+        violations.append("Frontend Template Studio route must require an explicit 1 flag")
 
     for relative in PROTECTED_PATHS:
         text = (root / relative).read_text(encoding="utf-8")

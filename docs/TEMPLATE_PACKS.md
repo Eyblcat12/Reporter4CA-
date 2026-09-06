@@ -172,6 +172,12 @@ first, marks anchors already owned by another semantic and requires an explicit
 `Duyệt ánh xạ` action. Draft edits are local until approval so exploratory choices
 cannot silently change workspace revision or audit history.
 
+The production build reads both feature flags from the repository-level `.env`.
+An administrator must explicitly set `AUTO_REPORT_TEMPLATE_PACKS=1` and
+`VITE_TEMPLATE_STUDIO=1`, rebuild the frontend, restart the backend, and open
+`/?view=template-studio`. Either missing flag keeps the experimental workflow
+unavailable; both defaults remain `0`.
+
 ## Pack Builder and isolated version catalog
 
 The backend now contains a deterministic Pack Builder and a revisioned catalog.

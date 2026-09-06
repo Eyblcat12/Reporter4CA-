@@ -2,6 +2,9 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
+  // Share the repository-level .env used by the local backend/launcher.
+  // Vite still exposes only VITE_* values to browser code.
+  envDir: '../../',
   plugins: [react()],
   server: {
     port: 5173,
