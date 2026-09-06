@@ -16,13 +16,8 @@ const TemplateStudioRoute = lazy(
   () => import('./features/template-studio/TemplateStudioRoute.jsx'),
 );
 
-const TEMPLATE_STUDIO_UI_ENABLED = import.meta.env.VITE_TEMPLATE_STUDIO === '1';
-
-export function isTemplateStudioView({
-  enabled = TEMPLATE_STUDIO_UI_ENABLED,
-  search = window.location.search,
-} = {}) {
-  return enabled && new URLSearchParams(search).get('view') === 'template-studio';
+export function isTemplateStudioView({ search = window.location.search } = {}) {
+  return new URLSearchParams(search).get('view') === 'template-studio';
 }
 
 function App() {

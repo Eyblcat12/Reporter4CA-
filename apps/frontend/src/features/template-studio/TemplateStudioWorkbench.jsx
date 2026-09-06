@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
+  ArrowLeft,
   ArrowRight,
   Check,
   ChevronRight,
@@ -335,6 +336,10 @@ export default function TemplateStudioWorkbench({
   return (
     <div className="ts-app">
       <header className="ts-topbar">
+        <a className="ts-back-link" href="./" aria-label="Quay lại Reporter Pro">
+          <ArrowLeft size={16} aria-hidden="true" />
+          <span>Reporter Pro</span>
+        </a>
         <div className="ts-brand">
           <span>R</span>
           <strong>Template Studio</strong>

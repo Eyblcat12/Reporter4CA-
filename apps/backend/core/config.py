@@ -223,11 +223,11 @@ def prepared_template_cache_bytes() -> int:
 
 
 def template_packs_enabled() -> bool:
-    """Expose the experimental Template Pack subsystem.
+    """Expose Template Studio authoring APIs.
 
-    This flag is deliberately disabled by default.  Template Packs are developed
-    beside the production Legacy Renderer and must never alter its behaviour just
-    because a pack exists on disk.
+    The authoring workspace is part of the local/team product by default. Setting
+    the flag to ``0`` remains an emergency isolation switch. Availability never
+    opts a pack into Preview/Generate; that boundary is enforced separately.
     """
 
-    return os.getenv("AUTO_REPORT_TEMPLATE_PACKS", "0").strip().lower() in _TRUTHY
+    return os.getenv("AUTO_REPORT_TEMPLATE_PACKS", "1").strip().lower() in _TRUTHY

@@ -42,10 +42,10 @@ def validate_source_tree(root: Path) -> list[str]:
             issues.append(f"Local-only file is present: {relative}")
 
     env_example = root / ".env.example"
-    if env_example.is_file() and "AUTO_REPORT_TEMPLATE_PACKS=0" not in env_example.read_text(
+    if env_example.is_file() and "AUTO_REPORT_TEMPLATE_PACKS=1" not in env_example.read_text(
         encoding="utf-8"
     ):
-        issues.append("Template Packs must remain disabled in .env.example")
+        issues.append("Template Studio must be available in .env.example")
 
     package_lock = root / "apps/frontend/package-lock.json"
     if package_lock.is_file():

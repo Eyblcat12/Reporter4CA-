@@ -18,7 +18,7 @@ class CleanSourceValidatorTests(unittest.TestCase):
                 path = root / relative
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text("placeholder", encoding="utf-8")
-            (root / ".env.example").write_text("AUTO_REPORT_TEMPLATE_PACKS=0\n", encoding="utf-8")
+            (root / ".env.example").write_text("AUTO_REPORT_TEMPLATE_PACKS=1\n", encoding="utf-8")
             (root / "apps/frontend/package-lock.json").write_text(
                 json.dumps({"lockfileVersion": 3}), encoding="utf-8"
             )
@@ -33,7 +33,7 @@ class CleanSourceValidatorTests(unittest.TestCase):
                 path = root / relative
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text("placeholder", encoding="utf-8")
-            (root / ".env.example").write_text("AUTO_REPORT_TEMPLATE_PACKS=0\n", encoding="utf-8")
+            (root / ".env.example").write_text("AUTO_REPORT_TEMPLATE_PACKS=1\n", encoding="utf-8")
             (root / "apps/frontend/package-lock.json").write_text(
                 json.dumps({"lockfileVersion": 3}), encoding="utf-8"
             )

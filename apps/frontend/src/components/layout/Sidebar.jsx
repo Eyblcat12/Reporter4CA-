@@ -13,6 +13,7 @@ import {
   Server,
   Monitor,
   Layers,
+  PanelsTopLeft,
   Search,
   CheckCircle2,
 } from 'lucide-react';
@@ -187,6 +188,36 @@ export default function Sidebar({ collapsed, onToggle }) {
           );
         })}
       </nav>
+
+      <div className="sidebar__tools">
+        <AnimatePresence>
+          {!collapsed && (
+            <motion.span
+              className="sidebar__nav-section-label"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              TOOLS
+            </motion.span>
+          )}
+        </AnimatePresence>
+        <a
+          className="sidebar__nav-item sidebar__tool-link"
+          href="?view=template-studio"
+          data-tooltip={collapsed ? t('templateStudio.title') : undefined}
+        >
+          <span className="sidebar__nav-icon">
+            <PanelsTopLeft size={18} />
+          </span>
+          {!collapsed && (
+            <span className="sidebar__nav-text">
+              <span className="sidebar__nav-label">{t('templateStudio.title')}</span>
+              <span className="sidebar__nav-desc">{t('templateStudio.description')}</span>
+            </span>
+          )}
+        </a>
+      </div>
 
       {/* ─── Stats ─── */}
       <div className="sidebar__stats">

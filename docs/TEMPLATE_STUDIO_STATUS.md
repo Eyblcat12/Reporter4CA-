@@ -1,15 +1,22 @@
 # Template Studio — trạng thái triển khai và hồ sơ bàn giao
 
-> **Ngày chốt:** 05/09/2026
-> **Nhánh phát triển:** `codex/template-studio`
-> **Baseline ổn định:** `github/main` tại commit `ec5795d`
-> **Checkpoint mã nguồn Template Studio:** commit `d06d9da` + clean-source verification
-> **Trạng thái tích hợp:** authoring route đã duyệt, chuẩn bị merge default-off; chưa nối Generate
-> **Feature flag:** `AUTO_REPORT_TEMPLATE_PACKS=0` theo mặc định
+> **Ngày cập nhật:** 06/09/2026
+> **Nhánh tích hợp:** `codex/reporter-pro-github-release`
+> **Baseline ổn định:** `github/main` tại commit `5ddfc44`
+> **Trạng thái tích hợp:** authoring subsystem đã merge và hiển thị sẵn trong tool; chưa nối Generate
+> **Feature flag:** `AUTO_REPORT_TEMPLATE_PACKS=1` theo mặc định; `0` là kill switch
 
 Tài liệu này là nguồn trạng thái chính cho chương trình Template Studio. Mỗi lần
 tiếp tục công việc phải đọc tài liệu này và `TEMPLATE_PACKS.md` trước khi sửa mã.
 Khi trạng thái thay đổi, cập nhật tài liệu này trong cùng commit với thay đổi.
+
+**Checkpoint khả dụng ngày 06/09/2026:** Template Studio đã có entry riêng trong
+sidebar, authoring API mặc định bật và có nút quay lại Reporter Pro. Visual QA với
+frontend/backend thật xác nhận mở Studio, trạng thái workspace rỗng và quay lại
+dashboard đều đạt. Full gate đạt **378/378 backend tests**, **106/106 frontend
+tests**, Ruff, ESLint, Prettier và production build **1.929 modules**. Catalog vẫn
+trả `selectionIntegrated: false`; không tệp template mặc định hay module Legacy
+Renderer nào bị sửa.
 
 ## 1. Mục tiêu đã thống nhất
 
@@ -37,8 +44,8 @@ Tool không cần tự hiểu mọi template với độ chính xác 100%. Templ
    baseline theo yêu cầu khách hàng; không chỉnh format hoặc renderer nếu không có
    yêu cầu trực tiếp.
 2. Legacy Renderer phải sử dụng được trong mọi thời điểm phát triển.
-3. Template Studio nằm trên nhánh riêng cho đến khi đạt đủ quality gate và được
-   người dùng đồng ý tích hợp.
+3. Template Studio là một phần của ứng dụng local/team và phải truy cập được từ
+   sidebar; việc khả dụng không đồng nghĩa được phép thay luồng Generate.
 4. Không tự động đưa pack mới vào dropdown template hoặc Generate.
 5. Mapping phải do người dùng duyệt; gợi ý từ analyzer không phải mapping đã duyệt.
 6. Coverage 100% phải do validator tính, không cho nhập phần trăm thủ công.
@@ -89,11 +96,9 @@ quyền thay template tạo report.
 
 | Nội dung | Trạng thái |
 |---|---|
-| `github/main` | Không thay đổi, đang ở `ec5795d` |
-| Nhánh làm việc | `codex/template-studio` |
-| Checkpoint đã commit | `d06d9da test(template-studio): certify distinct synthetic templates` |
-| Push nhánh lên remote | Remote đang ở `f534a33`; push sau merge gate |
-| UI Workbench V2 | React route đã được người dùng duyệt; được phép merge vào main theo cơ chế default-off |
+| `github/main` | Đã merge Template Studio tại `32e82e5`, hardening flag tại `5ddfc44` |
+| Nhánh làm việc | `codex/reporter-pro-github-release`, theo dõi `github/main` |
+| UI Workbench V2 | React route đã duyệt và đã merge; bổ sung entry sidebar mặc định |
 | `apps/backend/data/` | Runtime/user data, untracked; tuyệt đối không stage hoặc commit |
 
 Các thay đổi chưa commit hợp lệ hiện tại:
@@ -125,7 +130,8 @@ Nếu trạng thái Git khác danh sách trên ở phiên sau, phải kiểm tra
 
 ### TS-01 — Feature boundary và schema v1 — hoàn thành
 
-- Feature flag `AUTO_REPORT_TEMPLATE_PACKS`, mặc định tắt.
+- Feature flag `AUTO_REPORT_TEMPLATE_PACKS`, mặc định bật cho authoring; giá trị
+  `0` chỉ dùng để cô lập khẩn cấp API Studio.
 - Bốn JSON Schema Draft 2020-12 cho manifest, layout, mapping và validation.
 - Semantic catalog riêng cho sáu report type.
 - Validator kiểm tra profile ID, schema version, renderer, source, anchor, field,
@@ -272,9 +278,9 @@ template mặc định.
 
 ### TS-09A — React Mapping Workbench — hoàn thành working tree
 
-- Route chỉ mở khi `VITE_TEMPLATE_STUDIO=1` **và** URL có
-  `?view=template-studio`; không có flag thì `AppShell` baseline được render như cũ.
-- Không thêm menu vào Sidebar, Configure, template selector hoặc Generate.
+- Route mở khi URL có `?view=template-studio`; AppShell baseline vẫn là route mặc định.
+- Sidebar có mục **Template Studio** riêng trong **Tools**. Không thêm pack vào
+  Configure, template selector hoặc Generate.
 - API client chỉ gọi workspace list/get/approve/remove feature-gated hiện có; xử
   lý network error, backend disabled và revision conflict `409` bằng error envelope.
 - Mapping table có search/filter, coverage, blocker navigation và contextual
@@ -288,7 +294,7 @@ template mặc định.
   focus return, overlay focus trap, loading/empty/error và reduced motion đã có.
 - Gate đầy đủ sau nâng cấp anchor picker: **376/376 backend tests**, **105/105
   frontend tests**, ESLint, Prettier và production build **1.929 modules** đều đạt.
-  Feature flag backend vẫn mặc định `0`.
+  Đây là checkpoint lịch sử trước khi authoring API được bật mặc định.
 
 ### TS-09B.1 — React Workspace lifecycle — hoàn thành working tree
 
@@ -539,8 +545,8 @@ chưa có mutation lifecycle mới trong TS-10A.
   Sau validation/catalog UI: **95/95 frontend tests** đạt; targeted backend
   validation/publish/catalog/API/documentation/merge boundary **38/38 đạt**.
   ESLint, Prettier, production build **1.926 modules** và merge boundary đều đạt.
-- Feature flag vẫn tắt mặc định; không activate pack, không thêm dropdown và không
-  nối Profile Renderer vào Preview/Generate mặc định.
+- Authoring API hiện bật mặc định; vẫn không tự activate pack, không thêm dropdown
+  và không nối Profile Renderer vào Preview/Generate mặc định.
 
 ### Sau khi hoàn thành React upload/analyze TS-09B.2b ngày 02/09/2026
 
@@ -553,8 +559,8 @@ chưa có mutation lifecycle mới trong TS-10A.
   lỗi. Backend không được bật trong phiên visual nên không truyền template thật.
 - Playwright: **4/4 E2E đạt**, gồm workflow report mặc định, theme/data quality và
   workflow Template Studio synthetic analyze → create → mapping.
-- Luồng mặc định và ba template full/server/client không thay đổi; feature flag
-  backend vẫn `AUTO_REPORT_TEMPLATE_PACKS=0`.
+- Luồng mặc định và ba template full/server/client không thay đổi. Kết quả này là
+  checkpoint trước quyết định bật sẵn authoring API ngày 06/09/2026.
 
 ### Sau khi hoàn thành anchor picker tổng quát ngày 03/09/2026
 
@@ -589,7 +595,7 @@ cần frontend đang chạy tại localhost.
 |---|---|---|---|
 | TS-08.1 | Review bố cục Workbench mới | Hoàn thành hướng V2 | Được phép tiếp tục sang React |
 | TS-08.2 | Chỉnh màu, mật độ, thuật ngữ và drawer theo feedback | Hoàn thành, UI synthetic đã duyệt | Còn visual pilot bằng template thực |
-| TS-08.3 | Commit UI prototype đã được duyệt | Sẵn sàng commit | Route thật đã được người dùng duyệt |
+| TS-08.3 | Commit UI prototype đã được duyệt | Hoàn thành và đã merge | Route thật đã được người dùng duyệt |
 | TS-10A | Workspace Index metadata-only, filter/search/cursor | Hoàn thành | Không nối Generate |
 | TS-10B.1 | Rename/clone/archive draft | Hoàn thành backend + React UI | Không xóa dữ liệu |
 | TS-10B.2 | Export/import draft portable | Hoàn thành backend + React UI | `.rptdraft` data-only |
@@ -605,33 +611,33 @@ cần frontend đang chạy tại localhost.
 | TS-17D | Reproducible fuzz/soak harness | Hoàn thành | Corpus synthetic đã đạt; khách hàng chạy lại khi có template thật |
 | TS-17E | Synthetic Profile Renderer capacity harness | Hoàn thành | Engineering-only, chưa thay benchmark khách hàng |
 | TS-17F | Nested DOCX/workspace/catalog fuzz | Hoàn thành synthetic | Khách hàng chạy lại khi có template thật |
-| TS-18A | Administrator guide và migration/rollback contract | Hoàn thành | Chưa merge hoặc bật feature flag |
+| TS-18A | Administrator guide và migration/rollback contract | Hoàn thành | Đã cập nhật cho Studio mặc định khả dụng |
 | TS-18B | Automated merge-safety boundary | Hoàn thành | PR gate bảo vệ default flow |
-| TS-09A | React mapping route + API client tách biệt | Hoàn thành, UI đã duyệt | Merge default-off; không nối Generate |
+| TS-09A | React mapping route + API client tách biệt | Hoàn thành, UI đã duyệt | Có entry sidebar; không nối Generate |
 | TS-09B.1 | Workspace lifecycle React UI | Hoàn thành, UI đã duyệt | Không xóa dữ liệu |
 | TS-09B.2 | Upload/analyze + retention quarantine UI | Hoàn thành | Không chạm Import mặc định |
 | TS-09C | Validation/publish/catalog UI | Hoàn thành | Không nối Generate |
 | TS-16C | Ba fixture Word khác cấu trúc | Hoàn thành synthetic | Analyzer, mapping, validation, pack, preview/promotion đều đạt |
 
-TS-09 chỉ được gọi experimental API sau cả frontend/backend flag. Không thêm vào
-menu Generate hoặc template selector trước cổng TS-15.
+TS-09 được truy cập trực tiếp từ sidebar và gọi authoring API mặc định khả dụng.
+Không thêm pack vào menu Generate hoặc template selector trước cổng TS-15.
 
 ## 8. Backlog còn lại của Template Studio
 
 ### P0 — Hoàn thiện authoring workflow
 
-#### TS-09 — React Template Studio tách biệt
+#### TS-09 — React Template Studio tách biệt — hoàn thành
 
-- Route hoặc entry riêng, chỉ tồn tại khi frontend feature flag được bật.
-- Không sửa `AppShell`, Sidebar hoặc Configure mặc định trước khi có duyệt tích hợp.
+- Route riêng và entry **Template Studio** trong sidebar đã được tích hợp sau khi
+  người dùng duyệt. AppShell và workflow ba bước vẫn giữ nguyên.
 - Các màn: upload/analyze, mapping table, review blockers, test, publish/catalog.
 - API client có error envelope, loading, retry và revision conflict 409.
 - Việc chỉnh draft diễn ra cục bộ; quyết định mapping chỉ được lưu khi người dùng
   bấm `Duyệt ánh xạ`, với revision guard để không ghi đè editor mới hơn.
 - Light/dark, keyboard navigation, focus state và WCAG AA.
 
-**Definition of Done:** UI component/API tests đạt; build mặc định không hiển thị
-Template Studio; tắt flag cho kết quả giống baseline hiện tại.
+**Definition of Done:** UI component/API tests đạt; build mặc định hiển thị entry
+Studio; đặt backend flag `0` cô lập API mà Legacy Renderer vẫn hoạt động.
 
 #### TS-10 — Workspace index và lifecycle
 
@@ -766,8 +772,8 @@ client có section portrait/landscape. Cả ba đã đạt analyzer → mapping 
 validation hai lượt → publishable pack → Preview → byte-for-byte promotion.
 Toàn bộ năm trang fixture đã được render bằng Microsoft Word cài sẵn và kiểm tra
 trực quan sau khi sửa khoảng cách header/page break. Đây là bằng chứng tích hợp
-synthetic đủ để merge authoring subsystem ở trạng thái default-off; nó không thay
-thế visual/benchmark lại bằng template khách hàng trước khi bật Generate thật.
+synthetic đủ để đưa authoring subsystem vào tool; nó không thay thế visual/
+benchmark lại bằng template khách hàng trước khi bật Generate thật.
 
 #### TS-17 — Security/performance hardening
 
@@ -870,14 +876,14 @@ pack thực tế và tối thiểu 10 trial tương thích trước khi công b�
   modules đều đạt sau bản sửa Windows path.
 - Full backend/frontend/E2E/golden/security/performance gate.
 - Branch review và merge có kiểm soát vào main.
-- Feature flag vẫn mặc định tắt trong lần merge đầu.
+- Lần merge đầu giữ mặc định tắt; quyết định ngày 06/09/2026 đưa authoring Studio
+  thành phần sẵn có của tool nhưng vẫn không nối Generate.
 
 **Checkpoint merge ngày 05/09/2026:** người dùng đã duyệt UI React và cho phép bắt
 đầu merge subsystem vào `main`, với yêu cầu không ảnh hưởng luồng hiện tại. Gate
 trước merge đạt **378/378 backend tests**, **105/105 frontend tests**, Template
 Studio E2E **1/1**, Ruff, merge boundary, ESLint, Prettier và production build
-**1.929 modules**. Feature flag vẫn phải mặc định tắt và TS-15 Generate integration
-vẫn là công việc độc lập.
+**1.929 modules**. TS-15 Generate integration vẫn là công việc độc lập.
 
 Clean-source smoke trên exact commit `d06d9da` cũng đạt: archive chỉ chứa source
 được phép, dependency Python cài từ lockfile có hash, `npm ci` cài 270 package với
@@ -898,11 +904,10 @@ chạy lại có quyền tải dependency đã đạt và là kết quả phát 
 ## 10. Thứ tự triển khai bắt buộc từ thời điểm này
 
 ```text
-1. Commit route/UI và ba fixture synthetic đã được duyệt
+1. Hiển thị Template Studio trong sidebar và bật authoring API theo mặc định
 2. Chạy merge boundary, full gate và clean-source smoke
-3. Merge vào `main` với cả frontend/backend feature flag mặc định tắt
-4. Giữ TS-15 Preview/Generate ngoài production flow
-5. Khi có template khách hàng: chạy lại pilot/benchmark và xin duyệt TS-15
+3. Giữ TS-15 Preview/Generate ngoài production flow
+4. Khi có template khách hàng: chạy lại pilot/benchmark và xin duyệt TS-15
 ```
 
 TS-11–TS-14 đã hoàn thành backend tách biệt. Việc merge authoring subsystem không
@@ -929,7 +934,7 @@ Phải dừng và xin ý kiến khi xảy ra một trong các trường hợp:
 [ ] Đọc docs/TEMPLATE_STUDIO_STATUS.md và docs/TEMPLATE_PACKS.md
 [ ] Kiểm tra git branch, HEAD và git status
 [ ] Không stage apps/backend/data/
-[ ] Xác nhận AUTO_REPORT_TEMPLATE_PACKS vẫn mặc định 0
+[ ] Xác nhận AUTO_REPORT_TEMPLATE_PACKS mặc định 1 và giá trị 0 vẫn cô lập API
 [ ] Xác nhận task hiện tại theo ID TS-xx
 [ ] Kiểm tra task có chạm Legacy Renderer/template mặc định không
 [ ] Chạy test nhỏ trước khi sửa
@@ -943,7 +948,7 @@ Phải dừng và xin ý kiến khi xảy ra một trong các trường hợp:
 
 - Người dùng đã duyệt UI và workflow.
 - Không có diff ngoài phạm vi trong template mặc định và Legacy Renderer.
-- Feature flag mặc định tắt.
+- Authoring Studio mặc định khả dụng; kill switch và Legacy Renderer vẫn hoạt động.
 - Sáu golden DOCX baseline đạt.
 - Backend, frontend, production build và E2E đạt.
 - Template Pack security tests đạt.

@@ -6,9 +6,10 @@ báo cáo `full`, `server_only`, `client_only` và những report type mặc đ�
 
 ## Trạng thái và phạm vi
 
-- Template Studio chỉ hiện diện khi backend chạy với
-  `AUTO_REPORT_TEMPLATE_PACKS=1` **và** frontend được build với
-  `VITE_TEMPLATE_STUDIO=1`; cả hai mặc định là `0` trong `.env.example`.
+- Template Studio hiện diện sẵn trong sidebar và backend mặc định chạy với
+  `AUTO_REPORT_TEMPLATE_PACKS=1`.
+- Có thể đặt flag thành `0` rồi khởi động lại để cô lập khẩn cấp API quản trị;
+  thao tác này không ảnh hưởng Legacy Renderer.
 - Việc bật flag chỉ mở API quản trị. Template Pack **không xuất hiện trong
   Generate** và catalog trả `selectionIntegrated: false`.
 - “Active” chỉ là phiên bản được chọn bên trong catalog thử nghiệm. Legacy
@@ -46,9 +47,8 @@ DOCX mới
 ```
 
 1. Tạo Workspace Backup của Reporter Pro và lưu riêng DOCX nguồn.
-2. Đặt `AUTO_REPORT_TEMPLATE_PACKS=1` và `VITE_TEMPLATE_STUDIO=1` trong `.env`,
-   chạy lại `setup.bat` để frontend nhận build-time flag, rồi khởi động Reporter
-   Pro. Mở `/?view=template-studio`; Swagger `/docs` vẫn dùng được cho kiểm tra API.
+2. Mở **Template Studio** trong mục **Tools** ở sidebar. Có thể mở trực tiếp
+   `/?view=template-studio`; Swagger `/docs` vẫn dùng được cho kiểm tra API.
 3. Gọi `POST /api/template-packs/analyze-template`. Xem anchor trùng, token,
    heading, bảng, section, header/footer và relationship; analyzer chỉ gợi ý.
 4. Gọi `POST /api/template-packs/workspaces`, sau đó duyệt từng mapping bằng
@@ -85,8 +85,7 @@ DOCX mới
 
 | Hiện tượng | Xử lý an toàn |
 |---|---|
-| API trả 404 | Kiểm tra backend flag và khởi động lại; không sửa router |
-| Route vẫn mở dashboard | Kiểm tra frontend flag, rebuild bằng `setup.bat`, rồi mở lại URL |
+| API trả 404 | Kiểm tra `AUTO_REPORT_TEMPLATE_PACKS`; đặt `1` và khởi động lại |
 | HTTP 409 | Tải workspace/catalog mới, so sánh thay đổi rồi thử lại |
 | Workspace/checksum lỗi | Dừng publish; dùng bản export/backup đã xác minh |
 | Baseline khác DOCX đã xem | Không approve; tải lại artifact và đối chiếu SHA-256 |

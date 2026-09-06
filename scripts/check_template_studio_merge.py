@@ -73,18 +73,26 @@ def forbidden_tracked_violations(paths: Iterable[str]) -> list[str]:
 def static_contract_violations(root: Path = ROOT) -> list[str]:
     violations: list[str] = []
     env_text = (root / ".env.example").read_text(encoding="utf-8")
-    if not re.search(r"(?m)^AUTO_REPORT_TEMPLATE_PACKS=0$", env_text):
-        violations.append(".env.example must keep AUTO_REPORT_TEMPLATE_PACKS=0")
-    if not re.search(r"(?m)^VITE_TEMPLATE_STUDIO=0$", env_text):
-        violations.append(".env.example must keep VITE_TEMPLATE_STUDIO=0")
+    if not re.search(r"(?m)^AUTO_REPORT_TEMPLATE_PACKS=1$", env_text):
+        violations.append(
+            ".env.example must expose Template Studio with AUTO_REPORT_TEMPLATE_PACKS=1"
+        )
 
     config_text = (root / "apps/backend/core/config.py").read_text(encoding="utf-8")
-    if not re.search(r'os\.getenv\(\s*"AUTO_REPORT_TEMPLATE_PACKS"\s*,\s*"0"\s*\)', config_text):
-        violations.append("Backend feature-flag fallback must remain disabled (0)")
+    if not re.search(r'os\.getenv\(\s*"AUTO_REPORT_TEMPLATE_PACKS"\s*,\s*"1"\s*\)', config_text):
+        violations.append("Template Studio backend fallback must remain available (1)")
 
     app_text = (root / "apps/frontend/src/App.jsx").read_text(encoding="utf-8")
-    if "import.meta.env.VITE_TEMPLATE_STUDIO === '1'" not in app_text:
-        violations.append("Frontend Template Studio route must require an explicit 1 flag")
+    if "import.meta.env.VITE_TEMPLATE_STUDIO" in app_text:
+        violations.append("Template Studio route must not require a separate frontend build flag")
+    if "new URLSearchParams(search).get('view') === 'template-studio'" not in app_text:
+        violations.append("Frontend must retain the isolated Template Studio route")
+
+    sidebar_text = (root / "apps/frontend/src/components/layout/Sidebar.jsx").read_text(
+        encoding="utf-8"
+    )
+    if 'href="?view=template-studio"' not in sidebar_text:
+        violations.append("Reporter Pro sidebar must expose Template Studio")
 
     for relative in PROTECTED_PATHS:
         text = (root / relative).read_text(encoding="utf-8")

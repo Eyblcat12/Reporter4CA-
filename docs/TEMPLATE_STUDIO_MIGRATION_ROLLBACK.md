@@ -6,7 +6,8 @@ khôi phục catalog/workspace mà luồng report mặc định luôn sẵn sàn
 
 ## Nguyên tắc
 
-1. Feature flag mặc định phải là `AUTO_REPORT_TEMPLATE_PACKS=0`.
+1. Template Studio mặc định khả dụng với `AUTO_REPORT_TEMPLATE_PACKS=1`; giá trị
+   `0` là kill switch để cô lập API khi cần rollback.
 2. Backup trước, preview trước, kiểm tra checksum trước khi ghi.
 3. Không copy riêng `index.json`; catalog metadata và mọi `.rptpack` được tham
    chiếu là một đơn vị nhất quán.
@@ -92,7 +93,8 @@ thành công; không ghép catalog từ các backup khác thời điểm.
 ## Tiêu chí hoàn tất và bằng chứng
 
 - Default full/server/client sample tạo DOCX đạt trước và sau thao tác.
-- Feature flag trở về trạng thái đã phê duyệt; mặc định repository vẫn là `0`.
+- Feature flag trở về trạng thái đã phê duyệt; mặc định repository là `1`, còn
+  `0` chỉ được giữ khi đang cô lập sự cố.
 - Catalog seal, checkpoint và referenced pack checksums hợp lệ.
 - Không có file runtime/customer trong Git.
 - Có version/commit, thời gian, actor/reviewer, revision trước/sau, checksum backup

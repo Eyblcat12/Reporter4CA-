@@ -21,17 +21,17 @@ class TemplateStudioDocumentationTests(unittest.TestCase):
         self.assertIn("TEMPLATE_ADMIN_GUIDE.md", combined_indexes)
         self.assertIn("TEMPLATE_STUDIO_MIGRATION_ROLLBACK.md", combined_indexes)
 
-    def test_docs_preserve_default_off_and_legacy_renderer_contract(self) -> None:
+    def test_docs_preserve_available_studio_and_legacy_renderer_contract(self) -> None:
         text = "\n".join(
             path.read_text(encoding="utf-8")
             for path in (ADMIN_GUIDE, ROLLBACK_RUNBOOK, ROOT / "docs" / "TEMPLATE_PACKS.md")
         )
-        self.assertIn("AUTO_REPORT_TEMPLATE_PACKS=0", text)
+        self.assertIn("AUTO_REPORT_TEMPLATE_PACKS=1", text)
         self.assertIn("Legacy Renderer", text)
         self.assertIn("selectionIntegrated: false", text)
         self.assertRegex(text, r"(?i)(không|not).*?(dropdown|Generate)")
         env = (ROOT / ".env.example").read_text(encoding="utf-8")
-        self.assertRegex(env, r"(?m)^AUTO_REPORT_TEMPLATE_PACKS=0$")
+        self.assertRegex(env, r"(?m)^AUTO_REPORT_TEMPLATE_PACKS=1$")
 
     def test_documented_concrete_template_pack_endpoints_exist(self) -> None:
         route_text = ROUTES.read_text(encoding="utf-8")

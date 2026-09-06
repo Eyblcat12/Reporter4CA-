@@ -30,7 +30,8 @@ New DOCX
 
 Current safeguards:
 
-- `AUTO_REPORT_TEMPLATE_PACKS` defaults to `0` (disabled).
+- `AUTO_REPORT_TEMPLATE_PACKS` defaults to `1`, so the authoring Studio is part
+  of the local/team tool. Setting it to `0` is an emergency API isolation switch.
 - The legacy `ReportBuilder` and its template selection are unchanged.
 - Pack inspection is read-only and never extracts, installs or executes content.
 - A draft or partially mapped pack cannot become selectable.
@@ -125,8 +126,8 @@ development cycle.
 
 ## Experimental API boundary
 
-Both endpoints return `404` unless `AUTO_REPORT_TEMPLATE_PACKS=1` is set before
-starting the backend:
+These endpoints return `404` only when the emergency switch
+`AUTO_REPORT_TEMPLATE_PACKS=0` is set before starting the backend:
 
 - `POST /api/template-packs/analyze-template` reads a DOCX and reports content
   controls, bookmarks, tokens, duplicate-anchor conflicts, headings, tables,
@@ -172,11 +173,10 @@ first, marks anchors already owned by another semantic and requires an explicit
 `Duyệt ánh xạ` action. Draft edits are local until approval so exploratory choices
 cannot silently change workspace revision or audit history.
 
-The production build reads both feature flags from the repository-level `.env`.
-An administrator must explicitly set `AUTO_REPORT_TEMPLATE_PACKS=1` and
-`VITE_TEMPLATE_STUDIO=1`, rebuild the frontend, restart the backend, and open
-`/?view=template-studio`. Either missing flag keeps the experimental workflow
-unavailable; both defaults remain `0`.
+The production sidebar exposes **Template Studio** and its isolated route
+`/?view=template-studio`. The repository-level `.env` enables the authoring APIs
+with `AUTO_REPORT_TEMPLATE_PACKS=1` by default. This availability does not place
+any Template Pack in the production selector or connect it to Preview/Generate.
 
 ## Pack Builder and isolated version catalog
 
@@ -309,7 +309,7 @@ checksum manifest.
 The regression suite drives every fixture through read-only analysis, explicit
 100% mapping, two-pass structural validation, publishable pack construction,
 isolated Preview, and byte-for-byte Generate promotion. These fixtures authorize
-a safe default-off merge of the authoring subsystem; they do not authorize a
+the authoring subsystem to be available in the tool; they do not authorize a
 Template Pack in the production Generate selector. A customer template must
 repeat its own visual, compatibility, recovery, and performance pilot before
 that separate opt-in integration decision.

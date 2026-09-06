@@ -102,7 +102,7 @@ class ApiIntegrationTests(unittest.TestCase):
         self.assertEqual(rules.status_code, 200)
         self.assertTrue(any(rule["id"] == "PROXY_TOOL_REVIEW" for rule in rules.json()["rules"]))
 
-    def test_template_pack_inspection_is_hidden_by_default(self) -> None:
+    def test_template_pack_inspection_honors_emergency_isolation(self) -> None:
         encoded = base64.b64encode(b"not-a-template-pack").decode()
 
         with patch("api.routes.template_packs_enabled", return_value=False):
@@ -482,7 +482,7 @@ class ApiIntegrationTests(unittest.TestCase):
         self.assertEqual(invalid_query.status_code, 422)
         self.assertEqual(changed_collection_cursor.status_code, 409)
 
-    def test_template_mapping_workspace_index_is_hidden_by_default(self) -> None:
+    def test_template_mapping_workspace_index_honors_emergency_isolation(self) -> None:
         with patch("api.routes.template_packs_enabled", return_value=False):
             response = self.client.get("/api/template-packs/workspaces")
 

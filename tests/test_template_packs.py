@@ -250,11 +250,11 @@ class TemplateProfileTests(unittest.TestCase):
         self.assertTrue(result.mapping_complete)
         self.assertFalse(result.publishable)
 
-    def test_template_pack_feature_is_disabled_by_default(self) -> None:
+    def test_template_studio_is_available_by_default_and_has_emergency_switch(self) -> None:
         with patch.dict(os.environ, {}, clear=True):
-            self.assertFalse(template_packs_enabled())
-        with patch.dict(os.environ, {"AUTO_REPORT_TEMPLATE_PACKS": "1"}, clear=True):
             self.assertTrue(template_packs_enabled())
+        with patch.dict(os.environ, {"AUTO_REPORT_TEMPLATE_PACKS": "0"}, clear=True):
+            self.assertFalse(template_packs_enabled())
 
 
 class TemplatePackInspectionTests(unittest.TestCase):

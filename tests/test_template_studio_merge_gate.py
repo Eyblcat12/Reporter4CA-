@@ -68,16 +68,16 @@ class TemplateStudioMergeGateTests(unittest.TestCase):
             ),
         )
 
-    def test_static_contract_detects_enabled_default_and_runtime_import(self) -> None:
+    def test_static_contract_detects_hidden_studio_and_runtime_import(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             (root / ".env.example").write_text(
-                "AUTO_REPORT_TEMPLATE_PACKS=1\nVITE_TEMPLATE_STUDIO=1\n",
+                "AUTO_REPORT_TEMPLATE_PACKS=0\n",
                 encoding="utf-8",
             )
             config = root / "apps/backend/core/config.py"
             config.parent.mkdir(parents=True)
-            config.write_text('os.getenv("AUTO_REPORT_TEMPLATE_PACKS", "1")\n', encoding="utf-8")
+            config.write_text('os.getenv("AUTO_REPORT_TEMPLATE_PACKS", "0")\n', encoding="utf-8")
             for relative in (
                 "apps/backend/core/report_generator.py",
                 "apps/backend/core/report_orchestrator.py",
@@ -89,13 +89,19 @@ class TemplateStudioMergeGateTests(unittest.TestCase):
                 )
             app = root / "apps/frontend/src/App.jsx"
             app.parent.mkdir(parents=True)
-            app.write_text("const enabled = true;\n", encoding="utf-8")
+            app.write_text(
+                "const enabled = import.meta.env.VITE_TEMPLATE_STUDIO;\n", encoding="utf-8"
+            )
+            sidebar = root / "apps/frontend/src/components/layout/Sidebar.jsx"
+            sidebar.parent.mkdir(parents=True, exist_ok=True)
+            sidebar.write_text("const sidebar = [];\n", encoding="utf-8")
             violations = static_contract_violations(root)
-        self.assertEqual(7, len(violations))
-        self.assertTrue(any("AUTO_REPORT_TEMPLATE_PACKS=0" in item for item in violations))
-        self.assertTrue(any("VITE_TEMPLATE_STUDIO=0" in item for item in violations))
-        self.assertTrue(any("explicit 1" in item for item in violations))
-        self.assertTrue(any("fallback" in item for item in violations))
+        self.assertEqual(8, len(violations))
+        self.assertTrue(any("AUTO_REPORT_TEMPLATE_PACKS=1" in item for item in violations))
+        self.assertTrue(any("available (1)" in item for item in violations))
+        self.assertTrue(any("build flag" in item for item in violations))
+        self.assertTrue(any("isolated Template Studio route" in item for item in violations))
+        self.assertTrue(any("sidebar" in item for item in violations))
         self.assertEqual(3, sum("Legacy module" in item for item in violations))
 
 

@@ -53,4 +53,5 @@ Giữ workspace sau khi đạt để kiểm tra thủ công:
 - Gate chạy trên exact tag trong workflow release, trước khi tạo artifact/checksum.
 
 Gate này không chỉnh template, không gọi Template Pack Generate và không thay đổi
-Legacy Renderer. `AUTO_REPORT_TEMPLATE_PACKS` tiếp tục mặc định bằng `0`.
+Legacy Renderer. `AUTO_REPORT_TEMPLATE_PACKS=1` chỉ mở authoring Studio; catalog
+vẫn không được nối vào Preview/Generate.

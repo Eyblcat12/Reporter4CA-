@@ -123,10 +123,9 @@ function renderWorkbench(overrides = {}) {
 }
 
 describe('Template Studio route boundary', () => {
-  it('stays hidden unless both the build flag and isolated view are enabled', () => {
-    expect(isTemplateStudioView({ enabled: false, search: '?view=template-studio' })).toBe(false);
-    expect(isTemplateStudioView({ enabled: true, search: '' })).toBe(false);
-    expect(isTemplateStudioView({ enabled: true, search: '?view=template-studio' })).toBe(true);
+  it('opens from its isolated view without changing the default report route', () => {
+    expect(isTemplateStudioView({ search: '' })).toBe(false);
+    expect(isTemplateStudioView({ search: '?view=template-studio' })).toBe(true);
   });
 });
 
@@ -136,6 +135,10 @@ describe('Template Studio Workbench', () => {
     renderWorkbench();
 
     expect(screen.getByRole('heading', { name: 'Ánh xạ template' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Quay lại Reporter Pro' })).toHaveAttribute(
+      'href',
+      './',
+    );
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50');
     expect(screen.getByText('Luồng mặc định được bảo vệ')).toBeInTheDocument();
 
