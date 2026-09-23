@@ -48,4 +48,25 @@ không phải khôi phục dữ liệu và không dùng được cho pack đã c
 
 ## Tiến độ
 
-- Kế hoạch đã bắt đầu; kết quả thực thi cập nhật trong tài liệu này trước bàn giao.
+- Commit tính năng: `4653a83` — integration, source library/normalization, editor
+  checkpoints, sửa Tracking/mapping, test và tài liệu. Không thay templates/Legacy Renderer.
+- Commit dependency: `2144f1d` — pin Vitest 4.1.11 và dependency kiểm thử đi kèm;
+  phát hiện khi cài mới, npm audit sau cập nhật có 0 advisory tại thời điểm chạy.
+  Nguồn: https://github.com/advisories/GHSA-82fw-gwwq-j7x9.
+- Export source `4653a83`: clean-source contract đạt, không có runtime data/.env.
+- Clone ứng viên: tạo từ Git bằng `--no-hardlinks`, không copy môi trường hay data.
+  Setup -Development dùng Python Windows 3.12.13, cài hash-locked Python dependencies,
+  npm ci, chuẩn bị 6 template và production build đều đạt. pip check đạt.
+- Clone đã fast-forward lên `2144f1d`, npm ci lại: 134 frontend tests/27 files đạt
+  với Vitest 4.1.11; lint, format và production build đạt.
+- Launcher `-NoBrowser -ExitAfterReady`: production health/UI/lease đạt.
+- E2E cuối trên clone: **7/7 đạt**, gồm 4 API mock và 3 backend thật kho tạm.
+  Lượt trước có một ECONNRESET ở proxy test khi mở phiên browser; backend vẫn sống.
+  Đã chạy lại toàn suite với test server/kho tạm mới và không tái hiện. Không sửa
+  test bằng blind retry hoặc bỏ assertion; chưa kết luận nguyên nhân reset.
+- Backend gate trên clone `2144f1d`: **402/402 đạt**, 387,079 giây; Ruff check/format
+  và merge boundary đạt. Frontend **134/134**, E2E **7/7** như trên.
+- Đã đủ cổng push source; bước kế tiếp là push fast-forward và clone từ URL GitHub
+  để kiểm tra SHA/tree cùng smoke tests. Chưa có xác nhận GitHub CI từ tài liệu này.
+- Log kiểm chứng được giữ local tại artifacts/verification/github-candidate-20260923/;
+  không đưa log runtime hoặc dữ liệu test sinh ra lên GitHub.

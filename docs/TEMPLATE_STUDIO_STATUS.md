@@ -3,7 +3,7 @@
 > **Ngày cập nhật:** 23/09/2026
 > **Nhánh tích hợp:** `codex/reporter-pro-github-release`
 > **Baseline ổn định:** `github/main` tại commit `5ddfc44`
-> **Trạng thái hiện tại:** đang chốt ứng viên đồng bộ GitHub, gồm pack selection,
+> **Trạng thái hiện tại:** ứng viên đã qua clean-clone gate, gồm pack selection,
 > source library/normalization và editor checkpoints. Trạng thái push/clean-clone
 > ghi tại GITHUB_SYNC_PLAN_2026-09-23.md; không xem checklist C01–C15 là đã đóng.
 > **Feature flag:** `AUTO_REPORT_TEMPLATE_PACKS=1` theo mặc định; `0` là kill switch
@@ -15,6 +15,12 @@ Khi trạng thái thay đổi, cập nhật tài liệu này trong cùng commit 
 ## Checkpoint TS-15 — tích hợp được người dùng yêu cầu ngày 06/09/2026
 
 ### 23/09/2026 — cổng đồng bộ source
+
+Ứng viên `2144f1d` (trên `4653a83`): setup mới từ lockfile, launcher production,
+402 backend / 134 frontend / 7 E2E đạt trong clone cách ly. Bản vá Vitest 4.1.11
+được tách commit; npm audit 0 advisory tại thời điểm kiểm tra. Source runtime và
+template mặc định được giữ nguyên so với baseline. Xem hồ sơ sync cho trạng thái
+push/clone GitHub sau cùng; đây không phải phát hành prebuilt hoặc đóng C01–C15.
 
 Readiness: 402 backend tests, 134 frontend tests, Ruff/ESLint/Prettier/build đạt.
 3 E2E API thật (kho tạm) và 3 E2E report/theme đạt. E2E mock Studio từng lỗi do

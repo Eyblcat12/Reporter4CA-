@@ -2,6 +2,8 @@
 
 | Tài liệu | Nội dung |
 |---|---|
+| [GITHUB_SYNC_PLAN_2026-09-23.md](GITHUB_SYNC_PLAN_2026-09-23.md) | Kế hoạch đồng bộ GitHub, commit và bằng chứng clean-clone |
+| [READINESS_REVIEW_2026-09-23.md](READINESS_REVIEW_2026-09-23.md) | Rà soát sử dụng thực tế và giới hạn còn lại |
 | [TEMPLATE_STUDIO_STITCH_PLAN.md](TEMPLATE_STUDIO_STITCH_PLAN.md) | Kế hoạch UI/UX Stitch, ranh giới Tracking/template và các bước duyệt |
 | [USER_GUIDE.md](USER_GUIDE.md) | Luồng import, kiểm tra, cấu hình và tạo report |
 | [TEMPLATE_GUIDE.md](TEMPLATE_GUIDE.md) | Template categories, compatibility và upload |

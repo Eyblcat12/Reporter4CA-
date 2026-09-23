@@ -24,6 +24,18 @@ cáo DOCX có cấu trúc nhất quán.
 > **Phạm vi hiện tại:** tối ưu cho cá nhân và team nội bộ chạy trên Windows.
 > Reporter Pro chưa được thiết kế như dịch vụ multi-tenant triển khai toàn server.
 
+### Template Studio
+
+Studio giúp phân tích DOCX mới, duyệt mapping từ dữ liệu Tracking, chuẩn hóa trên
+bản sao, kiểm thử rồi phát hành Template Pack để chọn trong Configure. Template
+Full/Server/Client mặc định vẫn dùng luồng cũ, không tự bị thay thế.
+
+Xem [hướng dẫn từng bước](docs/TEMPLATE_STUDIO_USER_GUIDE.md) và
+[hồ sơ đồng bộ/kiểm chứng source](docs/GITHUB_SYNC_PLAN_2026-09-23.md).
+Pack khách hàng cần được duyệt trong Word trước khi dùng thật. Backup ZIP hiện tại
+chưa bao trọn kho Studio; draft recovery nhiều tab/restart vẫn cần nghiệm thu thêm.
+Clone source mới không đồng nghĩa đã có một Windows prebuilt release mới.
+
 ## Tính năng chính
 
 - **Import linh hoạt:** Excel, CSV, JSON, raw text hoặc sample; tự nhận diện và
