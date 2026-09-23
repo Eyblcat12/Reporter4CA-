@@ -3,9 +3,10 @@
 > **Ngày cập nhật:** 23/09/2026
 > **Nhánh tích hợp:** `codex/reporter-pro-github-release`
 > **Baseline ổn định:** `github/main` tại commit `5ddfc44`
-> **Trạng thái hiện tại:** ứng viên đã qua clean-clone gate, gồm pack selection,
-> source library/normalization và editor checkpoints. Trạng thái push/clean-clone
-> ghi tại GITHUB_SYNC_PLAN_2026-09-23.md; không xem checklist C01–C15 là đã đóng.
+> **Trạng thái hiện tại:** source đã push GitHub; d5b39fd đã qua GitHub CI và
+> kiểm chứng clone trực tiếp (setup/build/launcher, 61 backend smoke, 134 frontend).
+> Checkpoint source-sync-2026-09-23 bổ sung hồ sơ bàn giao; chi tiết tại
+> GITHUB_SYNC_PLAN_2026-09-23.md. Không xem checklist C01–C15 là đã đóng.
 > **Feature flag:** `AUTO_REPORT_TEMPLATE_PACKS=1` theo mặc định; `0` là kill switch
 
 Tài liệu này là nguồn trạng thái chính cho chương trình Template Studio. Mỗi lần
@@ -18,7 +19,7 @@ Khi trạng thái thay đổi, cập nhật tài liệu này trong cùng commit 
 
 Ứng viên `2144f1d` (trên `4653a83`): setup mới từ lockfile, launcher production,
 402 backend / 134 frontend / 7 E2E đạt trong clone cách ly. Bản vá Vitest 4.1.11
-được tách commit; npm audit 0 advisory tại thời điểm kiểm tra. Source runtime và
+được tách commit; npm audit 0 advisory tại thời điểm kiểm tra. Legacy Renderer và
 template mặc định được giữ nguyên so với baseline. Xem hồ sơ sync cho trạng thái
 push/clone GitHub sau cùng; đây không phải phát hành prebuilt hoặc đóng C01–C15.
 

@@ -66,7 +66,29 @@ không phải khôi phục dữ liệu và không dùng được cho pack đã c
   test bằng blind retry hoặc bỏ assertion; chưa kết luận nguyên nhân reset.
 - Backend gate trên clone `2144f1d`: **402/402 đạt**, 387,079 giây; Ruff check/format
   và merge boundary đạt. Frontend **134/134**, E2E **7/7** như trên.
-- Đã đủ cổng push source; bước kế tiếp là push fast-forward và clone từ URL GitHub
-  để kiểm tra SHA/tree cùng smoke tests. Chưa có xác nhận GitHub CI từ tài liệu này.
+- Đã push fast-forward GitHub main đến `d5b39fd`; clone mới trực tiếp từ URL GitHub
+  nhận đúng SHA này. Diff `2144f1d..d5b39fd` chỉ có README/docs, không đổi code/test.
+- GitHub CI của `d5b39fd`: **completed / success**, gồm Backend regression,
+  Frontend test and build, Main workflow E2E:
+  https://github.com/Eyblcat12/Reporter4CA-/actions/runs/35875767285.
+- Clone GitHub `github-remote-20260923`: setup -Development mới từ lockfile,
+  warmup 6 templates, production build và launcher -NoBrowser -ExitAfterReady đạt;
+  pip check đạt. Không copy venv/node_modules/dist/data từ clone ứng viên.
+- Kiểm chứng sau push trên clone GitHub: **61 backend smoke tests đạt** (API,
+  Tracking, pack runtime, draft, backup, docs), **134 frontend tests/27 files đạt**.
+  Toàn bộ 402 backend và 7 E2E đã được chạy trên clone ứng viên có cùng code/test;
+  không gán số 402 cho bộ smoke 61 của lượt sau push.
+- CScript field update bị Access denied trong môi trường test; fallback DOCX vẫn
+  đạt test. Chưa xác nhận Word visual/TOC/page-number update hoàn chỉnh.
+- Commit bàn giao cuối chỉ cập nhật tài liệu kiểm chứng và làm rõ Legacy Renderer;
+  checkpoint `source-sync-2026-09-23` đánh dấu source sync, không phải semantic
+  release/prebuilt hoặc chứng nhận enterprise. Remote SHA/tag được đối chiếu sau push.
 - Log kiểm chứng được giữ local tại artifacts/verification/github-candidate-20260923/;
   không đưa log runtime hoặc dữ liệu test sinh ra lên GitHub.
+
+## Cách nhận đúng source
+
+Clone repo, checkout `source-sync-2026-09-23` nếu cần đúng checkpoint này, chạy
+setup.bat rồi start.bat theo INSTALL.md. Nếu theo main, dùng commit/tag để ghi
+nhận phiên bản của dự án. Không copy nguyên data của máy phát triển cho thành viên.
+Các thư mục local docs/skill-drafts và runtime/customer data không thuộc bàn giao.

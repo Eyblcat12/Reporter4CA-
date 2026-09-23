@@ -1,5 +1,10 @@
 # Rà soát sẵn sàng sử dụng — 23/09/2026
 
+> Bổ sung sau rà soát: source đã được commit/push, sửa E2E mock và kiểm chứng clone
+> GitHub trong [hồ sơ đồng bộ](GITHUB_SYNC_PLAN_2026-09-23.md). Các mục “chưa commit”
+> và “mock E2E lỗi” bên dưới là kết quả trước đợt khắc phục; các giới hạn backup
+> Studio, recovery và duyệt Word vẫn còn hiệu lực.
+
 Phạm vi: working tree hiện tại trên nhánh `codex/reporter-pro-github-release`,
 HEAD `41fc19a`. Đây không phải chứng nhận bản đã push hoặc clean-clone.
 Không sửa mã nghiệp vụ, template khách hàng hoặc kho dữ liệu thật trong lượt rà soát.
