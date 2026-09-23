@@ -207,7 +207,7 @@ describe('Template Studio two-pass validation dialog', () => {
         artifactSha256: verified.validation.artifactSha256,
       }),
     );
-    expect(screen.getByText('Chưa được kết nối vào Generate mặc định')).toBeInTheDocument();
+    expect(screen.getByText(/Configure → Template/)).toBeInTheDocument();
   });
 
   it('ignores stale runs and blocks validation before mapping is complete', async () => {

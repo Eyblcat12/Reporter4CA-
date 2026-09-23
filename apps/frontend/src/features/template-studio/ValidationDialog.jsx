@@ -34,6 +34,7 @@ export default function ValidationDialog({
   onApproveBaseline,
   onPublish,
   onLoadCatalog,
+  onStageChange,
 }) {
   const [history, setHistory] = useState({ items: [], total: 0, skippedCorrupt: 0 });
   const [catalog, setCatalog] = useState(null);
@@ -60,6 +61,9 @@ export default function ValidationDialog({
   const currentRun = verifiedRun || baselineCandidate;
   const completedStep =
     installedVersion || published ? 3 : verifiedRun ? 2 : approvedBaseline ? 1 : 0;
+  useEffect(() => {
+    onStageChange?.(completedStep >= 2 ? 4 : 3);
+  }, [completedStep, onStageChange]);
   const issues = useMemo(
     () =>
       (currentRun?.validation?.issues || []).filter(
@@ -137,7 +141,8 @@ export default function ValidationDialog({
       const parsed = await readValidationFixture(file);
       setFixture(parsed);
       setFixtureId(
-        approvedBaseline?.validation?.fixtureId || file.name.replace(/\.json$/i, '').slice(0, 128),
+        approvedBaseline?.validation?.fixtureId ||
+          file.name.replace(/\.(json|csv)$/i, '').slice(0, 128),
       );
     } catch (fixtureError) {
       setFixture(null);
@@ -279,8 +284,8 @@ export default function ValidationDialog({
               <div className="ts-validation-complete">
                 <ShieldCheck size={30} />
                 <h2>Template Pack đã được phát hành</h2>
-                <p>Version v{workspace.version} đã nằm trong catalog tách biệt.</p>
-                <span>Chưa được kết nối vào Generate mặc định</span>
+                <p>Version v{workspace.version} đã sẵn sàng sử dụng.</p>
+                <span>Quay lại Reporter Pro → Configure → Template và chọn phiên bản này.</span>
               </div>
             ) : !baselineCandidate ? (
               <section className="ts-validation-task">
@@ -418,7 +423,13 @@ function FixturePicker({
 }) {
   return (
     <div className="ts-fixture-picker">
-      <input ref={fileRef} type="file" accept=".json,application/json" hidden onChange={onChoose} />
+      <input
+        ref={fileRef}
+        type="file"
+        accept=".json,.csv,application/json,text/csv"
+        hidden
+        onChange={onChoose}
+      />
       <button
         className="ts-fixture-file"
         type="button"
@@ -427,7 +438,7 @@ function FixturePicker({
       >
         <FileUp size={18} />
         <span>
-          <strong>{fixture?.filename || 'Chọn fixture JSON'}</strong>
+          <strong>{fixture?.filename || 'Chọn fixture JSON / Tracking CSV'}</strong>
           <small>
             {fixture ? `${fixture.rows.length.toLocaleString('vi-VN')} dòng` : 'Tối đa 30 MiB'}
           </small>

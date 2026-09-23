@@ -114,12 +114,21 @@ function renderWorkbench(overrides = {}) {
     onPublishValidationRun: vi.fn(),
     ...overrides,
   };
-  render(
+  const view = render(
     <ThemeProvider>
       <TemplateStudioWorkbench {...props} />
     </ThemeProvider>,
   );
-  return props;
+  return {
+    ...props,
+    rerenderWorkspace(next) {
+      view.rerender(
+        <ThemeProvider>
+          <TemplateStudioWorkbench {...props} workspace={next} />
+        </ThemeProvider>,
+      );
+    },
+  };
 }
 
 describe('Template Studio route boundary', () => {
@@ -130,6 +139,229 @@ describe('Template Studio route boundary', () => {
 });
 
 describe('Template Studio Workbench', () => {
+  it('autosaves an edit without approval and offers persisted recovery', async () => {
+    const user = userEvent.setup();
+    const draftApi = {
+      list: vi.fn().mockResolvedValue({ items: [], nextOffset: null }),
+      save: vi.fn().mockResolvedValue({ draftRevision: 1 }),
+      retire: vi.fn().mockResolvedValue({}),
+    };
+    const props = renderWorkbench({
+      draftApi,
+      workspace: { ...workspace, templateSha256: 'source' },
+    });
+    await user.click(screen.getByRole('button', { name: /Gỡ bỏ mã độc/ }));
+    await user.type(screen.getByLabelText('Cột Word cho hostname'), '1');
+    await screen.findByText('Đã lưu nháp · chưa duyệt mapping');
+    expect(draftApi.save).toHaveBeenCalledWith(
+      workspace.workspaceId,
+      expect.any(String),
+      expect.objectContaining({
+        baseRevision: 12,
+        draft: expect.objectContaining({ fields: expect.objectContaining({ hostname: '1' }) }),
+      }),
+    );
+    expect(props.onApprove).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Bỏ bản nháp', exact: true }));
+    expect(draftApi.retire).toHaveBeenCalledWith(
+      workspace.workspaceId,
+      expect.any(String),
+      expect.objectContaining({ reason: 'discarded', expectedDraftRevision: 1 }),
+    );
+    expect(screen.getByLabelText('Cột Word cho hostname')).toHaveValue('');
+  });
+
+  it('restores a stale checkpoint without rebasing or approving it', async () => {
+    const user = userEvent.setup();
+    const record = {
+      draftId: 'old',
+      sessionId: 'session',
+      draftRevision: 2,
+      baseRevision: 11,
+      templateSha256: 'source',
+      semantic: 'remediation',
+      workspaceId: workspace.workspaceId,
+      stale: true,
+      updatedAt: '2026-09-10',
+      baseline: { anchorKey: '', fields: {} },
+      draft: {
+        anchorKey: 'content_control:REPORTER_REMEDIATION',
+        fields: { hostname: '1', ip: '2', status: '3' },
+      },
+    };
+    const draftApi = {
+      list: vi.fn().mockResolvedValue({ items: [record], nextOffset: null }),
+      save: vi.fn(),
+      retire: vi.fn(),
+    };
+    const props = renderWorkbench({
+      draftApi,
+      workspace: { ...workspace, templateSha256: 'source' },
+    });
+    await user.click(screen.getByRole('button', { name: /Gỡ bỏ mã độc/ }));
+    await user.click(screen.getByText('Bản nháp đã lưu'));
+    await user.click(await screen.findByRole('button', { name: 'Khôi phục bản nháp' }));
+    expect(screen.getByLabelText('Cột Word cho hostname')).toHaveValue('1');
+    expect(screen.getByText('Bản nháp thuộc revision 11')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Duyệt ánh xạ' })).toBeDisabled();
+    expect(props.onApprove).not.toHaveBeenCalled();
+    expect(draftApi.save).not.toHaveBeenCalled();
+  });
+  it('finds remediation by its exact underscored token when another anchor is selected', async () => {
+    const user = userEvent.setup();
+    const testWorkspace = structuredClone(workspace);
+    testWorkspace.analysis.facts.tokens.push('{{REMEDIATION_REGISTER}}');
+    testWorkspace.analysis.facts.tokenOccurrences['{{REMEDIATION_REGISTER}}'] = 1;
+    for (let index = 0; index < 9; index++) {
+      testWorkspace.analysis.facts.contentControls.push({
+        value: `EXTRA_${index}`,
+        occurrences: 1,
+      });
+    }
+    renderWorkbench({ workspace: testWorkspace });
+    await user.click(screen.getByRole('button', { name: /Gỡ bỏ mã độc/ }));
+    await user.selectOptions(
+      screen.getByLabelText('Word anchor'),
+      'content_control:CUSTOM_CUSTOMER_SECTION',
+    );
+    await user.type(screen.getByLabelText('Tìm Word anchor'), '{{REMEDIATION_REGISTER}}');
+    expect(screen.getByRole('option', { name: /REMEDIATION_REGISTER/ })).toBeInTheDocument();
+  });
+  it('accepts plain column numbers and sends canonical targets to the backend', async () => {
+    const user = userEvent.setup();
+    const props = renderWorkbench();
+    await user.click(screen.getByRole('button', { name: /Gỡ bỏ mã độc/ }));
+    for (const [index, field] of ['hostname', 'ip', 'status'].entries()) {
+      await user.type(screen.getByLabelText(`Cột Word cho ${field}`), String(index + 1));
+    }
+    await user.click(screen.getByRole('button', { name: 'Duyệt ánh xạ' }));
+    expect(props.onApprove).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fields: [
+          { source: 'hostname', target: 'column:1' },
+          { source: 'ip', target: 'column:2' },
+          { source: 'status', target: 'column:3' },
+        ],
+      }),
+    );
+  });
+  it('warns before unloading an edited draft and clears the warning after reverting', async () => {
+    const user = userEvent.setup();
+    renderWorkbench();
+    const unload = () => {
+      const event = new Event('beforeunload', { cancelable: true });
+      window.dispatchEvent(event);
+      return event.defaultPrevented;
+    };
+    expect(unload()).toBe(false);
+    await user.click(screen.getByRole('button', { name: /Gỡ bỏ mã độc/ }));
+    await user.type(screen.getByLabelText('Cột Word cho hostname'), 'column:1');
+    expect(unload()).toBe(true);
+    await user.clear(screen.getByLabelText('Cột Word cho hostname'));
+    expect(unload()).toBe(false);
+  });
+
+  it('keeps the unload warning for a draft in another section', async () => {
+    const user = userEvent.setup();
+    renderWorkbench();
+    await user.click(screen.getByRole('button', { name: /Gỡ bỏ mã độc/ }));
+    await user.type(screen.getByLabelText('Cột Word cho hostname'), 'column:1');
+    await user.click(screen.getByRole('button', { name: /Tiêu đề báo cáo/ }));
+    const event = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+  });
+
+  it('keeps an edited mapping when closing and reopening or switching sections', async () => {
+    const user = userEvent.setup();
+    renderWorkbench();
+    await user.click(screen.getByRole('button', { name: /Gỡ bỏ mã độc/ }));
+    await user.type(screen.getByLabelText('Cột Word cho hostname'), 'column:4');
+    await user.click(screen.getAllByRole('button', { name: 'Đóng chi tiết ánh xạ' }).at(-1));
+    await user.click(screen.getByRole('button', { name: /Tiêu đề báo cáo/ }));
+    await user.click(screen.getByRole('button', { name: /Gỡ bỏ mã độc/ }));
+    expect(screen.getByLabelText('Cột Word cho hostname')).toHaveValue('column:4');
+  });
+
+  it('keeps stale drafts but blocks approval until the user chooses the new revision', async () => {
+    const user = userEvent.setup();
+    const props = renderWorkbench();
+    await user.click(screen.getByRole('button', { name: /Gỡ bỏ mã độc/ }));
+    await user.type(screen.getByLabelText('Cột Word cho hostname'), 'column:4');
+    props.rerenderWorkspace({ ...workspace, revision: 13 });
+    expect(screen.getByLabelText('Cột Word cho hostname')).toHaveValue('column:4');
+    expect(screen.getByText('Bản nháp thuộc revision 12')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Duyệt ánh xạ' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'Bỏ bản nháp, dùng bản mới' }));
+    expect(screen.getByLabelText('Cột Word cho hostname')).toHaveValue('');
+  });
+
+  it('does not reuse a draft for a different source document', async () => {
+    const user = userEvent.setup();
+    const props = renderWorkbench();
+    await user.click(screen.getByRole('button', { name: /Gỡ bỏ mã độc/ }));
+    await user.type(screen.getByLabelText('Cột Word cho hostname'), 'column:4');
+    props.rerenderWorkspace({ ...workspace, templateSha256: 'new-source' });
+    await user.click(screen.getByRole('button', { name: /Gỡ bỏ mã độc/ }));
+    expect(screen.getByLabelText('Cột Word cho hostname')).toHaveValue('');
+  });
+
+  it('blocks duplicate target columns before sending a mapping', async () => {
+    const user = userEvent.setup();
+    const props = renderWorkbench();
+    await user.click(screen.getByRole('button', { name: /Gỡ bỏ mã độc/ }));
+    for (const field of ['hostname', 'ip', 'status']) {
+      await user.type(screen.getByLabelText(`Cột Word cho ${field}`), 'column:1');
+    }
+    expect(screen.getByRole('button', { name: 'Duyệt ánh xạ' })).toBeDisabled();
+    expect(props.onApprove).not.toHaveBeenCalled();
+  });
+
+  it('blocks sparse columns instead of silently shifting data into earlier columns', async () => {
+    const user = userEvent.setup();
+    const props = renderWorkbench();
+    await user.click(screen.getByRole('button', { name: /Gỡ bỏ mã độc/ }));
+    for (const [index, field] of ['hostname', 'ip', 'status'].entries()) {
+      await user.type(screen.getByLabelText(`Cột Word cho ${field}`), `column:${index * 2 + 1}`);
+    }
+    expect(screen.getByRole('button', { name: 'Duyệt ánh xạ' })).toBeDisabled();
+    expect(props.onApprove).not.toHaveBeenCalled();
+  });
+
+  it('opens review after mapping and then the real validation workflow', async () => {
+    const user = userEvent.setup();
+    const complete = {
+      ...workspace,
+      status: 'mapping_complete',
+      coveragePercent: 100,
+      slots: [
+        ...workspace.slots,
+        {
+          semantic: 'remediation',
+          anchor: { kind: 'content_control', value: 'REPORTER_REMEDIATION' },
+          fields: [],
+        },
+      ],
+    };
+    renderWorkbench({
+      workspace: complete,
+      onListValidationRuns: vi.fn().mockResolvedValue({ items: [] }),
+      onLoadCatalog: vi.fn().mockResolvedValue({ packs: {}, revision: 0 }),
+    });
+    await user.click(screen.getByRole('button', { name: 'Rà soát template' }));
+    expect(screen.getByRole('heading', { name: 'Rà soát template' })).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Tạo báo cáo thử' }));
+    expect(await screen.findByRole('button', { name: 'Tạo baseline' })).toBeVisible();
+  });
+
+  it('allows reviewing incomplete mapping but blocks validation', async () => {
+    const user = userEvent.setup();
+    renderWorkbench();
+    await user.click(screen.getByRole('button', { name: 'Bước 3: Rà soát' }));
+    expect(screen.getByRole('heading', { name: 'Rà soát template' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Bước 4: Kiểm thử' })).toBeDisabled();
+    expect(screen.getByText(/Còn 1 block chưa ánh xạ/)).toBeVisible();
+  });
   it('shows a dense mapping workspace and filters blockers', async () => {
     const user = userEvent.setup();
     renderWorkbench();
@@ -164,6 +396,7 @@ describe('Template Studio Workbench', () => {
 
     await waitFor(() => expect(props.onApprove).toHaveBeenCalledTimes(1));
     expect(props.onApprove).toHaveBeenCalledWith({
+      expectedRevision: 12,
       semantic: 'remediation',
       anchor: { kind: 'content_control', value: 'REPORTER_REMEDIATION' },
       fields: [

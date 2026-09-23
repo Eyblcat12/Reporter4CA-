@@ -85,7 +85,7 @@ function MiniBar({ value, max, color }) {
   );
 }
 
-export default function Sidebar({ collapsed, onToggle }) {
+export default function Sidebar({ collapsed, onToggle, onOpenStudio }) {
   const { currentStep, setStep, counts } = useReporterContext();
   const { t } = useI18n();
 
@@ -205,6 +205,8 @@ export default function Sidebar({ collapsed, onToggle }) {
         <a
           className="sidebar__nav-item sidebar__tool-link"
           href="?view=template-studio"
+          onClick={onOpenStudio}
+          aria-label={t('templateStudio.title')}
           data-tooltip={collapsed ? t('templateStudio.title') : undefined}
         >
           <span className="sidebar__nav-icon">

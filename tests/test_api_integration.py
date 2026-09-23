@@ -102,6 +102,51 @@ class ApiIntegrationTests(unittest.TestCase):
         self.assertEqual(rules.status_code, 200)
         self.assertTrue(any(rule["id"] == "PROXY_TOOL_REVIEW" for rule in rules.json()["rules"]))
 
+    def test_studio_tracking_fixture_column_preview_then_import(self) -> None:
+        samples = Path(__file__).resolve().parents[1] / "apps" / "backend" / "samples"
+        for filename, servers, clients in (("Tracking.csv", 20, 10), ("Tracking_2.csv", 22, 28)):
+            with self.subTest(filename=filename):
+                upload = {
+                    "filename": filename,
+                    "contentBase64": base64.b64encode((samples / filename).read_bytes()).decode(),
+                }
+                preview = self.client.post("/api/column-preview", json=upload)
+                self.assertEqual(preview.status_code, 200, preview.text)
+                info = preview.json()
+                result = self.client.post(
+                    "/api/import-file",
+                    json={
+                        **upload,
+                        "defaultType": "server",
+                        "columnMapping": info["suggestedMapping"],
+                        "headerRow": info["headerRow"],
+                        "sheetName": (info.get("sheetNames") or [""])[0],
+                    },
+                )
+                self.assertEqual(result.status_code, 200, result.text)
+                data = result.json()
+                self.assertEqual(len(data["payload"]["servers"]), servers)
+                self.assertEqual(len(data["payload"]["clients"]), clients)
+
+    def test_excel_bytes_with_csv_name_use_excel_parser(self) -> None:
+        import io
+
+        import pandas as pd
+
+        output = io.BytesIO()
+        pd.DataFrame([{"hostname": "SRV-XLSX", "type": "server", "ip": "10.0.0.1"}]).to_excel(
+            output, index=False
+        )
+        response = self.client.post(
+            "/api/import-file",
+            json={
+                "filename": "disguised.csv",
+                "contentBase64": base64.b64encode(output.getvalue()).decode(),
+            },
+        )
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.json()["rows"][0]["hostname"], "SRV-XLSX")
+
     def test_template_pack_inspection_honors_emergency_isolation(self) -> None:
         encoded = base64.b64encode(b"not-a-template-pack").decode()
 

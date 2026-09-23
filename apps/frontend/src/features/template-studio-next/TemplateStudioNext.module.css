@@ -1,0 +1,47 @@
+.root {
+  height: 100dvh;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  background: #f8fafc;
+  color: #334155;
+}
+.compare {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  padding: 8px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #fff;
+  font:
+    12px/1.5 'Segoe UI',
+    sans-serif;
+}
+.compare div {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.compare span {
+  color: #64748b;
+}
+.compare a {
+  color: #4338ca;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.compare a:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 3px;
+}
+.frame {
+  border: 0;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  background: #fff;
+}

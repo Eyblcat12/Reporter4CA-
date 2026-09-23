@@ -1,14 +1,197 @@
 # Template Studio — trạng thái triển khai và hồ sơ bàn giao
 
-> **Ngày cập nhật:** 06/09/2026
+> **Ngày cập nhật:** 23/09/2026
 > **Nhánh tích hợp:** `codex/reporter-pro-github-release`
 > **Baseline ổn định:** `github/main` tại commit `5ddfc44`
-> **Trạng thái tích hợp:** authoring subsystem đã merge và hiển thị sẵn trong tool; chưa nối Generate
+> **Trạng thái hiện tại:** đang chốt ứng viên đồng bộ GitHub, gồm pack selection,
+> source library/normalization và editor checkpoints. Trạng thái push/clean-clone
+> ghi tại GITHUB_SYNC_PLAN_2026-09-23.md; không xem checklist C01–C15 là đã đóng.
 > **Feature flag:** `AUTO_REPORT_TEMPLATE_PACKS=1` theo mặc định; `0` là kill switch
 
 Tài liệu này là nguồn trạng thái chính cho chương trình Template Studio. Mỗi lần
 tiếp tục công việc phải đọc tài liệu này và `TEMPLATE_PACKS.md` trước khi sửa mã.
 Khi trạng thái thay đổi, cập nhật tài liệu này trong cùng commit với thay đổi.
+
+## Checkpoint TS-15 — tích hợp được người dùng yêu cầu ngày 06/09/2026
+
+### 23/09/2026 — cổng đồng bộ source
+
+Readiness: 402 backend tests, 134 frontend tests, Ruff/ESLint/Prettier/build đạt.
+3 E2E API thật (kho tạm) và 3 E2E report/theme đạt. E2E mock Studio từng lỗi do
+thiếu editor-drafts; đã bổ sung save/retire và xác minh thứ tự, chạy lại 1/1 đạt.
+Chưa thay Legacy Renderer/templates. Không công bố backup toàn Studio hoặc Word
+visual approval đã hoàn tất. Kế hoạch và bằng chứng clean-clone được theo dõi tại
+[GITHUB_SYNC_PLAN_2026-09-23.md](GITHUB_SYNC_PLAN_2026-09-23.md).
+
+### 10/09/2026 — C02 lifecycle checkpoint
+
+**Cập nhật UI cùng ngày:** đã nối autosave debounce 600 ms, hàng đợi save tuần tự,
+chỉ báo đã lưu sau ACK, retry giữ nguyên operation ID khi kết quả chưa xác định.
+API draft có timeout 15 giây. Có danh sách checkpoint phân trang, khôi phục theo
+source/semantic, giữ base revision gốc; draft stale không được duyệt. Bỏ draft và
+duyệt thành công đóng checkpoint qua retire, không xóa nội dung hay nâng coverage
+bằng autosave. Hướng dẫn tại TEMPLATE_STUDIO_USER_GUIDE.md.
+
+Kiểm chứng lượt UI: 134 frontend tests/27 files, ESLint và production build đạt;
+42 backend tests (draft store/API integration) đạt. Vẫn có warning React act ở
+suite lịch sử. Chưa test browser restart/hai tab với backend thật hoặc visual QA
+lượt này. Chưa đóng C02: còn conflict comparison, điều hướng nội bộ và E2E recovery.
+Không thay template mặc định/Legacy Renderer; chưa commit/push.
+
+Thêm retire API/store: marker đóng thay vì xóa nội dung, revision/operation guard,
+không hồi sinh từ save trễ; approved phải đối chiếu đúng source/anchor/fields của
+mapping đã commit dưới workspace lock. 12 test draft store/API và bộ mở rộng
+64 tests (draft/workspace/library/API integration) đạt; Ruff check/format đạt.
+Không sửa report DB/template/Legacy Renderer. Mốc backend này được nối UI ở cập
+nhật phía trên; chưa đóng C02. Chi tiết tại TEMPLATE_STUDIO_DRAFT_STORAGE_DESIGN.md.
+
+### 08/09/2026 — kế hoạch hoàn thiện tổng thể
+
+**Sửa lỗi người dùng kiểm thử (08/09, 13:52):** Studio fixture gọi column-preview
+trước import-file và chuyển suggestedMapping/header/sheet, như importer hiện có;
+parser bảng dùng định dạng thật thay vì đuôi file. API thật với samples đạt
+Tracking.csv 20 server/10 client và Tracking_2.csv 22 server/28 client.
+Ô cột nhận cả số 1/2/3 và column:N, gửi hợp đồng chuẩn lên backend; vẫn chặn
+trùng/nhảy cóc. Tìm anchor chuẩn hóa cả query và tên; token Full
+REMEDIATION_REGISTER được gợi ý chỉ khi có trong nguồn, không tự duyệt.
+31 backend import/API tests và 126 frontend tests/26 files đạt; Ruff/ESLint/build
+1.935 modules đạt. Suite frontend còn warning act lịch sử ở Dashboard/RuleManager.
+Chưa chạy browser E2E/visual Word đợt này. Không sửa sample, template hoặc Legacy
+Renderer; production frontend đã rebuild, cần khởi động lại tool để nạp backend.
+
+**C02, backend checkpoint đã được duyệt:** thêm SQLite draft riêng và GET/PUT API
+feature-gated, revision + idempotent operation journal, bounded editor payload,
+list phân trang/stale, không tăng approval/coverage. 59 backend tests liên quan
+đạt, Ruff check/format đạt; test mới vào CI. Chỉ dùng storage tạm khi test.
+UI autosave/restore và retire/discard checkpoint còn lại, chưa đóng C02.
+
+**C02, lượt tiếp theo:** thêm cảnh báo beforeunload cho RAM draft/mutation đang chạy,
+không báo dirty khi đã sửa về baseline; theo dõi cả draft ở section khác.
+20 Workbench tests, ESLint và production build 1.935 modules đạt. Chưa có checkpoint
+qua restart. [Thiết kế lưu draft riêng](TEMPLATE_STUDIO_DRAFT_STORAGE_DESIGN.md)
+đã viết để xin duyệt trước khi bổ sung storage/API. Chưa sửa database hay nguồn khách hàng.
+
+**Checkpoint triển khai sau khi duyệt:** bắt đầu phần C06 về an toàn mapping cột.
+Chặn target nhảy cóc ở approval/profile/pack gate và UI, giữ hỗ trợ đảo thứ tự đủ
+cột 1..N. Thêm regression và sửa fixture đích cột bằng tên không khớp renderer.
+86 backend tests liên quan + 18 frontend Workbench tests đạt; Ruff check/format
+đạt; ESLint và production build 1.935 modules đạt. Runtime test có cảnh báo CScript access denied, chưa xác nhận Word field/TOC
+hay visual QA. C06 chưa hoàn tất và chưa chạy full release gate.
+
+Đã lập [kế hoạch C01–C15](TEMPLATE_STUDIO_COMPLETION_PLAN.md): 15 task, 5 đợt,
+chi tiết đầu việc/phụ thuộc/ảnh hưởng/gate và điểm cần duyệt. Người dùng sau đó
+đã duyệt thực hiện; checkpoint triển khai ghi riêng ở trên. Giữ UI cũ,
+pack selection đã tích hợp và Legacy Renderer/template mặc định không đổi.
+Lượt lập kế hoạch chỉ rà soát và viết tài liệu; không chạy lại test, migrate, xóa dữ liệu
+hoặc commit/push. Kết quả frontend 119 tests bên dưới vẫn là lượt 07/09.
+
+### 07/09/2026 — chốt UI cũ, triển khai đồng bộ backend
+
+Quyết định mới nhất thay thế hướng phát triển Stitch: giữ UI Studio cũ và hoàn
+thiện chức năng thật. Xem [kế hoạch và audit](TEMPLATE_STUDIO_BACKEND_ALIGNMENT.md).
+Đợt đầu sửa request lỗi thời, phản hồi approval sau đổi workspace, summary bỏ
+mapping, AbortError và thông báo 404. Bảy test mới tập trung đạt. Chưa hoàn tất
+draft recovery, mutation timeout, chuẩn hóa/validation/publish audit hoặc E2E.
+
+Đợt 2: giữ draft trong bộ nhớ theo workspace/nguồn Word/section, bảo toàn revision
+gốc, chặn duyệt draft lỗi thời và cột trùng; ràng buộc phản hồi lưu với editor.
+Frontend 119 tests/26 files, lint và production build đạt (07/09, 13:22).
+Chưa có draft qua refresh, merge conflict hoặc đối chiếu mutation timeout;
+chưa chạy lại backend/E2E/golden đợt này. Chi tiết và giới hạn trong kế hoạch trên.
+
+### Nhánh công việc UI Stitch — 06/09/2026
+
+#### 07/09/2026 — lối vào so sánh riêng theo mẫu người dùng
+
+- `?view=template-studio-next`: UI mẫu Stitch được cách ly, chỉ dữ liệu tổng hợp;
+  không nối các thao tác save/import/publish vào backend.
+- `?view=template-studio`: Studio chức năng hiện có, thêm link so sánh UI. Chuyển
+  cùng trang giữ draft của Studio/report và một RuntimeLifecycle duy nhất.
+- Mẫu iframe sandbox không script/same-origin, CSP chặn mạng, CSS offline và
+  SVG nội bộ. Không thay module legacy renderer, template hoặc database.
+- Sáu test tập trung (navigation + isolation) đạt; toàn bộ frontend 120 test/25
+  file, lint và format:check đạt. Production build đạt 1.935 modules. Không chạy
+  lại backend/E2E trong đợt UI-only này. Visual QA và duyệt người dùng vẫn còn,
+  không coi mockup là flow hoàn chỉnh.
+- Thư mục mới: apps/frontend/src/features/template-studio-next/; xem README ở đó
+  cho phạm vi, rebuild CSS và gate tiếp theo. Bản HTML mockup cũ không bị xóa.
+
+Đã lưu [kế hoạch UI/UX Stitch](TEMPLATE_STUDIO_STITCH_PLAN.md). Người dùng đã chốt
+phương án B / Mapping Workspace, yêu cầu UI/backend chất lượng enterprise;
+còn gate duyệt prototype tương tác trước tích hợp UI. Đợt này chỉ thiết
+kế/tài liệu, không thay UI thật, importer Tracking hoặc renderer mặc định. Mục
+tiêu là thích nghi template khách hàng với Tracking hiện có, không đổi Tracking
+để khớp template. Xem nhật ký trong kế hoạch trước khi tiếp tục hoặc tạo lại screen.
+
+### Chốt phiên thư viện nguồn và hướng dẫn tự kiểm tra
+
+Phạm vi phiên này chỉ là Template Studio, theo xác nhận của người dùng; không
+thay đổi luồng tạo report legacy hoặc template khách hàng.
+
+- Gate đầy đủ `scripts/check.ps1`: **385 backend**, **116 frontend**, Ruff,
+  ESLint, Prettier và build **1.931 modules** đạt. Test tài liệu hướng dẫn mới
+  thêm sau lượt full gate cũng đạt **5/5** (thêm một test so với gate).
+- E2E **8/8** trên Chromium; bốn kịch bản API thật dùng kho tạm riêng. Không dùng
+  workspace/template khách hàng làm dữ liệu ghi thử. Các kịch bản mock còn lại
+  bảo vệ luồng báo cáo và theme đã có.
+- Đã build lại `apps/frontend/dist` để launcher dùng bản mới. Cần khởi động lại
+  tool để backend nạp SQLite library/API mới. Chưa commit/push các thay đổi phiên này.
+- Đã xem screenshot thư viện nguồn dark/light/760px, giữ bố cục Workbench hiện có.
+- [Hướng dẫn tự kiểm tra](TEMPLATE_STUDIO_USER_GUIDE.md) có bài tập fixture Full,
+  bảng anchor/cột, thư viện nguồn, chuẩn hóa và xử lý lỗi.
+- Còn bước nghiệm thu của người dùng: chọn/duyệt mapping và xem DOCX với template
+  thực tế của khách hàng. Giới hạn v1 (body paragraph/table, semantic catalog hiện có)
+  vẫn áp dụng; không tuyên bố tương thích vô điều kiện với mọi cấu trúc Word.
+
+Checkpoint này thay thế các giới hạn lịch sử “chưa nối Generate” ở bên dưới.
+Người dùng yêu cầu hoàn thiện toàn luồng và đưa Template Studio vào tool chính.
+Không thay các template khách hàng hoặc Legacy Renderer.
+
+- Sửa stepper tĩnh và nút review bị disabled ở 100%; bước Rà soát có thao tác thật,
+  hiển thị blocker, rồi chuyển vào validation/publish hiện có.
+- Workspace thực tế được kiểm tra chỉ đọc: 54 heading, 37 bảng, không có anchor,
+  coverage 0%. Không tự phê duyệt hoặc tự sửa workspace này.
+- Thêm chuẩn hóa copy-only: đọc danh sách đoạn/bảng, người dùng chọn vị trí cho
+  từng semantic và chọn chèn sau/thay nội dung. Tạo workspace và source mới; nguồn
+  cũ không đổi. Revision, vị trí trùng, thiếu semantic, anchor lồng/trùng bị chặn.
+- Validation nhận JSON hoặc Tracking CSV qua import API hiện có; rule evaluation
+  và scope server/client được áp dụng cho cả fixture và production pack.
+- `/api/templates` cung cấp các pack đã phát hành, kiểm checksum và report type.
+  Chọn `rptpack:<id>:<version>` là quyết định rõ ràng của người dùng; không tự đổi
+  template mặc định hoặc theo activeVersion của Catalog.
+- Preview/Generate dùng job, cache, history, download và cancellation hiện có.
+  Snapshot pin toàn bộ pack SHA-256 vào signature; pack sai loại, hỏng hoặc Studio
+  bị tắt sẽ bị từ chối, không fallback sang Legacy Renderer.
+- Plugin tùy chỉnh không chạy trong pack đã kiểm duyệt; UI tắt plugin khi chọn pack.
+  Template Manager cũ chỉ quản lý DOCX legacy; version pack quản lý trong Catalog.
+- Profile Renderer bảo tồn bảng prototype khi chuẩn hóa theo chế độ thay bảng
+  (header, widths, borders, row/cell properties); số cột không khớp bị chặn.
+- Kiểm thử mới: `tests.test_template_pack_runtime`, `NormalizeDialog.test.jsx`,
+  regression bước 2→3→4, fixture CSV và `e2e/studio-publish-live.spec.js`.
+- Backend E2E cô lập: `python scripts/serve_studio_test_backend.py` dùng thư mục
+  tạm, port 8011, không ghi workspace/catalog/report thử vào dữ liệu người dùng.
+  Chạy Playwright với `REPORTER_STUDIO_TEST_API=http://127.0.0.1:8011` và
+  `REPORTER_LIVE_API=http://127.0.0.1:8011` để bật hai kịch bản API thật.
+
+### Những điều không được suy diễn là đã tự động hoàn thành
+
+**Kết quả chốt 06/09/2026:** `scripts/check.ps1` đạt **381 backend tests**, **112
+frontend tests**, Ruff, ESLint, Prettier và production build **1.930 modules**.
+Chromium E2E đạt **7/7**: 3 kịch bản dùng backend thật với storage tạm (giữ phiên,
+map/review/validate/publish/production Preview→Generate, chuẩn hóa DOCX thô); 4
+kịch bản còn lại dùng fixture/mock. Test full/server/client ngoài sandbox đạt,
+không còn cảnh báo CScript access denied trong lượt đó. Mặc định/template legacy
+không có diff. Build `apps/frontend/dist` đã cập nhật, cần khởi động lại tool để
+backend nạp module mới. Chưa nghiệm thu DOCX khách hàng hiện tại vì người dùng
+chưa chọn/duyệt các vùng mapping của template đó.
+
+- Template tùy ý vẫn cần người dùng chọn vị trí/mapping và duyệt DOCX thực tế.
+  Công cụ không thể biết các đoạn tĩnh nào là dữ liệu mẫu cần bỏ nếu chưa được chỉ ra.
+- Chuẩn hóa v1 hỗ trợ đoạn/bảng cấp body; layout lồng phức tạp, text box hoặc anchor
+  trong header/footer cần chuẩn hóa trong Word trước. Không nhận là hỗ trợ mọi DOCX.
+- Kết quả test synthetic không thay cho nghiệm thu nội dung/định dạng của khách hàng.
+- Những mục bên dưới là hồ sơ lịch sử; release gate hiện tại phải được chạy lại
+  trên working tree này trước khi commit/build giao người dùng.
 
 **Checkpoint khả dụng ngày 06/09/2026:** Template Studio đã có entry riêng trong
 sidebar, authoring API mặc định bật và có nút quay lại Reporter Pro. Visual QA với
@@ -19,6 +202,34 @@ trả `selectionIntegrated: false`; không tệp template mặc định hay modu
 Renderer nào bị sửa.
 
 ## 1. Mục tiêu đã thống nhất
+
+### Hotfix điều hướng và phiên chạy — 06/09/2026
+
+- Sửa chuyển Reporter Pro ↔ Template Studio: điều hướng trong ứng dụng thay vì
+  tải lại trang; giữ provider, dữ liệu report và bản nháp Studio trong cùng tab.
+  Back/Forward đồng bộ màn hình với URL. F5/đóng tab không thuộc cam kết giữ draft này.
+- RuntimeLifecycle được giữ ở cấp ứng dụng, kể cả khi mở trực tiếp Studio;
+  chuyển màn hình không đóng phiên khiến launcher tưởng người dùng đã thoát.
+- Thêm `App.navigation.test.jsx` (giữ draft hai chiều và phiên mở trực tiếp).
+- Thêm `e2e/studio-live.spec.js`: chuyển tiếp request tới backend thật qua
+  `REPORTER_LIVE_API`, import CSV, phân tích DOCX synthetic, xác nhận heartbeat,
+  giữ dữ liệu và Back/Forward. Đã chạy đạt trên Chromium với backend cục bộ.
+  Test không tạo workspace lâu dài, không sửa template khách hàng; không phải
+  kiểm thử đóng cửa sổ CMD thực tế hoặc nối pack vào production Generate.
+- Chạy lại test này từ `apps/frontend` khi backend cục bộ đang chạy:
+
+  ```powershell
+  $env:REPORTER_LIVE_API='http://127.0.0.1:8000'
+  npm run test:e2e -- studio-live.spec.js
+  ```
+
+- Giữ nguyên ranh giới: Template Studio phục vụ authoring/test/publish;
+  chọn pack trong Generate vẫn là TS-15, chưa tích hợp.
+- Xác minh sau sửa: **378 backend tests**, **108 frontend tests**, **5 Chromium
+  E2E tests** đạt (1 E2E dùng backend thật, các E2E còn lại dùng fixture/mock).
+  Ruff, ESLint, Prettier và production build 1.929 modules đạt. Bộ backend bao
+  gồm roundtrip Tracking 30 máy/8 bất thường và Tracking đa dạng 50 máy.
+  Không suy rộng kết quả này thành bảo đảm mọi template khách hàng đều tương thích.
 
 Reporter Pro hiện tạo report tốt bằng các template mặc định đã chuẩn hóa. Hướng
 phát triển mới không thay thế luồng đó. Mục tiêu là bổ sung một đường xử lý song
@@ -957,6 +1168,28 @@ Phải dừng và xin ý kiến khi xảy ra một trong các trường hợp:
 - Release note liệt kê rõ tính năng experimental và cách tắt.
 - `apps/backend/data/`, log, cache, report sinh ra và template khách hàng không có
   trong commit.
+
+## 15. Kho template nguồn riêng — 2026-09-06
+
+- Đã thêm SQLite `apps/backend/data/template_studio/template_library.sqlite3`, tách khỏi DB báo cáo.
+- Khi phân tích thành công, lưu DOCX gốc (BLOB), SHA-256, tên file, thời gian,
+  kết quả phân tích theo report type và liên kết workspace. File trùng nội dung
+  chỉ lưu một bản; mapping workspace và catalog vẫn giữ cơ chế hiện tại.
+- API `GET /api/template-packs/library` hỗ trợ tìm tên/phân trang và bổ sung
+  workspace cũ còn đủ nguồn. `backfillSkipped` công khai số bản chưa bổ sung được.
+- API `GET /api/template-packs/library/{sha256}` trả nguồn base64 và các phân tích;
+  nguồn được kiểm tra checksum trước khi trả. Có thể dùng nguồn này tạo workspace
+  qua API hiện hữu, không tự động phê duyệt mapping hay publish.
+- Đã nối **Template mới → Thư viện nguồn**: tìm tên, phân trang, tải lại DOCX,
+  loading/empty/error/retry và cảnh báo backfill thiếu nguồn. Chọn nguồn yêu cầu
+  phân tích và duyệt mapping mới; không lấy approval cũ làm approval mới.
+- Backup báo cáo hiện tại không được coi là backup kho này. Khi sao lưu thủ công,
+  dừng tool và sao lưu toàn bộ `apps/backend/data/template_studio` (DB + nguồn + workspace + catalog).
+- Không sửa template khách hàng, Legacy Renderer hay database báo cáo.
+- Xác minh: `unittest tests.test_template_library tests.test_api_integration -q`
+  đạt 31 test tại checkpoint backend. E2E bổ sung đã đạt toàn bộ 8 kịch bản,
+  gồm 4 dùng backend thật với storage tạm; screenshot thư viện dark/light/760px đã xem.
+- Hướng dẫn mới: [TEMPLATE_STUDIO_USER_GUIDE.md](TEMPLATE_STUDIO_USER_GUIDE.md).
 
 ## 14. Tài liệu liên quan
 

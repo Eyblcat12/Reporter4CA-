@@ -2,6 +2,7 @@
 
 | Tài liệu | Nội dung |
 |---|---|
+| [TEMPLATE_STUDIO_STITCH_PLAN.md](TEMPLATE_STUDIO_STITCH_PLAN.md) | Kế hoạch UI/UX Stitch, ranh giới Tracking/template và các bước duyệt |
 | [USER_GUIDE.md](USER_GUIDE.md) | Luồng import, kiểm tra, cấu hình và tạo report |
 | [TEMPLATE_GUIDE.md](TEMPLATE_GUIDE.md) | Template categories, compatibility và upload |
 | [USER_RULE_GUIDE.md](USER_RULE_GUIDE.md) | Thêm rule để nhận diện finding từ cột Note |
@@ -10,6 +11,7 @@
 | [DEVELOPMENT.md](DEVELOPMENT.md) | Môi trường phát triển, test và CI |
 | [PROJECT_STATUS_AND_ROADMAP.md](PROJECT_STATUS_AND_ROADMAP.md) | Những gì đã hoàn thành và hướng phát triển |
 | [TEMPLATE_STUDIO_STATUS.md](TEMPLATE_STUDIO_STATUS.md) | Trạng thái, backlog, invariant và hồ sơ bàn giao Template Studio |
+| [TEMPLATE_STUDIO_USER_GUIDE.md](TEMPLATE_STUDIO_USER_GUIDE.md) | Hướng dẫn từng bước, thư viện nguồn, bảng mapping mẫu và checklist tự kiểm tra |
 | [TEMPLATE_PACKS.md](TEMPLATE_PACKS.md) | Kiến trúc, schema và API Template Pack thử nghiệm |
 | [TEMPLATE_ADMIN_GUIDE.md](TEMPLATE_ADMIN_GUIDE.md) | Quy trình analyze, mapping, review và publish an toàn |
 | [TEMPLATE_PILOT.md](TEMPLATE_PILOT.md) | Pilot manifest, evidence checklist và readiness contract |

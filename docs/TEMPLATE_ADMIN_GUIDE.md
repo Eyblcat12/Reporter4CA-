@@ -1,5 +1,10 @@
 # Template Administrator Guide
 
+> **Cập nhật 06/09/2026:** pack đã phát hành có thể chọn trực tiếp trong Configure.
+> Xem mục **Luồng tích hợp hiện tại** cuối tài liệu để dùng chuẩn hóa → mapping →
+> validation → phát hành → Preview/Generate. Các mô tả “chưa nối Generate” bên dưới
+> là ranh giới của bản trước khi người dùng duyệt tích hợp TS-15.
+
 Tài liệu này dành cho người quản trị template trong môi trường cá nhân/team. Nó
 mô tả đường thử nghiệm Template Studio; không thay đổi cách Reporter Pro tạo các
 báo cáo `full`, `server_only`, `client_only` và những report type mặc định khác.
@@ -119,3 +124,33 @@ không bật tích hợp hoặc Generate.
 Xem thêm [kiến trúc Template Pack](TEMPLATE_PACKS.md),
 [migration/rollback runbook](TEMPLATE_STUDIO_MIGRATION_ROLLBACK.md) và
 [trạng thái triển khai](TEMPLATE_STUDIO_STATUS.md).
+# Luồng tích hợp hiện tại — cập nhật 06/09/2026
+
+Hướng dẫn thao tác và bài tự kiểm tra có bảng mapping mẫu:
+[Template Studio User Guide](TEMPLATE_STUDIO_USER_GUIDE.md).
+
+1. Mở **Template Studio → Quản lý → Template mới**, chọn DOCX và report type,
+   phân tích rồi tạo workspace.
+2. Nếu Word chưa có anchor, chọn **Chuẩn hóa cấu trúc**. Với mỗi nội dung bắt buộc,
+   chọn đúng đoạn/bảng: **Chèn phía sau** giữ nguyên đoạn đã chọn; **Thay nội dung**
+   đánh dấu đoạn/bảng đó để thay bằng dữ liệu khi xuất. Bản chuẩn hóa là bản sao,
+   không ghi đè nguồn. Phải rà soát dữ liệu mẫu cũ ở ngoài các vùng đã chọn.
+3. Trong **Ánh xạ**, chọn từng block, anchor và cột (`column:1`, `column:2`, …),
+   rồi **Duyệt ánh xạ**. Mọi block bắt buộc phải đạt 100%; không có nút bỏ qua lỗi.
+4. **Rà soát template → Tạo báo cáo thử**. Chọn Tracking CSV hoặc fixture JSON.
+   Tạo baseline, tải DOCX, mở Word kiểm tra bố cục/nội dung và nhập người duyệt.
+   Chỉ duyệt khi chính bạn đã xem đúng tài liệu được tải.
+5. Chạy lượt xác minh trên cùng fixture, tải/duyệt kết quả, **Phát hành vào Catalog**.
+6. Quay lại Reporter Pro, import dữ liệu → **Cấu hình → Template báo cáo**.
+   Chọn phiên bản có hậu tố **(Studio)** đúng report type; Preview rồi Generate
+   như bình thường. Chọn lại “Template mặc định” để quay về luồng khách hàng cũ.
+
+Các pack không tự trở thành mặc định. Thay lựa chọn “active” trong Catalog không
+đổi report đang làm. Plugin tùy chỉnh tắt khi chọn pack; template lỗi hoặc checksum
+không khớp bị chặn thay vì xuất âm thầm bằng template khác.
+
+**Giới hạn chuẩn hóa:** v1 chọn đoạn/bảng cấp body. Text box, layout lồng, header/
+footer động cần chuẩn hóa trước trong Word. Bảng thay thế cần số cột khớp mapping;
+định dạng và nội dung đặc thù khách hàng luôn phải được duyệt bằng DOCX thực tế.
+
+---

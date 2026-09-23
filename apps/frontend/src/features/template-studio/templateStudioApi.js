@@ -1,5 +1,59 @@
 const API_ROOT = '/api/template-packs';
 
+export const editorDraftApi = {
+  list(workspaceId, offset = 0) {
+    return editorRequest(
+      `/workspaces/${encodeURIComponent(workspaceId)}/editor-drafts?offset=${offset}&limit=20`,
+    );
+  },
+  save(workspaceId, draftId, payload) {
+    return editorRequest(
+      `/workspaces/${encodeURIComponent(workspaceId)}/editor-drafts/${draftId}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+  retire(workspaceId, draftId, payload) {
+    return editorRequest(
+      `/workspaces/${encodeURIComponent(workspaceId)}/editor-drafts/${draftId}/retire`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
+async function editorRequest(path, options = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+  try {
+    return await request(path, { ...options, signal: controller.signal });
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new TemplateStudioApiError(
+        'Hết thời gian chờ kho bản nháp; kết quả chưa xác định. Thử lại cùng thao tác.',
+        { retryable: true },
+      );
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export function listTemplateLibrary({ q = '', offset = 0, signal } = {}) {
+  return request(`/library?${new URLSearchParams({ q, offset: String(offset), limit: '20' })}`, {
+    signal,
+  });
+}
+
+export function getTemplateLibraryEntry(digest) {
+  return request(`/library/${encodeURIComponent(digest)}`);
+}
+
 export class TemplateStudioApiError extends Error {
   constructor(message, { status = 0, retryable = false, conflict = false } = {}) {
     super(message);
@@ -17,7 +71,8 @@ async function requestResponse(path, options = {}) {
       headers: { 'Content-Type': 'application/json', ...options.headers },
       ...options,
     });
-  } catch (_error) {
+  } catch (error) {
+    if (error.name === 'AbortError') throw error;
     throw new TemplateStudioApiError('Không thể kết nối với backend Template Studio.', {
       retryable: true,
     });
@@ -32,13 +87,13 @@ async function requestResponse(path, options = {}) {
       detail = '';
     }
     const conflict = response.status === 409;
-    const disabled = response.status === 404;
+    const missing = response.status === 404;
     throw new TemplateStudioApiError(
       detail ||
         (conflict
           ? 'Workspace đã có revision mới.'
-          : disabled
-            ? 'Template Studio chưa được bật ở backend.'
+          : missing
+            ? 'Không tìm thấy tài nguyên Template Studio. Kiểm tra workspace hoặc trạng thái backend.'
             : 'Yêu cầu Template Studio không thành công.'),
       {
         status: response.status,
@@ -52,6 +107,17 @@ async function requestResponse(path, options = {}) {
 
 async function request(path, options = {}) {
   return (await requestResponse(path, options)).json();
+}
+
+export function getTemplateStructure(id) {
+  return request(`/workspaces/${encodeURIComponent(id)}/structure`);
+}
+
+export function normalizeTemplateWorkspace(id, body) {
+  return request(`/workspaces/${encodeURIComponent(id)}/normalize`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
 }
 
 export async function listTemplateWorkspaces({

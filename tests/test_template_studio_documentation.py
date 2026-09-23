@@ -11,6 +11,33 @@ ROUTES = ROOT / "apps" / "backend" / "api" / "routes.py"
 
 
 class TemplateStudioDocumentationTests(unittest.TestCase):
+    def test_user_guide_has_actionable_workflow_and_library_boundaries(self) -> None:
+        guide = ROOT / "docs" / "TEMPLATE_STUDIO_USER_GUIDE.md"
+        text = guide.read_text(encoding="utf-8")
+        for required in (
+            "Thư viện nguồn",
+            "Duyệt ánh xạ",
+            "Tạo baseline",
+            "Duyệt baseline",
+            "Chạy lượt xác minh",
+            "Phát hành vào Catalog",
+            "column:1",
+            "template_library.sqlite3",
+            "Không tự",
+            "Checklist DOCX",
+        ):
+            self.assertIn(required, text)
+        self.assertIn(guide.name, (ROOT / "docs" / "README.md").read_text(encoding="utf-8"))
+        for filename in (
+            "cross_platform_assessment_full.docx",
+            "infrastructure_review_server.docx",
+            "endpoint_assurance_client.docx",
+        ):
+            self.assertTrue(
+                (ROOT / "tests/fixtures/template_studio/synthetic_templates" / filename).is_file()
+            )
+            self.assertIn(filename, text)
+
     def test_operator_documents_exist_and_are_linked_from_indexes(self) -> None:
         self.assertTrue(ADMIN_GUIDE.is_file())
         self.assertTrue(ROLLBACK_RUNBOOK.is_file())

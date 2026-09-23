@@ -1,4 +1,5 @@
 const KIND_ORDER = { content_control: 0, bookmark: 1, token: 2 };
+const SEMANTIC_ALIASES = { remediation: ['token:{{REMEDIATION_REGISTER}}'] };
 
 export function anchorKey(anchor) {
   return `${anchor.kind}:${anchor.value}`;
@@ -44,7 +45,10 @@ export function discoverTemplateAnchors(workspace) {
 
 export function anchorOptionsForSemantic(workspace, semantic, suggestions = []) {
   const catalog = discoverTemplateAnchors(workspace);
-  const recommendationKeys = new Set(suggestions.map(anchorKey));
+  const recommendationKeys = new Set([
+    ...suggestions.map(anchorKey),
+    ...(SEMANTIC_ALIASES[semantic] || []),
+  ]);
   const used = new Map(
     (workspace?.slots || [])
       .filter((slot) => slot.semantic !== semantic && slot.anchor)

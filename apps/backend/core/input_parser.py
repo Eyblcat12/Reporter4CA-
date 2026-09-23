@@ -85,7 +85,7 @@ def parse_table_file(path: str | Path, *, default_section: str = "servers") -> d
         ) from exc
 
     table_path = Path(path)
-    suffix = table_path.suffix.lower()
+    suffix = detect_real_format(table_path)
 
     if suffix == ".csv":
         frame = pd.read_csv(table_path)

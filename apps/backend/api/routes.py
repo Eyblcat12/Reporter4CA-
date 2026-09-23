@@ -9,6 +9,7 @@ import json
 import os
 import re
 import shutil
+import sqlite3
 import sys
 import tempfile
 import time
@@ -77,6 +78,7 @@ from core.template_analyzer import (
     sanitize_filename,
     validate_docx_bytes,
 )
+from core.template_editor_drafts import EditorDraftConflict
 from core.template_mapping_workspace import (
     WORKSPACE_CURSOR_MAX_LENGTH,
     WORKSPACE_LIST_DEFAULT_LIMIT,
@@ -87,6 +89,7 @@ from core.template_mapping_workspace import (
     TemplateMappingWorkspaceIndexChanged,
     TemplateStudioService,
 )
+from core.template_normalization import normalize_template_source, structure_blocks
 from core.template_pack import MAX_PACK_SIZE, TemplatePackError, inspect_template_pack
 from core.template_pack_catalog import (
     TemplatePackCatalog,
@@ -97,6 +100,13 @@ from core.template_pack_publish import (
     TemplatePackPublishConflict,
     TemplatePackPublishError,
     TemplatePackPublishService,
+)
+from core.template_pack_runtime import (
+    PACK_PREFIX,
+    build_published_document,
+    prepare_profile_payload,
+    published_templates,
+    resolve_pack,
 )
 from core.template_profile_analyzer import analyze_profile_template
 from core.template_schema import compare_template_analysis
@@ -173,6 +183,57 @@ TEMPLATES_DIR = BUNDLE_ROOT / "templates"
 GENERATED_REPORTS_DIR = BUNDLE_ROOT / "data" / "generated"
 
 router = APIRouter(prefix="/api")
+
+
+class TemplatePlacement(BaseModel):
+    semantic: str = Field(max_length=128)
+    blockIndex: int = Field(ge=0)
+    mode: str = Field(pattern="^(after|replace)$")
+
+
+class TemplateNormalizeRequest(BaseModel):
+    expectedRevision: int = Field(ge=1)
+    placements: list[TemplatePlacement] = Field(min_length=1, max_length=100)
+
+
+@router.get("/template-packs/workspaces/{workspace_id}/structure")
+async def template_workspace_structure(workspace_id: str):
+    if not template_packs_enabled():
+        raise HTTPException(404, "Template Studio đang tắt.")
+    try:
+        workspace = _template_studio.get(workspace_id)
+        return {
+            "revision": workspace["revision"],
+            "blocks": structure_blocks(
+                _template_studio.source_bytes(workspace_id), workspace["reportType"]
+            ),
+        }
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+
+@router.post("/template-packs/workspaces/{workspace_id}/normalize", status_code=201)
+async def normalize_template_workspace(workspace_id: str, req: TemplateNormalizeRequest):
+    if not template_packs_enabled():
+        raise HTTPException(404, "Template Studio đang tắt.")
+    try:
+        workspace = _template_studio.get(workspace_id)
+        if workspace["revision"] != req.expectedRevision:
+            raise HTTPException(409, "Workspace đã thay đổi. Hãy tải lại cấu trúc.")
+        normalized = normalize_template_source(
+            _template_studio.source_bytes(workspace_id),
+            workspace["reportType"],
+            [item.model_dump() for item in req.placements],
+        )
+        return _template_studio.create(
+            normalized,
+            report_type=workspace["reportType"],
+            profile_id=workspace["profileId"][:100] + "-normalized-" + uuid.uuid4().hex[:8],
+            display_name=workspace["displayName"][:180] + " (chuẩn hóa)",
+        )
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
 
 # Store last generated report path for save-as-template
 _last_generated: dict[str, Path] = {}
@@ -482,6 +543,33 @@ def _accept_report_snapshot(
     )
     with _metric_phase(metrics, "templatePreparation"):
         template_path = req.template_path or _default_template_path(req.report_type)
+        if template_path and str(template_path).startswith(PACK_PREFIX):
+            if not template_packs_enabled():
+                raise HTTPException(409, "Template Studio đang tắt. Hãy chọn template mặc định.")
+            if plugins:
+                raise HTTPException(422, "Hãy tắt plugin khi sử dụng Template Pack đã kiểm duyệt.")
+            try:
+                pack_bytes, inspection = resolve_pack(
+                    _template_pack_catalog, template_path, req.report_type.value
+                )
+            except (ValueError, OSError) as exc:
+                raise HTTPException(
+                    422, "Template Pack không hợp lệ, không đúng loại report hoặc đã thay đổi."
+                ) from exc
+            return AcceptedReportSnapshot.create(
+                rows=req.rows,
+                metadata=metadata,
+                title=req.title,
+                organization=req.organization,
+                assessment_date=req.assessment_date,
+                report_type=req.report_type.value,
+                template_bytes=inspection.template_bytes,
+                template_key=f"{template_path}:{hashlib.sha256(pack_bytes).hexdigest()}",
+                template_source_path="",
+                plugin_manifest=plugins_manifest,
+                plugins_dir=req.plugins_dir,
+                disable_plugins=req.disable_plugins,
+            ), plugins
         _assert_template_compatible(template_path)
         template_bytes = (
             Path(template_path).read_bytes()
@@ -564,6 +652,8 @@ def _orchestrate_report_document(
 ) -> Any:
     def apply_input(payload: dict[str, Any], active_plugins: list[Any]) -> dict[str, Any]:
         with _metric_phase(metrics, "pluginInput", attributes={"count": len(active_plugins)}):
+            if accepted.template_key.startswith(PACK_PREFIX):
+                return prepare_profile_payload(payload, accepted.report_type)
             return _apply_input_plugins(payload, active_plugins)
 
     with _metric_phase(metrics, "snapshotValidation"):
@@ -572,6 +662,22 @@ def _orchestrate_report_document(
             plugins=plugins,
             validate_and_normalize=_validate_and_normalize_snapshot,
             apply_input_plugins=apply_input,
+        )
+
+    if accepted.template_key.startswith(PACK_PREFIX):
+        if not template_packs_enabled():
+            raise HTTPException(
+                409, "Template Studio đã tắt; job Template Pack không thể tiếp tục."
+            )
+        return build_published_document(
+            _template_pack_catalog,
+            prepared,
+            check_cancelled=check_cancelled,
+            on_progress=(
+                lambda value, semantic: on_build_progress(45 + round(value * 0.2), semantic)
+            )
+            if on_build_progress
+            else None,
         )
 
     def apply_document(document: Any, payload: dict[str, Any], active_plugins: list[Any]) -> Any:
@@ -1354,6 +1460,12 @@ async def list_templates():
                 "createdAt": r.get("created_at", ""),
             }
         )
+    if template_packs_enabled():
+        try:
+            templates.extend(published_templates(_template_pack_catalog))
+        except (ValueError, OSError):
+            # Catalog damage must not disable the existing customer templates.
+            pass
     return {"templates": templates}
 
 
@@ -2305,9 +2417,96 @@ async def analyze_uploaded_profile_template(req: TemplateProfileAnalyzeRequest):
         raise HTTPException(400, "Template filename must end in .docx.")
     decoded = _decode_base64(req.content_base64, max_bytes=MAX_TEMPLATE_SIZE)
     try:
-        return analyze_profile_template(decoded, req.report_type.value)
+        analysis = analyze_profile_template(decoded, req.report_type.value)
+        _template_studio.library.remember(decoded, req.filename, analysis)
+        return analysis
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
+
+
+@router.get("/template-packs/library")
+async def list_template_library(q: str = "", limit: int = 50, offset: int = 0):
+    if not template_packs_enabled():
+        raise HTTPException(404, "Template Pack API is not enabled.")
+    skipped = _template_studio.library.backfill(_template_studio)
+    return {
+        **_template_studio.library.list(query=q, limit=limit, offset=offset),
+        "backfillSkipped": skipped,
+    }
+
+
+@router.get("/template-packs/library/{digest}")
+async def get_template_library_entry(digest: str):
+    if not template_packs_enabled():
+        raise HTTPException(404, "Template Pack API is not enabled.")
+    try:
+        filename, source = _template_studio.library.source(digest)
+        return {
+            "sha256": digest,
+            "filename": filename,
+            "contentBase64": base64.b64encode(source).decode("ascii"),
+            "analyses": _template_studio.library.analyses(digest),
+        }
+    except FileNotFoundError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+
+@router.get("/template-packs/workspaces/{workspace_id}/editor-drafts")
+def list_template_editor_drafts(workspace_id: str, offset: int = 0, limit: int = 20):
+    if not template_packs_enabled():
+        raise HTTPException(404, "Template Pack API is not enabled.")
+    try:
+        workspace = _template_studio.get(workspace_id)
+        return _template_studio.editor_drafts.list(workspace, offset=offset, limit=limit)
+    except FileNotFoundError as exc:
+        raise HTTPException(404, "Workspace not found.") from exc
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except (sqlite3.Error, OSError) as exc:
+        raise HTTPException(503, "Không đọc được kho bản nháp. Thử lại sau.") from exc
+
+
+@router.put("/template-packs/workspaces/{workspace_id}/editor-drafts/{draft_id}")
+def save_template_editor_draft(workspace_id: str, draft_id: str, payload: dict[str, Any]):
+    if not template_packs_enabled():
+        raise HTTPException(404, "Template Pack API is not enabled.")
+    try:
+        workspace = _template_studio.get(workspace_id)
+        if workspace.get("archived") or workspace["status"] in {"test_passed", "published"}:
+            raise EditorDraftConflict("Workspace is read-only; clone or restore it before editing.")
+        return _template_studio.editor_drafts.save(workspace, draft_id, payload)
+    except FileNotFoundError as exc:
+        raise HTTPException(404, "Workspace not found.") from exc
+    except EditorDraftConflict as exc:
+        raise HTTPException(409, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except (sqlite3.Error, OSError) as exc:
+        raise HTTPException(
+            503, "Chưa xác nhận lưu bản nháp. Đọc lại trạng thái trước khi thử lại."
+        ) from exc
+
+
+@router.post("/template-packs/workspaces/{workspace_id}/editor-drafts/{draft_id}/retire")
+def retire_template_editor_draft(workspace_id: str, draft_id: str, payload: dict[str, Any]):
+    if not template_packs_enabled():
+        raise HTTPException(404, "Template Pack API is not enabled.")
+    try:
+        with _template_studio._lock_for(workspace_id):
+            workspace = _template_studio.get(workspace_id)
+            return _template_studio.editor_drafts.retire(workspace, draft_id, payload)
+    except FileNotFoundError as exc:
+        raise HTTPException(404, "Workspace or editor draft not found.") from exc
+    except EditorDraftConflict as exc:
+        raise HTTPException(409, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except (sqlite3.Error, OSError) as exc:
+        raise HTTPException(
+            503, "Chưa xác nhận đóng bản nháp. Đọc lại trạng thái trước khi thử lại."
+        ) from exc
 
 
 @router.post("/template-packs/workspaces", status_code=201)
@@ -2500,6 +2699,7 @@ def _prepare_template_pack_fixture(
         metadata,
         workspace["reportType"],
     )
+    payload = prepare_profile_payload(payload, workspace["reportType"])
     return PreparedReportSnapshot.create(
         accepted,
         payload=payload,

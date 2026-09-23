@@ -21,7 +21,7 @@ const stepVariants = {
 
 const STEP_KEYS = ['import', 'configure', 'export'];
 
-export default function AppShell() {
+export default function AppShell({ onOpenStudio }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [homeDismissed, setHomeDismissed] = useState(false);
   const [importEntryTab, setImportEntryTab] = useState('file');
@@ -55,6 +55,7 @@ export default function AppShell() {
   return (
     <div className="app-shell">
       <Sidebar
+        onOpenStudio={onOpenStudio}
         collapsed={sidebarCollapsed}
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
       />

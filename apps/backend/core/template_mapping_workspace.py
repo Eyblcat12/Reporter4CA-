@@ -412,6 +412,11 @@ class TemplateStudioService:
         self.root = root.resolve()
         self.workspaces = TemplateMappingWorkspaceStore(self.root / "workspaces")
         self.sources = self.root / "sources"
+        from .template_editor_drafts import EditorDraftStore
+        from .template_library import TemplateLibrary
+
+        self.library = TemplateLibrary(self.root / "template_library.sqlite3")
+        self.editor_drafts = EditorDraftStore(self.root / "editor_drafts.sqlite3")
         self._guard = threading.Lock()
         self._locks: dict[str, threading.RLock] = {}
 
@@ -434,6 +439,9 @@ class TemplateStudioService:
             actor=actor,
         )
         self._save_source(template_bytes, workspace["templateSha256"])
+        self.library.remember(
+            template_bytes, display_name + ".docx", analysis, workspace_id=workspace["workspaceId"]
+        )
         self.workspaces.save(workspace)
         return workspace
 
@@ -624,6 +632,12 @@ class TemplateStudioService:
             else:
                 raise TemplateMappingWorkspaceError("Imported workspace identifier already exists.")
             self._save_source(template_bytes, validated["templateSha256"])
+            self.library.remember(
+                template_bytes,
+                validated["displayName"] + ".docx",
+                validated["analysis"],
+                workspace_id=workspace_id,
+            )
             self.workspaces.save(validated)
             return validated
 
@@ -737,6 +751,11 @@ def _validate_field_mapping(
     if missing:
         raise TemplateMappingWorkspaceError(
             f"Missing required field mappings: {', '.join(sorted(missing))}."
+        )
+    if targets != {f"column:{index}" for index in range(1, len(required_fields) + 1)}:
+        raise TemplateMappingWorkspaceError(
+            "Các cột phải liên tục từ column:1 đến "
+            f"column:{len(required_fields)}. Chưa hỗ trợ bỏ trống cột trong bảng dữ liệu."
         )
     return normalized
 

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { AlertTriangle, Check, FileText, LoaderCircle, Upload } from 'lucide-react';
 import { readTemplateSource } from './templateSource';
+import TemplateSourceLibrary from './TemplateSourceLibrary';
 
 const REPORT_TYPES = [
   ['full', 'Full'],
@@ -17,6 +18,7 @@ function metric(value) {
 
 export default function NewTemplateWorkspace({ onCancel, onAnalyze, onCreate }) {
   const [source, setSource] = useState(null);
+  const [libraryOpen, setLibraryOpen] = useState(false);
   const [readProgress, setReadProgress] = useState(0);
   const [reportType, setReportType] = useState('full');
   const [profileId, setProfileId] = useState('');
@@ -28,9 +30,11 @@ export default function NewTemplateWorkspace({ onCancel, onAnalyze, onCreate }) 
   const fileRef = useRef(null);
 
   const profileIdValid = /^[a-z0-9][a-z0-9._-]{1,127}$/.test(profileId);
-  const canAnalyze = Boolean(source) && state !== 'reading' && state !== 'analyzing';
+  const canAnalyze =
+    Boolean(source) && !libraryOpen && state !== 'reading' && state !== 'analyzing';
   const canCreate =
     Boolean(analysis) &&
+    !libraryOpen &&
     profileIdValid &&
     Boolean(displayName.trim()) &&
     Boolean(version.trim()) &&
@@ -155,7 +159,9 @@ export default function NewTemplateWorkspace({ onCancel, onAnalyze, onCreate }) 
               className="ts-template-dropzone"
               type="button"
               onClick={() => fileRef.current?.click()}
-              disabled={state === 'reading' || state === 'analyzing' || state === 'creating'}
+              disabled={
+                libraryOpen || state === 'reading' || state === 'analyzing' || state === 'creating'
+              }
             >
               {state === 'reading' ? (
                 <LoaderCircle className="spin" size={20} />
@@ -175,6 +181,28 @@ export default function NewTemplateWorkspace({ onCancel, onAnalyze, onCreate }) 
                 </small>
               </span>
             </button>
+            <button
+              type="button"
+              className="ts-button ts-button--secondary"
+              disabled={state === 'reading' || state === 'analyzing' || state === 'creating'}
+              onClick={() => setLibraryOpen((value) => !value)}
+              aria-expanded={libraryOpen}
+            >
+              Thư viện nguồn
+            </button>
+            {libraryOpen && (
+              <TemplateSourceLibrary
+                onCancel={() => setLibraryOpen(false)}
+                onSelect={(loaded) => {
+                  setSource(loaded);
+                  setAnalysis(null);
+                  setError(null);
+                  setState('ready');
+                  setLibraryOpen(false);
+                  if (!displayName.trim()) setDisplayName(loaded.filename.replace(/\.docx$/i, ''));
+                }}
+              />
+            )}
             <label>
               Report type
               <select

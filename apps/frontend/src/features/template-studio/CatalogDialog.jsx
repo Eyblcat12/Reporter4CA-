@@ -152,7 +152,7 @@ export default function CatalogDialog({
             <h1 id="ts-catalog-title" tabIndex="-1" ref={titleRef}>
               Template Pack Catalog
             </h1>
-            <p>Kho version tách biệt, chưa kết nối luồng Generate mặc định.</p>
+            <p>Phiên bản đã phát hành có thể được chọn trong Configure → Template.</p>
           </div>
           <button
             className="ts-icon-button"

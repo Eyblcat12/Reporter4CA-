@@ -184,6 +184,40 @@ class TemplateMappingWorkspaceTests(unittest.TestCase):
                 expected_revision=1,
             )
 
+    def test_sparse_columns_are_rejected_without_changing_workspace(self) -> None:
+        workspace = create_mapping_workspace(
+            _analysis(), profile_id="customer-full", display_name="Customer Full"
+        )
+        original = copy.deepcopy(workspace)
+        semantic = "inventory.server"
+        index = REPORT_REQUIREMENTS["full"].index(semantic)
+        fields = _fields(semantic)
+        fields[-1]["target"] = "column:999"
+        with self.assertRaisesRegex(TemplateMappingWorkspaceError, "liên tục"):
+            approve_semantic_mapping(
+                workspace,
+                semantic=semantic,
+                anchor={"kind": "content_control", "value": f"REPORTER_SLOT_{index}"},
+                fields=fields,
+                expected_revision=1,
+            )
+        self.assertEqual(workspace, original)
+
+    def test_profile_gate_rejects_sparse_columns_but_accepts_reordered_columns(self) -> None:
+        workspace = create_mapping_workspace(
+            _analysis(), profile_id="customer-full", display_name="Customer Full"
+        )
+        for index, semantic in enumerate(REPORT_REQUIREMENTS["full"]):
+            workspace = _approve(workspace, semantic, index)
+        profile = workspace_profile(workspace)
+        slot = next(item for item in profile["slots"] if item["semantic"] == "inventory.server")
+        targets = [field["target"] for field in slot["fields"]][::-1]
+        for field, target in zip(slot["fields"], targets, strict=True):
+            field["target"] = target
+        self.assertTrue(validate_template_profile(profile).mapping_complete)
+        slot["fields"][-1]["target"] = "column:999"
+        self.assertFalse(validate_template_profile(profile).mapping_complete)
+
     def test_complete_mapping_reaches_one_hundred_but_is_not_publishable(self) -> None:
         workspace = create_mapping_workspace(
             _analysis(), profile_id="customer-full", display_name="Customer Full"

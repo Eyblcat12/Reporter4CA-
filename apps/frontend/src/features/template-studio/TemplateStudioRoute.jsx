@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import TemplateStudioWorkbench from './TemplateStudioWorkbench';
 import {
+  editorDraftApi,
   applyTemplateWorkspaceRetention,
   approveTemplateMapping,
   approveTemplateValidationBaseline,
@@ -27,15 +28,18 @@ import {
 } from './templateStudioApi';
 import './TemplateStudio.css';
 
-export default function TemplateStudioRoute() {
+export default function TemplateStudioRoute({ onReturn }) {
   const [workspaces, setWorkspaces] = useState([]);
   const [archivedWorkspaces, setArchivedWorkspaces] = useState([]);
   const [skippedCorrupt, setSkippedCorrupt] = useState(0);
   const [workspace, setWorkspace] = useState(null);
   const [status, setStatus] = useState('loading');
   const [error, setError] = useState(null);
+  const readGeneration = useRef(0);
 
   const load = useCallback(async (preferredId, signal) => {
+    const generation = ++readGeneration.current;
+    const isCurrent = () => generation === readGeneration.current && !signal?.aborted;
     setStatus('loading');
     setError(null);
     try {
@@ -43,7 +47,11 @@ export default function TemplateStudioRoute() {
         listAllTemplateWorkspaces({ signal, archived: false }),
         listAllTemplateWorkspaces({ signal, archived: true }),
       ]);
+      if (!isCurrent()) return;
       const items = activePage.items || [];
+      const selected = items.find((item) => item.workspaceId === preferredId) || items[0];
+      const loaded = selected ? await getTemplateWorkspace(selected.workspaceId, { signal }) : null;
+      if (!isCurrent()) return;
       setWorkspaces(items);
       setArchivedWorkspaces(archivedPage.items || []);
       setSkippedCorrupt(Math.max(activePage.skippedCorrupt || 0, archivedPage.skippedCorrupt || 0));
@@ -52,12 +60,10 @@ export default function TemplateStudioRoute() {
         setStatus('empty');
         return;
       }
-      const selected = items.find((item) => item.workspaceId === preferredId) || items[0];
-      const loaded = await getTemplateWorkspace(selected.workspaceId, { signal });
       setWorkspace(loaded);
       setStatus('ready');
     } catch (loadError) {
-      if (loadError.name === 'AbortError') return;
+      if (!isCurrent() || loadError.name === 'AbortError') return;
       setError(loadError);
       setStatus('error');
     }
@@ -66,31 +72,45 @@ export default function TemplateStudioRoute() {
   useEffect(() => {
     const controller = new AbortController();
     load(undefined, controller.signal);
-    return () => controller.abort();
+    return () => {
+      readGeneration.current += 1;
+      controller.abort();
+    };
   }, [load]);
 
   async function selectWorkspace(workspaceId) {
+    const generation = ++readGeneration.current;
     setStatus('loading-workspace');
     setError(null);
     try {
-      setWorkspace(await getTemplateWorkspace(workspaceId));
+      const loaded = await getTemplateWorkspace(workspaceId);
+      if (generation !== readGeneration.current) return;
+      setWorkspace(loaded);
       setStatus('ready');
     } catch (loadError) {
+      if (generation !== readGeneration.current || loadError.name === 'AbortError') return;
       setError(loadError);
       setStatus('error');
     }
   }
 
-  async function approve({ semantic, anchor, fields }) {
+  async function approve({ semantic, anchor, fields, expectedRevision }) {
+    const generation = readGeneration.current;
     const updated = await approveTemplateMapping(workspace.workspaceId, semantic, {
       anchor,
       fields,
-      expectedRevision: workspace.revision,
+      expectedRevision: expectedRevision ?? workspace.revision,
     });
-    setWorkspace(updated);
+    if (generation === readGeneration.current) {
+      setWorkspace((current) =>
+        current?.workspaceId === updated.workspaceId && current.revision <= updated.revision
+          ? updated
+          : current,
+      );
+    }
     setWorkspaces((items) =>
       items.map((item) =>
-        item.workspaceId === updated.workspaceId
+        item.workspaceId === updated.workspaceId && item.revision <= updated.revision
           ? {
               ...item,
               revision: updated.revision,
@@ -104,12 +124,31 @@ export default function TemplateStudioRoute() {
   }
 
   async function remove(semantic) {
+    const generation = readGeneration.current;
     const updated = await removeTemplateMapping(
       workspace.workspaceId,
       semantic,
       workspace.revision,
     );
-    setWorkspace(updated);
+    if (generation === readGeneration.current) {
+      setWorkspace((current) =>
+        current?.workspaceId === updated.workspaceId && current.revision <= updated.revision
+          ? updated
+          : current,
+      );
+    }
+    setWorkspaces((items) =>
+      items.map((item) =>
+        item.workspaceId === updated.workspaceId && item.revision <= updated.revision
+          ? {
+              ...item,
+              revision: updated.revision,
+              coveragePercent: updated.coveragePercent,
+              status: updated.status,
+            }
+          : item,
+      ),
+    );
     return updated;
   }
 
@@ -156,6 +195,9 @@ export default function TemplateStudioRoute() {
 
   return (
     <TemplateStudioWorkbench
+      draftApi={editorDraftApi}
+      onReturn={onReturn}
+      onNormalized={(created) => load(created.workspaceId)}
       status={status}
       error={error}
       workspaces={workspaces}

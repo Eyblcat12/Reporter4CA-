@@ -32,7 +32,7 @@ const REPORT_TYPES = [
 
 export default function TemplateManager({ onClose }) {
   const {
-    templates,
+    templates: allTemplates,
     uploadTemplate,
     updateTemplate,
     deleteTemplate,
@@ -42,6 +42,7 @@ export default function TemplateManager({ onClose }) {
     fetchReportHistory,
     reportHistory,
   } = useReporterContext();
+  const templates = allTemplates.filter((template) => template.templateMode !== 'profile');
   const { t } = useI18n();
   const fileInputRef = useRef(null);
   const [dragOver, setDragOver] = useState(false);

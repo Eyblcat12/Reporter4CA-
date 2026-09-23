@@ -62,6 +62,8 @@ if (-not $SkipBackend) {
         tests.test_template_categories `
         tests.test_template_blueprint `
         tests.test_template_mapping_workspace `
+        tests.test_template_library `
+        tests.test_template_editor_drafts `
         tests.test_template_pack_catalog `
         tests.test_template_pack_fuzz_harness `
         tests.test_template_pilot `
@@ -70,6 +72,7 @@ if (-not $SkipBackend) {
         tests.test_template_pack_preview `
         tests.test_template_pack_validation `
         tests.test_template_packs `
+        tests.test_template_pack_runtime `
         tests.test_template_studio_prototype `
         tests.test_template_workspace_retention `
         tests.test_template_workspace_transfer `

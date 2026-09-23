@@ -35,7 +35,11 @@ export default function ReportSettings({ onManageTemplates }) {
   }, [fetchTemplates]);
 
   const update = (field, value) => {
-    setReportSettings({ ...reportSettings, [field]: value });
+    setReportSettings({
+      ...reportSettings,
+      [field]: value,
+      ...(field === 'templatePath' && value.startsWith('rptpack:') ? { disablePlugins: true } : {}),
+    });
   };
 
   const updateIncident = (field, value) => {
@@ -249,6 +253,8 @@ export default function ReportSettings({ onManageTemplates }) {
         <div className="rs__input-wrap rs__select-wrap">
           <select
             className="rs__input rs__select"
+            aria-label="Template báo cáo"
+            onFocus={fetchTemplates}
             value={reportSettings.templatePath || ''}
             onChange={(e) => update('templatePath', e.target.value)}
           >

@@ -61,11 +61,44 @@ test('Template Studio analyzes before creating an isolated workspace', async ({ 
   let created = false;
   let currentWorkspace = workspace;
   const mutations = [];
+  const checkpoints = new Map();
+  const draftEvents = [];
+
+  await page.route('**/api/reports/history*', (route) => route.fulfill({ json: { reports: [] } }));
+  await page.route('**/api/dashboard/summary*', (route) =>
+    route.fulfill({ json: { days: 30, metrics: {}, series: [], recent: [] } }),
+  );
 
   await page.route('**/api/template-packs/**', async (route) => {
     const request = route.request();
     const url = new URL(request.url());
     const path = url.pathname;
+    if (path.includes('/editor-drafts')) {
+      const draftId = path.split('/editor-drafts/')[1]?.split('/')[0];
+      if (request.method() === 'GET')
+        return route.fulfill({ json: { items: [...checkpoints.values()], nextOffset: null } });
+      const body = request.postDataJSON();
+      if (request.method() === 'PUT') {
+        const previous = checkpoints.get(draftId);
+        expect(body.expectedDraftRevision).toBe(previous?.draftRevision || 0);
+        const saved = {
+          ...body,
+          draftId,
+          workspaceId: workspace.workspaceId,
+          draftRevision: body.expectedDraftRevision + 1,
+        };
+        checkpoints.set(draftId, saved);
+        draftEvents.push('save');
+        return route.fulfill({ json: saved });
+      }
+      if (request.method() === 'POST' && path.endsWith('/retire')) {
+        expect(body.reason).toBe('approved');
+        expect(body.expectedDraftRevision).toBe(checkpoints.get(draftId)?.draftRevision);
+        checkpoints.delete(draftId);
+        draftEvents.push('retire');
+        return route.fulfill({ json: { retired: true } });
+      }
+    }
     if (request.method() === 'GET' && path === '/api/template-packs/workspaces') {
       const archived = url.searchParams.get('archived') === 'true';
       return route.fulfill({
@@ -90,6 +123,7 @@ test('Template Studio analyzes before creating an isolated workspace', async ({ 
       return route.fulfill({ status: 201, json: workspace });
     }
     if (request.method() === 'PUT' && path.endsWith('/mappings/report.title')) {
+      expect(draftEvents).toContain('save');
       const body = request.postDataJSON();
       mutations.push({ kind: 'map', body });
       currentWorkspace = {
@@ -125,7 +159,7 @@ test('Template Studio analyzes before creating an isolated workspace', async ({ 
   await expect(page.getByText('customer-full.docx', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Tạo workspace' })).toBeDisabled();
 
-  await page.getByRole('button', { name: 'Phân tích' }).click();
+  await page.getByRole('button', { name: 'Phân tích', exact: true }).click();
   await expect(page.getByText('Đã phân tích an toàn')).toBeVisible();
   await expect(page.getByText('0%')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Tạo workspace' })).toBeEnabled();
@@ -144,6 +178,8 @@ test('Template Studio analyzes before creating an isolated workspace', async ({ 
     .selectOption('content_control:CUSTOM_CUSTOMER_TITLE');
   await page.getByRole('button', { name: 'Duyệt ánh xạ' }).click();
   await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '100');
+  await expect.poll(() => draftEvents.at(-1)).toBe('retire');
+  expect(checkpoints.size).toBe(0);
 
   expect(mutations.map((item) => item.kind)).toEqual(['analyze', 'create', 'map']);
   expect(mutations[0].body).toMatchObject({

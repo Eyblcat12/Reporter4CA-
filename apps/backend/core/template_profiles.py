@@ -428,7 +428,19 @@ def _validate_fields(
                 f"Missing required field mappings: {', '.join(missing)}.",
             )
         )
-    return not missing
+    expected_targets = {
+        f"column:{index}" for index in range(1, len(requirement.required_fields) + 1)
+    }
+    columns_valid = targets == expected_targets
+    if not columns_valid:
+        errors.append(
+            ProfileIssue(
+                "fields.columns_noncontiguous",
+                f"{slot_path}.fields",
+                "Table columns must be contiguous from column:1 with no unmapped columns.",
+            )
+        )
+    return not missing and columns_valid
 
 
 def _text(value: Any) -> str:

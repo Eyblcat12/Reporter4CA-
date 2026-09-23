@@ -44,7 +44,7 @@ artifacts/template-backups/
 artifacts/template-pack-fuzz/
 artifacts/verification/
 artifacts/releases/
-apps/backend/data/cache/
+apps/backend/data/
 
 # ─── Database ────────────────────────────────────────────────────────────────
 *.db
@@ -84,6 +84,7 @@ Desktop.ini
 *.log
 logs/
 .verification/
+.verification-*/
 
 # ─── Generated Reports (output) ─────────────────────────────────────────────
 reporter-report-fixed.docx

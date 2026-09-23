@@ -21,6 +21,25 @@ const workspace = {
 };
 
 describe('Template Studio anchor catalog', () => {
+  it('recommends the discovered remediation token without inventing missing anchors', () => {
+    expect(
+      anchorOptionsForSemantic(workspace, 'remediation').options.some(
+        (a) => a.value === '{{REMEDIATION_REGISTER}}',
+      ),
+    ).toBe(false);
+    const source = {
+      analysis: {
+        facts: {
+          tokens: ['{{REMEDIATION_REGISTER}}'],
+          tokenOccurrences: { '{{REMEDIATION_REGISTER}}': 1 },
+        },
+      },
+    };
+    expect(anchorOptionsForSemantic(source, 'remediation').options[0]).toMatchObject({
+      value: '{{REMEDIATION_REGISTER}}',
+      recommended: true,
+    });
+  });
   it('offers every unique analyzed anchor and excludes ambiguous anchors', () => {
     expect(discoverTemplateAnchors(workspace)).toEqual({
       items: [

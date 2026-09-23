@@ -5,6 +5,28 @@ Mọi thay đổi đáng chú ý của Reporter Pro được ghi tại đây. D�
 
 ## [Unreleased]
 
+### Template Studio
+
+- Autosave mapping vào SQLite checkpoint riêng; khôi phục có chủ ý, revision/source
+  guards, retry idempotent và retire sau duyệt/bỏ nháp. Không tự nâng coverage.
+- Import Tracking nhận dạng bytes thực (kể cả XLSX mang đuôi CSV), truyền mapping/
+  header/sheet thống nhất; tìm anchor và mapping cột số có kiểm thử hồi quy.
+- E2E authoring kiểm tra save → approve → retire; runtime data và build kiểm chứng
+  được loại khỏi Git. Xem kế hoạch đồng bộ và giới hạn readiness ngày 23/09/2026.
+
+- Chuyển màn hình giữ draft/report và phiên launcher; sửa bước Rà soát bị khóa.
+- Chuẩn hóa DOCX chưa có anchor thành bản sao theo vị trí đoạn/bảng do người dùng chọn.
+- Validation nhận Tracking CSV; pack đã phát hành có thể chọn rõ phiên bản trong Configure.
+- Profile Renderer dùng pipeline job Preview/Generate, checksum snapshot, history,
+  download và cache promotion; không thay Legacy Renderer hoặc template mặc định.
+- Bảng prototype giữ header/width/border và định dạng cell; chặn cấu trúc ô gộp
+  hoặc số cột không phù hợp thay vì âm thầm làm mất dữ liệu.
+- Bổ sung API/browser regression từ mapping đến phát hành và xuất báo cáo thật.
+- Thư viện nguồn Template Studio có SQLite riêng, lưu DOCX và phân tích theo
+  checksum; tìm kiếm/phân trang/chọn lại nguồn trong màn hình tạo workspace.
+- Hướng dẫn tự kiểm tra Studio có bảng mapping cho fixture Full, quy trình hai
+  lượt và checklist DOCX; không coi test tổng hợp là duyệt template khách hàng.
+
 ## [2.2.1] - 2026-08-17
 
 ### Fixed

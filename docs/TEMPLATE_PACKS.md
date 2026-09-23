@@ -1,5 +1,11 @@
 # Template Packs (experimental architecture)
 
+> Update 06/09/2026: the user has authorized explicit production pack selection.
+> Published packs are now offered in Configure and dispatched to Profile Renderer
+> by the API integration layer; the legacy renderer and default templates remain
+> unchanged. The domain-only descriptions below document earlier checkpoints.
+> See the TS-15 checkpoint in TEMPLATE_STUDIO_STATUS.md and TEMPLATE_ADMIN_GUIDE.md.
+
 > Trạng thái triển khai, commit hiện tại, backlog và checklist bàn giao được cập
 > nhật tại [TEMPLATE_STUDIO_STATUS.md](TEMPLATE_STUDIO_STATUS.md). Đọc tài liệu đó
 > trước khi tiếp tục sửa subsystem này.

@@ -46,8 +46,8 @@ def _complete_profile(report_type: str = "full") -> dict:
                 },
                 "repeat": "once",
                 "fields": [
-                    {"source": field, "target": f"column:{field}"}
-                    for field in requirement.required_fields
+                    {"source": field, "target": f"column:{index}"}
+                    for index, field in enumerate(requirement.required_fields, 1)
                 ],
             }
         )

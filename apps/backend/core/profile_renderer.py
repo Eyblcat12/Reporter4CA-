@@ -10,6 +10,7 @@ import hashlib
 import io
 import os
 import tempfile
+from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Iterable
@@ -504,14 +505,69 @@ def _replace_anchor_text(target: _AnchorTarget, text: str) -> None:
         _replace_bookmark_content(target.element, text)
     else:
         content = _sdt_content(target.element)
+        prototype = next(iter(content.iter(qn("w:p"))), None)
+        paragraph = _paragraph_xml(text)
+        if prototype is not None and prototype.find(qn("w:pPr")) is not None:
+            paragraph.insert(0, deepcopy(prototype.find(qn("w:pPr"))))
+        run_properties = (
+            next(iter(prototype.iter(qn("w:rPr"))), None) if prototype is not None else None
+        )
+        if run_properties is not None:
+            paragraph.find(qn("w:r")).insert(0, deepcopy(run_properties))
         for child in list(content):
             content.remove(child)
-        content.append(_paragraph_xml(text))
+        content.append(paragraph)
 
 
 def _replace_anchor_blocks(target: _AnchorTarget, elements: list[Any]) -> None:
     if target.kind == "content_control":
         content = _sdt_content(target.element)
+        prototype = next(iter(content.iter(qn("w:tbl"))), None)
+        generated_tables = [node for node in elements if node.tag == qn("w:tbl")]
+        if prototype is not None and len(generated_tables) == 1:
+            if any(node.tag in {qn("w:gridSpan"), qn("w:vMerge")} for node in prototype.iter()):
+                raise ProfileRendererError(
+                    "Bảng mẫu có ô gộp. Hãy chuẩn hóa bảng dữ liệu thành các cột độc lập trước khi xuất."
+                )
+            source_table = Table(prototype, None)
+            generated_table = Table(generated_tables[0], None)
+            if len(source_table.columns) != len(generated_table.columns):
+                raise ProfileRendererError(
+                    "Số cột bảng gốc không khớp mapping. Chuẩn hóa bảng hoặc chọn vị trí chèn khác."
+                )
+            # Retain template widths, borders, header labels and row/cell styling.
+            replacement = deepcopy(prototype)
+            target_table = Table(replacement, None)
+            header = target_table.rows[0]._tr
+            row_prototype = deepcopy(
+                target_table.rows[1]._tr if len(target_table.rows) > 1 else header
+            )
+            for row in list(target_table.rows)[1:]:
+                replacement.remove(row._tr)
+            for row in list(generated_table.rows)[1:]:
+                copied = deepcopy(row_prototype)
+                replacement.append(copied)
+                for cell, value in zip(
+                    target_table.rows[-1].cells, [c.text for c in row.cells], strict=True
+                ):
+                    first = cell.paragraphs[0]
+                    font_properties = next(iter(first._p.iter(qn("w:rPr"))), None)
+                    font_properties = (
+                        deepcopy(font_properties) if font_properties is not None else None
+                    )
+                    first.text = value
+                    if font_properties is not None and first.runs:
+                        first.runs[0]._r.insert(0, font_properties)
+                    for extra in list(cell.paragraphs)[1:]:
+                        extra._p.getparent().remove(extra._p)
+            generated = generated_tables[0]
+            caption = generated.find(".//" + qn("w:tblCaption"))
+            if caption is not None:
+                properties = replacement.find(qn("w:tblPr"))
+                for old in list(properties.findall(qn("w:tblCaption"))):
+                    properties.remove(old)
+                properties.append(deepcopy(caption))
+            elements[elements.index(generated)] = replacement
         for child in list(content):
             content.remove(child)
         for element in elements:
