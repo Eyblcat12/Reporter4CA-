@@ -5,6 +5,13 @@ Mọi thay đổi đáng chú ý của Reporter Pro được ghi tại đây. D�
 
 ## [Unreleased]
 
+### Security
+
+- Pin Vitest 4.1.11 và cập nhật lockfile nhóm dependency kiểm thử để xử lý
+  [GHSA-82fw-gwwq-j7x9](https://github.com/advisories/GHSA-82fw-gwwq-j7x9).
+  Không thay dependency runtime tạo báo cáo; npm audit lockfile không còn advisory
+  được biết tại thời điểm kiểm tra 23/09/2026 (không phải bảo đảm tuyệt đối an toàn).
+
 ### Template Studio
 
 - Autosave mapping vào SQLite checkpoint riêng; khôi phục có chủ ý, revision/source
