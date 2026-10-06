@@ -25,6 +25,149 @@ from core.workspace_backup import (  # noqa: E402
 
 
 class WorkspaceBackupTests(unittest.TestCase):
+    def test_restored_studio_can_reopen_library_workspace_and_editor_draft(self) -> None:
+        from core.template_mapping_workspace import TemplateStudioService
+
+        from tests.test_profile_renderer import _template_for
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            database = Database(root / "reporter.db")
+            database.initialize()
+            self.addCleanup(database.close)
+            studio = TemplateStudioService(root / "studio")
+            source, _ = _template_for("full")
+            workspace = studio.create(
+                source, report_type="full", profile_id="restore-test", display_name="Restore test"
+            )
+            payload = {
+                "sessionId": "c" * 32,
+                "operationId": "d" * 32,
+                "expectedDraftRevision": 0,
+                "baseRevision": workspace["revision"],
+                "templateSha256": workspace["templateSha256"],
+                "semantic": "remediation",
+                "draft": {"anchorKey": "", "fields": {"hostname": "column:"}},
+                "baseline": {"anchorKey": "", "fields": {}},
+            }
+            studio.editor_drafts.save(workspace, "e" * 32, payload)
+            archive = root / "backup.zip"
+            create_workspace_backup(database, root / "templates", archive, studio_dir=studio.root)
+            preview = inspect_workspace_backup(archive, database, root / "templates")
+            # Restore into a fresh location, as on another installation.
+            destination = root / "recovered"
+            restore_workspace_backup(
+                archive,
+                database,
+                root / "templates",
+                confirmation_token=preview["confirmationToken"],
+                studio_dir=destination,
+            )
+            reopened = TemplateStudioService(destination)
+            self.assertEqual(reopened.get(workspace["workspaceId"]), workspace)
+            self.assertEqual(reopened.library.source(workspace["templateSha256"])[1], source)
+            self.assertEqual(
+                reopened.editor_drafts.list(workspace)["items"][0]["draft"], payload["draft"]
+            )
+            database.close()
+
+    def test_empty_studio_is_a_valid_complete_snapshot(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            database = Database(root / "reporter.db")
+            database.initialize()
+            archive = root / "empty.zip"
+            create_workspace_backup(
+                database, root / "templates", archive, studio_dir=root / "studio"
+            )
+            preview = inspect_workspace_backup(archive, database, root / "templates")
+            restore_workspace_backup(
+                archive,
+                database,
+                root / "templates",
+                confirmation_token=preview["confirmationToken"],
+                studio_dir=root / "studio",
+            )
+            self.assertTrue((root / "studio").is_dir())
+            database.close()
+
+    def test_studio_snapshot_restores_sqlite_sources_and_rolls_back_together(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            database = Database(root / "reporter.db")
+            database.initialize()
+            studio = root / "studio"
+            studio.mkdir()
+            original = b'{"draft":"original"}'
+            (studio / "workspace.json").write_bytes(original)
+            with sqlite3.connect(studio / "editor_drafts.sqlite3") as connection:
+                connection.execute("CREATE TABLE evidence(value TEXT)")
+                connection.execute("INSERT INTO evidence VALUES ('original')")
+            connection.close()
+            archive = root / "backup.zip"
+            manifest = create_workspace_backup(
+                database, root / "templates", archive, studio_dir=studio
+            )
+            self.assertEqual(manifest["schemaVersion"], 2)
+            preview = inspect_workspace_backup(archive, database, root / "templates")
+            self.assertTrue(preview["studioIncluded"])
+            self.assertEqual(preview["studioFileCount"], 2)
+            (studio / "workspace.json").write_bytes(b"changed")
+            (studio / "new.json").write_bytes(b"new")
+            with patch(
+                "core.workspace_backup._validate_live_restore",
+                side_effect=RuntimeError("disk failure"),
+            ):
+                with self.assertRaisesRegex(WorkspaceBackupError, "rolled back"):
+                    restore_workspace_backup(
+                        archive,
+                        database,
+                        root / "templates",
+                        confirmation_token=preview["confirmationToken"],
+                        studio_dir=studio,
+                    )
+            self.assertEqual((studio / "workspace.json").read_bytes(), b"changed")
+            self.assertTrue((studio / "new.json").exists())
+            restored = restore_workspace_backup(
+                archive,
+                database,
+                root / "templates",
+                confirmation_token=preview["confirmationToken"],
+                studio_dir=studio,
+            )
+            self.assertTrue(restored["studioRestored"])
+            self.assertEqual((studio / "workspace.json").read_bytes(), original)
+            self.assertFalse((studio / "new.json").exists())
+            with sqlite3.connect(studio / "editor_drafts.sqlite3") as connection:
+                self.assertEqual(
+                    connection.execute("SELECT value FROM evidence").fetchone()[0], "original"
+                )
+            connection.close()
+            database.close()
+
+    def test_legacy_restore_preserves_existing_studio(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            database = Database(root / "reporter.db")
+            database.initialize()
+            archive = root / "legacy.zip"
+            create_workspace_backup(database, root / "templates", archive)
+            studio = root / "studio"
+            studio.mkdir()
+            (studio / "keep.json").write_text("keep", encoding="utf-8")
+            preview = inspect_workspace_backup(archive, database, root / "templates")
+            self.assertFalse(preview["studioIncluded"])
+            restored = restore_workspace_backup(
+                archive,
+                database,
+                root / "templates",
+                confirmation_token=preview["confirmationToken"],
+                studio_dir=studio,
+            )
+            self.assertFalse(restored["studioRestored"])
+            self.assertEqual((studio / "keep.json").read_text(encoding="utf-8"), "keep")
+            database.close()
+
     @staticmethod
     def _add_workspace_data(
         database: Database,

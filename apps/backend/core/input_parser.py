@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
@@ -263,7 +264,7 @@ def _normalize_asset(item: Any, *, section: str, row_index: int, source: str) ->
             continue
         if _is_missing(value):
             continue
-        asset[key] = str(value).strip()
+        asset[key] = deepcopy(value) if isinstance(value, (list, dict)) else str(value).strip()
 
     return asset
 

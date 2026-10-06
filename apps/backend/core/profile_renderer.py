@@ -23,6 +23,7 @@ from docx.table import Table
 
 from .report_snapshot import PreparedReportSnapshot, thaw_json
 from .template_pack import TemplatePackError, inspect_template_pack
+from .threat_intelligence import collect_iocs
 
 PROFILE_RENDERER_VERSION = "1.0"
 _BLOCK_RENDERERS = {
@@ -437,25 +438,7 @@ def _flatten_findings(assets: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
 def _collect_iocs(
     metadata: dict[str, Any], assets: Iterable[dict[str, Any]]
 ) -> list[dict[str, Any]]:
-    raw: list[Any] = []
-    if isinstance(metadata.get("iocs"), list):
-        raw.extend(metadata["iocs"])
-    for asset in assets:
-        if isinstance(asset.get("iocs"), list):
-            raw.extend(asset["iocs"])
-    seen: set[tuple[str, str]] = set()
-    result: list[dict[str, Any]] = []
-    for item in raw:
-        if isinstance(item, dict):
-            ioc_type = _plain_text(item.get("type"))
-            value = _plain_text(item.get("value"))
-        else:
-            ioc_type, value = "value", _plain_text(item)
-        key = (ioc_type.casefold(), value.casefold())
-        if value and key not in seen:
-            seen.add(key)
-            result.append({"type": ioc_type, "value": value})
-    return result
+    return collect_iocs(metadata, assets)
 
 
 def _mapped_rows(

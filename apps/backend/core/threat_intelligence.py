@@ -22,7 +22,9 @@ def normalize_iocs(items: list[Any], *, default_source: str = "input") -> list[d
             continue
         ioc_type, canonical, valid = _normalize_value(value, str(raw.get("type") or "").lower())
         source = str(raw.get("source") or raw.get("evidence") or default_source).strip()
-        key = (ioc_type, canonical.lower())
+        # Hostnames and hashes are already canonical; URL paths, queries and
+        # filenames may be case-sensitive evidence.
+        key = (ioc_type, canonical)
         if key not in normalized:
             normalized[key] = {
                 "type": ioc_type,
@@ -31,27 +33,60 @@ def normalize_iocs(items: list[Any], *, default_source: str = "input") -> list[d
                 "sources": [],
                 "detail": str(raw.get("detail") or ""),
             }
-        if source and source not in normalized[key]["sources"]:
-            normalized[key]["sources"].append(source)
+        sources = raw.get("sources") if isinstance(raw.get("sources"), list) else [source]
+        for evidence in sources:
+            evidence = str(evidence).strip()
+            if evidence and evidence not in normalized[key]["sources"]:
+                normalized[key]["sources"].append(evidence)
     return list(normalized.values())
+
+
+def collect_iocs(metadata: dict[str, Any], assets: Any) -> list[dict[str, Any]]:
+    """Collect structured evidence consistently across all report renderers."""
+    raw = list(metadata.get("iocs", [])) if isinstance(metadata.get("iocs"), list) else []
+    for asset in assets:
+        extras = asset.get("extras") if isinstance(asset.get("extras"), dict) else {}
+        items = asset.get("iocs", extras.get("iocs", []))
+        for item in items if isinstance(items, list) else []:
+            entry = dict(item) if isinstance(item, dict) else {"value": item}
+            entry.setdefault("source", asset.get("hostname") or "asset")
+            raw.append(entry)
+    return normalize_iocs(raw)
 
 
 def _normalize_value(value: str, declared: str) -> tuple[str, str, bool]:
     try:
         address = ipaddress.ip_address(value)
-        return "ip", address.compressed, declared in {"", "ip", "ipv4", "ipv6"}
+        return "ip", address.compressed, declared in {"", "ip", f"ipv{address.version}"}
     except ValueError:
         pass
     if declared in {"ip", "ipv4", "ipv6"}:
         return "ip", value, False
     if declared in {"url", "uri"} or "://" in value:
-        parsed = urlsplit(value)
-        valid = parsed.scheme.lower() in {"http", "https"} and bool(parsed.hostname)
-        host = (parsed.hostname or "").lower()
-        netloc = host + (f":{parsed.port}" if parsed.port else "")
+        try:
+            parsed = urlsplit(value)
+            host = (parsed.hostname or "").lower()
+            port = parsed.port
+        except ValueError:
+            return "url", value, False
+        valid = (
+            parsed.scheme.lower() in {"http", "https"}
+            and declared in {"", "url", "uri"}
+            and bool(host)
+            and not any(character.isspace() or ord(character) < 32 for character in value)
+        )
+        if not valid:
+            return "url", value, False
+        netloc = f"[{host}]" if ":" in host else host
+        if port is not None:
+            netloc += f":{port}"
+        if "@" in parsed.netloc:
+            netloc = parsed.netloc.rsplit("@", 1)[0] + "@" + netloc
         return (
             "url",
-            urlunsplit((parsed.scheme.lower(), netloc, parsed.path or "/", parsed.query, "")),
+            urlunsplit(
+                (parsed.scheme.lower(), netloc, parsed.path or "/", parsed.query, parsed.fragment)
+            ),
             valid,
         )
     compact = value.lower()
@@ -61,12 +96,12 @@ def _normalize_value(value: str, declared: str) -> tuple[str, str, bool]:
     ):
         detected = _HASH_LENGTHS[len(compact)]
         return detected, compact, declared in {"", "hash", detected}
-    if declared == "domain" or _DOMAIN.fullmatch(compact):
+    if declared in {"filename", "file"}:
+        return "filename", value, bool(_FILENAME.fullmatch(value))
+    if declared == "domain" or (not declared and _DOMAIN.fullmatch(compact.rstrip("."))):
         canonical = compact.rstrip(".")
         return "domain", canonical, bool(_DOMAIN.fullmatch(canonical))
-    if declared in {"filename", "file"} or (
-        "." in value and "/" not in value and "\\" not in value
-    ):
+    if not declared and "." in value and "/" not in value and "\\" not in value:
         return "filename", value, bool(_FILENAME.fullmatch(value))
     return declared or "unknown", value, False
 

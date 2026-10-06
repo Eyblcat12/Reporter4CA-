@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from core.threat_intelligence import normalize_iocs
+
 
 def _text(value: Any) -> str:
     return str(value or "").strip()
@@ -91,6 +93,14 @@ def assess_incident_metadata(metadata: dict[str, Any] | None) -> dict[str, Any]:
         ioc = ioc if isinstance(ioc, dict) else {}
         if not _text(ioc.get("type")) or not _text(ioc.get("value")):
             issue(errors, "invalid_ioc", "iocs", "IoC phải có cả loại và giá trị.", index)
+        elif not all(item["valid"] for item in normalize_iocs([ioc])):
+            issue(
+                errors,
+                "invalid_ioc",
+                "iocs",
+                "Giá trị IoC không đúng định dạng của loại đã chọn.",
+                index,
+            )
         source = _text(ioc.get("source"))
         if source:
             evidence_refs.add(source)

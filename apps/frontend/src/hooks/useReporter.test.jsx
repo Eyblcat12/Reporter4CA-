@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ReporterProvider, useReporter } from './useReporter';
+import { ReporterProvider, useReporter, validateIncidentMetadata } from './useReporter';
 
 const wrapper = ({ children }) => <ReporterProvider>{children}</ReporterProvider>;
 const jsonResponse = (payload, ok = true) => ({
@@ -23,6 +23,16 @@ beforeEach(() => {
 });
 
 describe('ReporterProvider API workflow', () => {
+  it('blocks malformed URL evidence before submitting an incident report', () => {
+    const result = validateIncidentMetadata({
+      incidentId: 'IR-1',
+      detectedAt: '2026-10-06',
+      timelineText: '10:00 | Detected | EDR-1',
+      iocsText: 'url | https://example.com:bad/path | EDR-1',
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((issue) => issue.code === 'invalid_ioc')).toBe(true);
+  });
   it('opens Configure with a rule draft sourced from an imported note', async () => {
     fetch.mockResolvedValueOnce(
       jsonResponse({

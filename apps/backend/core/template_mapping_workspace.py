@@ -31,6 +31,7 @@ from .template_profiles import (
     REPORT_REQUIREMENTS,
     validate_template_profile,
 )
+from .workspace_maintenance import guarded_workspace_service
 
 WORKSPACE_SCHEMA_VERSION = "1.0"
 MAX_AUDIT_EVENTS = 500
@@ -405,6 +406,7 @@ class TemplateMappingWorkspaceStore:
         return summaries, skipped_corrupt, collection_fingerprint
 
 
+@guarded_workspace_service
 class TemplateStudioService:
     """Coordinate immutable DOCX sources and revisioned mapping workspaces."""
 

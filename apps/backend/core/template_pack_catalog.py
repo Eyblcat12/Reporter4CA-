@@ -31,6 +31,7 @@ from .template_pack import (
     inspect_template_pack,
 )
 from .template_profiles import validate_template_profile
+from .workspace_maintenance import guarded_workspace_service
 
 CATALOG_SCHEMA_VERSION = "1.0"
 CATALOG_CHECKSUM_FIELD = "catalogSha256"
@@ -219,6 +220,7 @@ def _build_pack_archive(
     return built
 
 
+@guarded_workspace_service
 class TemplatePackCatalog:
     """Immutable version catalog for validated Template Packs."""
 

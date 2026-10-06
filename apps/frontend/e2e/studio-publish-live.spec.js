@@ -201,3 +201,69 @@ test('real API: normalize an unprepared Word document without changing its sourc
   await expect(dialog).not.toBeVisible();
   await expect(page.getByRole('heading', { name: 'Ánh xạ template' })).toBeVisible();
 });
+
+test('real API: unapproved editor checkpoint survives reload and a second tab', async ({
+  page,
+  context,
+}) => {
+  test.skip(!process.env.REPORTER_STUDIO_TEST_API, 'Requires isolated temporary-data API');
+  const routeApi = async (target) =>
+    target.route('**/api/**', async (route) => {
+      const url = new URL(route.request().url());
+      const response = await route.fetch({
+        url: `${process.env.REPORTER_STUDIO_TEST_API}${url.pathname}${url.search}`,
+      });
+      await route.fulfill({ response });
+    });
+  await routeApi(page);
+  await page.goto('/?view=template-studio');
+  await page.getByRole('button', { name: 'Quản lý', exact: true }).click();
+  await page.getByRole('button', { name: 'Template mới', exact: true }).click();
+  const fixtureDir = path.resolve('../../tests/fixtures/template_studio/synthetic_templates');
+  const fixture = JSON.parse(fs.readFileSync(path.join(fixtureDir, 'manifest.json'), 'utf8'))
+    .fixtures.full;
+  await page
+    .locator('input[type="file"][accept=".docx"]')
+    .setInputFiles(path.join(fixtureDir, fixture.file));
+  await page.getByLabel(/^Profile ID/).fill(`recovery-${Date.now()}`);
+  await page.getByRole('button', { name: 'Phân tích', exact: true }).click();
+  const created = page.waitForResponse(
+    (response) =>
+      response.url().endsWith('/template-packs/workspaces') &&
+      response.request().method() === 'POST' &&
+      response.ok(),
+  );
+  await page.getByRole('button', { name: 'Tạo workspace', exact: true }).click();
+  const workspaceId = (await (await created).json()).workspaceId;
+  const selector = page.getByRole('combobox', { name: 'Workspace hiện tại' });
+  await expect(selector).toHaveValue(workspaceId);
+  await page.getByRole('button', { name: /Tiêu đề báo cáo/ }).click();
+  const anchor = fixture.anchors['report.title'];
+  const key = `${anchor.kind}:${anchor.value}`;
+  const saved = page.waitForResponse(
+    (response) =>
+      response.url().includes('/editor-drafts/') &&
+      response.request().method() === 'PUT' &&
+      response.ok(),
+  );
+  await page.locator('#ts-anchor').selectOption(key);
+  await saved;
+  await page.reload();
+  const second = await context.newPage();
+  await routeApi(second);
+  await second.goto('/?view=template-studio');
+  for (const target of [page, second]) {
+    await target.getByRole('combobox', { name: 'Workspace hiện tại' }).selectOption(workspaceId);
+    await target.getByRole('button', { name: /Tiêu đề báo cáo/ }).click();
+    await target.getByText('Bản nháp đã lưu', { exact: true }).click();
+    await target.getByRole('button', { name: 'Khôi phục bản nháp', exact: true }).first().click();
+    await expect(target.locator('#ts-anchor')).toHaveValue(key);
+    await expect(target.getByRole('button', { name: 'Duyệt ánh xạ', exact: true })).toBeEnabled();
+  }
+  const workspace = await page.request.get(
+    `${process.env.REPORTER_STUDIO_TEST_API}/api/template-packs/workspaces/${workspaceId}`,
+  );
+  expect(workspace.ok()).toBe(true);
+  expect((await workspace.json()).slots).toHaveLength(0);
+  await second.close();
+});

@@ -26,6 +26,32 @@ from core.report_generator import (  # noqa: E402
 
 
 class ReportGeneratorTests(unittest.TestCase):
+    def test_structured_web_iocs_survive_normalization_and_both_reports(self) -> None:
+        from core.gui_state import build_payload_from_rows
+        from core.input_parser import normalize_payload
+
+        rows = [
+            {
+                "hostname": "Evidence host",
+                "type": "server",
+                "extras": {
+                    "iocs": [
+                        {"type": "url", "value": "https://example.com/Payload", "source": "EDR-42"}
+                    ]
+                },
+            }
+        ]
+        payload = normalize_payload(build_payload_from_rows(rows), "web")
+        self.assertIsInstance(payload["servers"][0]["iocs"], list)
+        for report_type in (ReportType.FULL, ReportType.TECHNICAL):
+            with self.subTest(report_type=report_type):
+                document = generate_report(
+                    payload, title="Evidence", organization="Test", report_type=report_type
+                )
+                text = self.all_text(document)
+                self.assertIn("https://example.com/Payload", text)
+                self.assertIn("EDR-42", text)
+
     def setUp(self) -> None:
         self.template = BACKEND / "templates" / "report_template.docx"
         self.data = {

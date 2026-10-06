@@ -5,6 +5,23 @@ Mọi thay đổi đáng chú ý của Reporter Pro được ghi tại đây. D�
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-10-06
+
+### Release readiness
+
+- Preserve structured IoC evidence throughout import, preview and generation;
+  Full/Server/Client and Technical reports now render supplied IoCs consistently.
+- Preserve case-sensitive URL paths/query/fragment, IPv6 brackets and credentials;
+  malformed URL ports become validation errors instead of generation crashes.
+- Backup schema v2 includes Template Studio sources, library, editor checkpoints,
+  mapping workspaces, validation artifacts and published packs. Restore validates
+  checksums and SQLite, rolls back all components on failure, and preserves Studio
+  when restoring an older v1 archive. Studio operations and snapshots share a lock
+  in the supported single-process local runtime.
+- Add real API browser tests to CI and the release workflow, and include publication
+  and workbench regression modules in the backend gate.
+- Patch brace-expansion to 5.0.12 and source-map-js to 1.2.2 in the dev lockfile.
+
 ### Security
 
 - Pin Vitest 4.1.11 và cập nhật lockfile nhóm dependency kiểm thử để xử lý

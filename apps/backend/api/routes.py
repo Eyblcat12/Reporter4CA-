@@ -1119,6 +1119,7 @@ async def download_workspace_backup():
             TEMPLATES_DIR,
             backup_path,
             app_version=APP_VERSION,
+            studio_dir=_template_studio.root,
         )
     except Exception as exc:
         backup_path.unlink(missing_ok=True)
@@ -1171,20 +1172,21 @@ async def restore_workspace(
     confirmation_token: str = Form(..., alias="confirmationToken"),
 ):
     """Restore a previously dry-run archive, with automatic rollback on failure."""
-    active_jobs = [
-        job
-        for job in _report_jobs.list(limit=100)
-        if job["status"] not in {"completed", "failed", "cancelled"}
-    ]
-    if active_jobs:
-        raise HTTPException(409, "Wait for active report jobs to finish before restoring.")
     archive_path = await _save_backup_upload(backup)
     try:
+        active_jobs = [
+            job
+            for job in _report_jobs.list(limit=100)
+            if job["status"] not in {"completed", "failed", "cancelled"}
+        ]
+        if active_jobs:
+            raise HTTPException(409, "Wait for active report jobs to finish before restoring.")
         return restore_workspace_backup(
             archive_path,
             get_db(),
             TEMPLATES_DIR,
             confirmation_token=confirmation_token,
+            studio_dir=_template_studio.root,
         )
     except WorkspaceBackupError as exc:
         raise HTTPException(422, str(exc)) from exc

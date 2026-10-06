@@ -11,12 +11,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .template_profiles import COMMON_REQUIREMENTS, REPORT_REQUIREMENTS
+from .workspace_maintenance import guarded_workspace_service
 
 
 class EditorDraftConflict(ValueError):
     """A draft revision or operation identity no longer matches."""
 
 
+@guarded_workspace_service
 class EditorDraftStore:
     def __init__(self, path: Path):
         self.path = path

@@ -40,8 +40,22 @@ jobs:
         working-directory: apps/frontend
         run: |
           npm run lint
+          if ($LASTEXITCODE -ne 0) { throw 'Frontend lint failed' }
           npm run format:check
+          if ($LASTEXITCODE -ne 0) { throw 'Frontend format check failed' }
           npm test
+          if ($LASTEXITCODE -ne 0) { throw 'Frontend tests failed' }
+      - name: Run browser workflows with real isolated API
+        shell: pwsh
+        working-directory: apps/frontend
+        env:
+          REPORTER_E2E_MANAGED_API: '1'
+        run: |
+          $env:REPORTER_TEST_PYTHON = (Resolve-Path '../backend/.venv/Scripts/python.exe').Path
+          npx playwright install chromium
+          if ($LASTEXITCODE -ne 0) { throw 'Chromium installation failed' }
+          npm run test:e2e -- --retries=0
+          if ($LASTEXITCODE -ne 0) { throw 'Live browser tests failed' }
       - name: Run frontend production build
         shell: pwsh
         working-directory: apps/frontend

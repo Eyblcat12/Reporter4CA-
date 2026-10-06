@@ -158,6 +158,10 @@ export default function WorkspaceBackup() {
               <dt>Templates</dt>
               <dd>{restorePreview.templateCount}</dd>
             </div>
+            <div>
+              <dt>Template Studio</dt>
+              <dd>{restorePreview.studioIncluded ? restorePreview.studioFileCount : '—'}</dd>
+            </div>
           </dl>
           {restorePreview.warnings?.map((warning) => (
             <p className="workspace-backup__preview-warning" key={warning}>

@@ -70,10 +70,12 @@ if (-not $SkipBackend) {
         tests.test_template_pilot_matrix `
         tests.test_template_pilot_preflight `
         tests.test_template_pack_preview `
+        tests.test_template_pack_publish `
         tests.test_template_pack_validation `
         tests.test_template_packs `
         tests.test_template_pack_runtime `
         tests.test_template_studio_prototype `
+        tests.test_template_studio_workbench_v2 `
         tests.test_template_workspace_retention `
         tests.test_template_workspace_transfer `
         tests.test_compact_prototype_integration `

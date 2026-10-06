@@ -11,7 +11,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from .workspace_maintenance import guarded_workspace_service
 
+
+@guarded_workspace_service
 class TemplateLibrary:
     def __init__(self, path: Path):
         self.path = path

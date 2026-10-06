@@ -26,9 +26,11 @@ class ScheduledBackupManager:
         retention: int = 7,
         enabled: bool = True,
         now: Callable[[], datetime] | None = None,
+        studio_dir: Path | str | None = None,
     ) -> None:
         self.database_factory = database_factory
         self.templates_dir = Path(templates_dir)
+        self.studio_dir = studio_dir
         self.backup_dir = Path(backup_dir)
         self.interval_seconds = max(1, int(interval_hours)) * 60 * 60
         self.retention = min(max(int(retention), 1), 90)
@@ -63,6 +65,7 @@ class ScheduledBackupManager:
                     self.database_factory(),
                     self.templates_dir,
                     temporary,
+                    studio_dir=self.studio_dir,
                 )
                 os.replace(temporary, destination)
             finally:

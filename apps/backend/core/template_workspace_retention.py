@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from .template_mapping_workspace import TemplateMappingWorkspaceError, TemplateStudioService
+from .workspace_maintenance import guarded_workspace_service
 
 RETENTION_SCHEMA_VERSION = "1.0"
 MIN_RETENTION_DAYS = 30
@@ -28,6 +29,7 @@ class TemplateWorkspaceRetentionError(ValueError):
     """Raised when cleanup cannot be proven safe or a plan became stale."""
 
 
+@guarded_workspace_service
 class TemplateWorkspaceRetention:
     """Move eligible drafts to recoverable quarantine after an exact dry run."""
 

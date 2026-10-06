@@ -11,6 +11,18 @@ from core.incident_validation import assess_incident_metadata  # noqa: E402
 
 
 class IncidentValidationTests(unittest.TestCase):
+    def test_malformed_url_is_a_readiness_error(self) -> None:
+        result = assess_incident_metadata(
+            {
+                "incidentId": "IR-1",
+                "detectedAt": "2026-10-06",
+                "timeline": [{"event": "Detected"}],
+                "iocs": [{"type": "url", "value": "https://example.com:bad/path"}],
+            }
+        )
+        self.assertFalse(result["valid"])
+        self.assertIn("invalid_ioc", {item["code"] for item in result["errors"]})
+
     def test_complete_incident_is_ready_and_counts_traceability(self) -> None:
         result = assess_incident_metadata(
             {

@@ -27,6 +27,7 @@ from .template_pack_validation import (
     approve_template_pack_validation,
     run_template_pack_validation,
 )
+from .workspace_maintenance import guarded_workspace_service
 
 PUBLISH_STORE_SCHEMA_VERSION = 1
 
@@ -39,6 +40,7 @@ class TemplatePackPublishConflict(TemplatePackPublishError):
     """Raised when a workspace or validation revision is stale."""
 
 
+@guarded_workspace_service
 class TemplatePackPublishService:
     """Own validation artifacts and publish only server-issued evidence."""
 

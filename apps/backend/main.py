@@ -45,6 +45,7 @@ _auto_backups = ScheduledBackupManager(
     interval_hours=automatic_backup_interval_hours(),
     retention=automatic_backup_retention(),
     enabled=automatic_backup_enabled(),
+    studio_dir=PROJECT_ROOT / "data" / "template_studio",
 )
 
 

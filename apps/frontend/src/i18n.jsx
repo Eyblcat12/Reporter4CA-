@@ -229,7 +229,8 @@ const translations = {
     'backup.title': 'Sao lưu workspace',
     'backup.subtitle': 'Bảo vệ cấu hình, lịch sử và template của bạn',
     'backup.snapshot': 'Snapshot nhất quán, sẵn sàng lưu trữ',
-    'backup.contents': 'Bao gồm SQLite database và toàn bộ template DOCX hiện có.',
+    'backup.contents':
+      'Bao gồm database, template DOCX và Template Studio: thư viện nguồn, workspace, bản nháp, kiểm thử và pack đã phát hành.',
     'backup.warning':
       'Backup có thể chứa cấu hình kết nối đã lưu. Hãy bảo quản file ZIP như dữ liệu nhạy cảm.',
     'backup.download': 'Tạo và tải backup',
@@ -493,7 +494,8 @@ const translations = {
     'backup.title': 'Workspace Backup',
     'backup.subtitle': 'Protect your settings, history, and templates',
     'backup.snapshot': 'Consistent snapshot, ready for safe storage',
-    'backup.contents': 'Includes the SQLite database and every current DOCX template.',
+    'backup.contents':
+      'Includes databases, DOCX templates and Template Studio: source library, workspaces, drafts, validation runs and published packs.',
     'backup.warning':
       'The backup may contain saved connection settings. Protect the ZIP as sensitive data.',
     'backup.download': 'Create & Download Backup',

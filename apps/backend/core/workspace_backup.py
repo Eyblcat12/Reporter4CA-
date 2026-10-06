@@ -4,33 +4,36 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shutil
 import sqlite3
 import tempfile
-import threading
 import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from core.database import LATEST_SCHEMA_VERSION, Database
+from core.workspace_maintenance import WORKSPACE_LOCK, workspace_operation
 
 BACKUP_SCHEMA_VERSION = 1
 MAX_BACKUP_BYTES = 512 * 1024 * 1024
 MAX_EXTRACTED_BYTES = 1024 * 1024 * 1024
 MAX_ARCHIVE_MEMBERS = 5000
-_RESTORE_LOCK = threading.RLock()
+_RESTORE_LOCK = WORKSPACE_LOCK
 
 
 class WorkspaceBackupError(RuntimeError):
     """Raised when a backup cannot be trusted or restored safely."""
 
 
+@workspace_operation
 def create_workspace_backup(
     database: Database,
     templates_dir: Path | str,
     output_path: Path | str,
     *,
-    app_version: str = "2.2.1",
+    app_version: str = "2.3.0",
+    studio_dir: Path | str | None = None,
 ) -> dict[str, Any]:
     """Write a database/template backup archive and return its manifest."""
     template_root = Path(templates_dir).resolve()
@@ -53,6 +56,9 @@ def create_workspace_backup(
     with tempfile.TemporaryDirectory(prefix="reporter-pro-backup-") as directory:
         snapshot_path = Path(directory) / "reporter.db"
         database.backup_to(snapshot_path)
+        studio_snapshot = Path(directory) / "studio"
+        if studio_dir is not None:
+            _copy_studio_tree(Path(studio_dir), studio_snapshot)
 
         manifest: dict[str, Any] = {
             "schemaVersion": BACKUP_SCHEMA_VERSION,
@@ -80,17 +86,40 @@ def create_workspace_backup(
                 "The database may contain saved connection settings; protect this archive.",
             ],
         }
+        if studio_dir is not None:
+            manifest["schemaVersion"] = 2
+            manifest["studio"] = [
+                {
+                    "path": "studio/" + path.relative_to(studio_snapshot).as_posix(),
+                    "size": path.stat().st_size,
+                    "sha256": _sha256(path),
+                }
+                for path in sorted(studio_snapshot.rglob("*"))
+                if path.is_file()
+            ]
 
         with zipfile.ZipFile(destination, "w", compression=zipfile.ZIP_DEFLATED) as archive:
             archive.write(snapshot_path, "database/reporter.db")
             for path in template_files:
                 relative = path.relative_to(template_root).as_posix()
                 archive.write(path, f"templates/{relative}")
+            for entry in manifest.get("studio", []):
+                archive.write(Path(directory) / entry["path"], entry["path"])
             archive.writestr(
                 "manifest.json",
                 json.dumps(manifest, ensure_ascii=False, indent=2).encode("utf-8"),
             )
 
+    entries = [manifest["database"], *manifest["templates"], *manifest.get("studio", [])]
+    if (
+        len(entries) + 1 > MAX_ARCHIVE_MEMBERS
+        or sum(entry["size"] for entry in entries) > MAX_EXTRACTED_BYTES
+        or destination.stat().st_size > MAX_BACKUP_BYTES
+    ):
+        destination.unlink(missing_ok=True)
+        raise WorkspaceBackupError(
+            "Workspace exceeds backup safety limits; no incomplete archive was retained."
+        )
     return manifest
 
 
@@ -106,6 +135,7 @@ def inspect_workspace_backup(
         staged = Path(directory)
         _extract_validated_archive(archive_file, validated, staged)
         _validate_docx_tree(staged / "templates")
+        _validate_studio_tree(staged / "studio")
         staged_database = staged / validated["database"]["path"]
         backup_counts = _validate_database(staged_database)
         _validate_database_manifest(staged_database, validated["database"], backup_counts)
@@ -149,6 +179,8 @@ def inspect_workspace_backup(
         "templates": templates,
         "templateCount": len(templates),
         "currentTemplateCount": current_template_count,
+        "studioIncluded": "studio" in validated,
+        "studioFileCount": len(validated.get("studio", [])),
         "warnings": _restore_warnings(validated),
     }
 
@@ -159,6 +191,7 @@ def restore_workspace_backup(
     templates_dir: Path | str,
     *,
     confirmation_token: str,
+    studio_dir: Path | str | None = None,
 ) -> dict[str, Any]:
     """Restore database/templates and roll both back after any partial failure."""
     archive_file = Path(archive_path)
@@ -170,6 +203,11 @@ def restore_workspace_backup(
 
     with _RESTORE_LOCK:
         validated = _validate_archive(archive_file)
+        if "studio" in validated and studio_dir is None:
+            raise WorkspaceBackupError(
+                "This backup includes Studio; a Studio destination is required."
+            )
+        studio_root = Path(studio_dir).resolve() if studio_dir is not None else None
         template_root = Path(templates_dir).resolve()
         template_root.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory(prefix="reporter-pro-restore-") as directory:
@@ -177,18 +215,24 @@ def restore_workspace_backup(
             staged = work / "staged"
             rollback_db = work / "rollback.db"
             rollback_templates = work / "templates"
+            rollback_studio = work / "studio"
             _extract_validated_archive(archive_file, validated, staged)
             staged_db = staged / validated["database"]["path"]
             _validate_docx_tree(staged / "templates")
+            _validate_studio_tree(staged / "studio")
             restored_counts = _validate_database(staged_db)
             _validate_database_manifest(staged_db, validated["database"], restored_counts)
             database.backup_to(rollback_db)
             _copy_docx_tree(template_root, rollback_templates)
+            if "studio" in validated:
+                _copy_studio_tree(studio_root, rollback_studio)
 
             try:
                 database.restore_from(staged_db)
                 database.initialize()
                 installed_paths = _install_templates(staged / "templates", template_root)
+                if "studio" in validated:
+                    _replace_studio_tree(staged / "studio", studio_root)
                 database.relocate_template_paths(installed_paths)
                 final_counts = _validate_live_restore(database, restored_counts, installed_paths)
             except Exception as exc:
@@ -201,6 +245,11 @@ def restore_workspace_backup(
                     _replace_docx_tree(rollback_templates, template_root)
                 except Exception as rollback_exc:  # pragma: no cover - catastrophic I/O
                     rollback_errors.append(f"templates: {rollback_exc}")
+                if "studio" in validated:
+                    try:
+                        _replace_studio_tree(rollback_studio, studio_root)
+                    except Exception as rollback_exc:  # pragma: no cover - catastrophic I/O
+                        rollback_errors.append(f"studio: {rollback_exc}")
                 if rollback_errors:
                     raise WorkspaceBackupError(
                         "Restore failed and rollback was incomplete ("
@@ -221,6 +270,7 @@ def restore_workspace_backup(
             "records": final_counts,
         },
         "templateCount": len(validated["templates"]),
+        "studioRestored": "studio" in validated,
         "message": "Workspace restored successfully. Reload the application state.",
     }
 
@@ -259,13 +309,18 @@ def _validate_archive(archive_path: Path) -> dict[str, Any]:
                 "manifest.json",
                 manifest["database"]["path"],
                 *(entry["path"] for entry in manifest["templates"]),
+                *(entry["path"] for entry in manifest.get("studio", [])),
             }
             file_names = {info.filename for info in infos if not info.is_dir()}
             if file_names != declared:
                 raise WorkspaceBackupError(
-                    "Backup members do not exactly match the signed manifest."
+                    "Backup members do not exactly match the checksum manifest."
                 )
-            for entry in (manifest["database"], *manifest["templates"]):
+            for entry in (
+                manifest["database"],
+                *manifest["templates"],
+                *manifest.get("studio", []),
+            ):
                 info = archive.getinfo(entry["path"])
                 if info.file_size != entry["size"]:
                     raise WorkspaceBackupError(f"Size mismatch for {entry['path']}.")
@@ -279,7 +334,7 @@ def _validate_archive(archive_path: Path) -> dict[str, Any]:
 def _validate_manifest_shape(manifest: Any) -> None:
     if not isinstance(manifest, dict):
         raise WorkspaceBackupError("Backup manifest must be a JSON object.")
-    if manifest.get("schemaVersion") != BACKUP_SCHEMA_VERSION:
+    if manifest.get("schemaVersion") not in (1, 2):
         raise WorkspaceBackupError("Unsupported backup schema version.")
     if manifest.get("app") != "Reporter Pro":
         raise WorkspaceBackupError("Archive was not created by Reporter Pro.")
@@ -291,7 +346,14 @@ def _validate_manifest_shape(manifest: Any) -> None:
     templates = manifest.get("templates")
     if not isinstance(database, dict) or not isinstance(templates, list):
         raise WorkspaceBackupError("Backup database/template manifest is invalid.")
-    entries = [database, *templates]
+    studio = manifest.get("studio", [])
+    if not isinstance(studio, list) or (
+        manifest["schemaVersion"] == 2 and "studio" not in manifest
+    ):
+        raise WorkspaceBackupError("Backup Studio manifest is invalid.")
+    if manifest["schemaVersion"] == 1 and "studio" in manifest:
+        raise WorkspaceBackupError("Legacy backup must not declare Studio state.")
+    entries = [database, *templates, *studio]
     for entry in entries:
         if not isinstance(entry, dict):
             raise WorkspaceBackupError("Backup file manifest entry is invalid.")
@@ -319,9 +381,32 @@ def _validate_manifest_shape(manifest: Any) -> None:
             ".docx"
         ):
             raise WorkspaceBackupError("Backup contains an invalid template path.")
+    for entry in studio:
+        if not entry["path"].startswith("studio/"):
+            raise WorkspaceBackupError("Backup contains an invalid Studio path.")
+    if len({entry["path"].casefold() for entry in entries}) != len(entries):
+        raise WorkspaceBackupError("Backup manifest contains duplicate paths.")
 
 
 def _safe_archive_path(value: str) -> Path:
+    if "\\" in value or any(
+        part in {"", ".", ".."} or ":" in part or part.endswith((" ", "."))
+        for part in value.split("/")
+    ):
+        raise WorkspaceBackupError(f"Unsafe archive path: {value}")
+    reserved = {
+        "CON",
+        "PRN",
+        "AUX",
+        "NUL",
+        *(f"COM{i}" for i in range(1, 10)),
+        *(f"LPT{i}" for i in range(1, 10)),
+    }
+    if any(
+        part.split(".")[0].upper() in reserved or any(ord(char) < 32 for char in part)
+        for part in value.split("/")
+    ):
+        raise WorkspaceBackupError(f"Unsafe archive path: {value}")
     path = Path(value.replace("\\", "/"))
     if path.is_absolute() or ".." in path.parts or not path.parts:
         raise WorkspaceBackupError(f"Unsafe archive path: {value}")
@@ -334,10 +419,13 @@ def _extract_validated_archive(
     archive_path: Path, manifest: dict[str, Any], destination: Path
 ) -> None:
     destination.mkdir(parents=True, exist_ok=True)
+    if "studio" in manifest:
+        (destination / "studio").mkdir(exist_ok=True)
     with zipfile.ZipFile(archive_path) as archive:
         for name in (
             manifest["database"]["path"],
             *(entry["path"] for entry in manifest["templates"]),
+            *(entry["path"] for entry in manifest.get("studio", [])),
         ):
             target = destination.joinpath(*_safe_archive_path(name).parts)
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -408,6 +496,10 @@ def _database_counts_connection(connection: sqlite3.Connection) -> dict[str, int
 
 def _restore_warnings(manifest: dict[str, Any]) -> list[str]:
     warnings: list[str] = []
+    if "studio" not in manifest:
+        warnings.append(
+            "Legacy backup excludes Template Studio. Existing Studio data will be preserved."
+        )
     version = manifest["database"]["schemaVersion"]
     if version < LATEST_SCHEMA_VERSION:
         warnings.append(
@@ -416,6 +508,71 @@ def _restore_warnings(manifest: dict[str, Any]) -> list[str]:
     if not manifest["templates"]:
         warnings.append("Backup contains no DOCX templates.")
     return warnings
+
+
+def _copy_studio_tree(source: Path, destination: Path) -> None:
+    """Snapshot SQLite through its backup API, excluding transient lock/WAL files."""
+    destination.mkdir(parents=True, exist_ok=True)
+    if source.is_symlink() or (hasattr(source, "is_junction") and source.is_junction()):
+        raise WorkspaceBackupError("Studio root must not be a link.")
+    source = source.resolve()
+    if not source.exists():
+        return
+    for path in sorted(source.rglob("*")):
+        if path.is_symlink() or (hasattr(path, "is_junction") and path.is_junction()):
+            raise WorkspaceBackupError("Studio contains a symbolic link or junction.")
+        if not path.is_file() or path.name.endswith(("-wal", "-shm", "-journal", ".lock", ".tmp")):
+            continue
+        target = destination / path.relative_to(source)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if path.suffix in {".sqlite3", ".sqlite", ".db"}:
+            connection = sqlite3.connect(path.as_uri() + "?mode=ro", uri=True)
+            snapshot = sqlite3.connect(target)
+            try:
+                connection.backup(snapshot)
+            finally:
+                snapshot.close()
+                connection.close()
+        else:
+            shutil.copyfile(path, target)
+
+
+def _validate_studio_tree(source: Path) -> None:
+    _validate_docx_tree(source)
+    for path in source.rglob("*"):
+        if path.suffix in {".sqlite3", ".sqlite", ".db"}:
+            connection = sqlite3.connect(path.as_uri() + "?mode=ro", uri=True)
+            try:
+                if connection.execute("PRAGMA integrity_check").fetchone() != ("ok",):
+                    raise WorkspaceBackupError("Studio database failed integrity_check.")
+            except sqlite3.Error as exc:
+                raise WorkspaceBackupError(f"Invalid Studio database: {path.name}") from exc
+            finally:
+                connection.close()
+
+
+def _replace_studio_tree(source: Path, destination: Path) -> None:
+    # Both roots are internal, resolved workspace directories, never archive paths.
+    # Validate existing paths before any recursive removal (including junctions).
+    for path in [destination, *destination.rglob("*")]:
+        if path.is_symlink() or (hasattr(path, "is_junction") and path.is_junction()):
+            raise WorkspaceBackupError("Studio destination contains a link.")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(
+        prefix=".studio-restore-", dir=destination.parent, ignore_cleanup_errors=True
+    ) as directory:
+        staged = Path(directory) / "new"
+        previous = Path(directory) / "previous"
+        shutil.copytree(source, staged)
+        existed = destination.exists()
+        if existed:
+            destination.rename(previous)
+        try:
+            staged.rename(destination)
+        except Exception:
+            if existed:
+                previous.rename(destination)
+            raise
 
 
 def _copy_docx_tree(source: Path, destination: Path) -> None:

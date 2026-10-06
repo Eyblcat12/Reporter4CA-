@@ -369,7 +369,9 @@ class ReportBuilder:
             include_servers=include_servers,
             include_clients=include_clients,
         )
-        _add_ioc_section(document)
+        _add_ioc_section(
+            document, data, include_servers=include_servers, include_clients=include_clients
+        )
         _add_recommendations_section(
             document,
             include_servers=include_servers,
@@ -1649,17 +1651,9 @@ def _add_technical_analysis_section(document: Any, data: dict[str, Any]) -> None
             )
 
     _add_heading(document, "Indicators of Compromise (IoCs)", level=2)
-    raw_iocs: list[dict[str, Any]] = []
-    for asset in assets:
-        extras = asset.get("extras") if isinstance(asset.get("extras"), dict) else {}
-        iocs = extras.get("iocs", asset.get("iocs", []))
-        if not isinstance(iocs, list):
-            continue
-        for ioc in iocs:
-            raw = dict(ioc) if isinstance(ioc, dict) else {"value": ioc}
-            raw.setdefault("source", asset.get("hostname", DEFAULT_TEXT_VALUE))
-            raw_iocs.append(raw)
-    normalized = normalize_iocs(raw_iocs, default_source="asset")
+    from core.threat_intelligence import collect_iocs
+
+    normalized = collect_iocs(data.get("metadata") or {}, assets)
     ioc_rows = [
         [
             str(index),
@@ -1923,12 +1917,30 @@ def _add_malware_remediation_table(
     _style_table(table, center_all=True)
 
 
-def _add_ioc_section(document: Any) -> None:
+def _add_ioc_section(
+    document: Any,
+    data: dict[str, Any],
+    *,
+    include_servers: bool = True,
+    include_clients: bool = True,
+) -> None:
+    from core.threat_intelligence import collect_iocs
+
+    servers, clients = _report_assets(data)
+    assets = [*(servers if include_servers else []), *(clients if include_clients else [])]
+    rows = [
+        [
+            str(index),
+            item["value"],
+            f"{item['type']} · {'valid' if item['valid'] else 'invalid'} · {', '.join(item['sources'])}",
+        ]
+        for index, item in enumerate(collect_iocs(data.get("metadata") or {}, assets), start=1)
+    ]
     _add_heading(document, "Indicators of compromise (IoCs)", level=1)
     table = _create_table(
         document,
         ["STT", "Thông tin", "Chi tiết"],
-        [["1", "", ""]],
+        rows or [["1", "", ""]],
         prototype_key="ioc",
         column_widths_mm=[14, 38, 108],
     )

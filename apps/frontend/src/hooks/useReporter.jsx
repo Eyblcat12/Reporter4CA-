@@ -222,6 +222,22 @@ export function validateIncidentMetadata(metadata = {}) {
   data.iocs.forEach((ioc, index) => {
     if (!text(ioc.type) || !text(ioc.value))
       add(errors, 'invalid_ioc', 'iocs', 'IoC phải có cả loại và giá trị.', index + 1);
+    else if (
+      ['url', 'uri'].includes(text(ioc.type).toLowerCase()) ||
+      text(ioc.value).includes('://')
+    ) {
+      try {
+        const url = new URL(text(ioc.value));
+        if (
+          !['http:', 'https:'].includes(url.protocol) ||
+          !url.hostname ||
+          /\s/.test(text(ioc.value))
+        )
+          throw new Error('Invalid URL');
+      } catch {
+        add(errors, 'invalid_ioc', 'iocs', 'URL IoC không hợp lệ.', index + 1);
+      }
+    }
     if (text(ioc.source)) evidence.add(text(ioc.source));
     else add(warnings, 'missing_ioc_source', 'iocs', 'IoC chưa có nguồn evidence.', index + 1);
   });
