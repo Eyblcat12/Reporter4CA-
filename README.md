@@ -34,7 +34,7 @@ Xem [hướng dẫn từng bước](docs/TEMPLATE_STUDIO_USER_GUIDE.md) và
 [hồ sơ đồng bộ/kiểm chứng source](docs/GITHUB_SYNC_PLAN_2026-09-23.md).
 Pack khách hàng cần được duyệt trong Word trước khi dùng thật. Từ v2.3.0, backup ZIP
 bao gồm cả kho Studio và bản nháp đã lưu; backup v1 vẫn được hỗ trợ và giữ nguyên
-kho Studio hiện có khi khôi phục. Xem [phạm vi nghiệm thu v2.3.0](docs/releases/v2.3.0.md).
+kho Studio hiện có khi khôi phục. Xem [bản phát hành v2.3.1](docs/releases/v2.3.1.md).
 
 ## Tính năng chính
 

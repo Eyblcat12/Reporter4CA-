@@ -5,6 +5,14 @@ Mọi thay đổi đáng chú ý của Reporter Pro được ghi tại đây. D�
 
 ## [Unreleased]
 
+## [2.3.1] - 2026-10-07
+
+### Fixed
+
+- Enforce LF checkout for CSS and MJS so Windows fresh clones pass the same
+  Prettier gate as Linux. Add Windows to the frontend CI matrix.
+- Supersede the unpublished v2.3.0 release candidate; retain its tag for traceability.
+
 ## [2.3.0] - 2026-10-06
 
 ### Release readiness

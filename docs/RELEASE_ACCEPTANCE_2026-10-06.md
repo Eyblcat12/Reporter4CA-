@@ -1,5 +1,9 @@
 # Nghiệm thu Reporter Pro v2.3.0
 
+**Cập nhật 07/10/2026:** v2.3.0 là candidate chưa công bố asset do lỗi checkout
+CSS/MJS trên Windows. Bản phát hành thay thế là [v2.3.1](releases/v2.3.1.md),
+giữ các sửa lỗi runtime dưới đây và bổ sung gate frontend Windows/Linux.
+
 Phạm vi: Windows local, một tiến trình backend cho mỗi workspace, các mẫu đi kèm
 và fixture tổng hợp. Báo cáo này tiếp nối
 [audit ban đầu](READINESS_AUDIT_2026-10-06.md); không thay đổi kết luận lịch sử của

@@ -45,8 +45,11 @@ jobs:
           retention-days: 7
 
   frontend:
-    name: Frontend test and build
-    runs-on: ubuntu-latest
+    name: Frontend test and build (${{ matrix.os }})
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     defaults:
       run:
