@@ -10,6 +10,7 @@
 | [USER_RULE_GUIDE.md](USER_RULE_GUIDE.md) | Thêm rule để nhận diện finding từ cột Note |
 | [REPORT_QUALITY.md](REPORT_QUALITY.md) | Mô hình kết luận, evidence và cơ chế chống bỏ sót nội dung |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Thành phần hệ thống và luồng dữ liệu |
+| [MALWARE_ANALYSIS_IMPLEMENTATION.md](MALWARE_ANALYSIS_IMPLEMENTATION.md) | Đặc tả triển khai IDA/AI, quy trình cập nhật, rollback và quản lý file runtime; phân biệt hiện trạng với phần cần triển khai |
 | [DEVELOPMENT.md](DEVELOPMENT.md) | Môi trường phát triển, test và CI |
 | [PROJECT_STATUS_AND_ROADMAP.md](PROJECT_STATUS_AND_ROADMAP.md) | Những gì đã hoàn thành và hướng phát triển |
 | [TEMPLATE_STUDIO_STATUS.md](TEMPLATE_STUDIO_STATUS.md) | Trạng thái, backlog, invariant và hồ sơ bàn giao Template Studio |
