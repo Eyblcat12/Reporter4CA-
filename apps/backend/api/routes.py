@@ -746,6 +746,7 @@ def _save_finalized_report(
     output_path: str | Path,
     *,
     metrics: PerformanceMetrics | None = None,
+    check_cancelled: Any | None = None,
 ) -> tuple[Path, FieldUpdateResult]:
     """Save a report, then refresh calculated fields without risking the file."""
     save_attributes: dict[str, Any] = {"outcome": "failed"}
@@ -757,7 +758,7 @@ def _save_finalized_report(
 
     field_attributes: dict[str, Any] = {"outcome": "failed"}
     with _metric_phase(metrics, "wordFieldUpdate", attributes=field_attributes):
-        field_update = refresh_docx_fields(saved_path)
+        field_update = refresh_docx_fields(saved_path, check_cancelled=check_cancelled)
         field_attributes["outcome"] = "passed" if field_update.updated else "deferred"
     if metrics is not None:
         metrics.update_metadata({"wordFieldUpdater": field_update.engine})
@@ -908,6 +909,7 @@ def _create_report_artifact_impl(
             document,
             temporary_path,
             metrics=metrics,
+            check_cancelled=check_cancelled,
         )
         progress("recording", 94, "Đang lưu lịch sử")
         filename = _suggest_filename(req.output_name)
@@ -1009,6 +1011,7 @@ def _create_preview_artifact_impl(
             document,
             preview_path,
             metrics=metrics,
+            check_cancelled=check_cancelled,
         )
         return {
             "path": preview_path,

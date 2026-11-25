@@ -5,6 +5,12 @@ Mọi thay đổi đáng chú ý của Reporter Pro được ghi tại đây. D�
 
 ## [Unreleased]
 
+## [2.3.2] - 2026-11-25
+
+### Fixed
+
+- Sửa lỗi Generate dừng ở 82% với `PermissionError` khi Word giữ bản sao tạm. Reporter cho tải DOCX đã dựng nếu Word đang bận hoặc cập nhật quá 45 giây. Nút hủy tác vụ cũng có hiệu lực trong lúc chờ Word.
+
 ## [2.3.1] - 2026-10-07
 
 ### Fixed

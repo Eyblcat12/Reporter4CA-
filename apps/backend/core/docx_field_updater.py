@@ -19,12 +19,16 @@ import shutil
 import subprocess
 import tempfile
 import threading
+import time
 import uuid
 import zipfile
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-DEFAULT_FIELD_UPDATE_TIMEOUT_SECONDS = 180
+from core.report_jobs import JobCancelled
+
+DEFAULT_FIELD_UPDATE_TIMEOUT_SECONDS = 45
 _WORD_UPDATE_LOCK = threading.Lock()
 
 
@@ -41,6 +45,7 @@ def refresh_docx_fields(
     docx_path: str | Path,
     *,
     timeout_seconds: int = DEFAULT_FIELD_UPDATE_TIMEOUT_SECONDS,
+    check_cancelled: Callable[[], None] | None = None,
 ) -> FieldUpdateResult:
     """Refresh TOC/page/reference fields without making report creation fragile.
 
@@ -70,12 +75,19 @@ def refresh_docx_fields(
         # Prevent Word from eagerly updating every stale PAGEREF while opening
         # a template-derived document. The script rebuilds TOCs first.
         _set_update_fields_on_open(working_copy, enabled=False)
-        with _WORD_UPDATE_LOCK:
+        if check_cancelled:
+            check_cancelled()
+        if not _WORD_UPDATE_LOCK.acquire(blocking=False):
+            return FieldUpdateResult(False, "deferred", "Microsoft Word field updater is busy.")
+        try:
             completed = _run_word_update(
                 script_host,
                 working_copy,
                 timeout_seconds=timeout_seconds,
+                check_cancelled=check_cancelled,
             )
+        finally:
+            _WORD_UPDATE_LOCK.release()
 
         if completed.returncode != 0:
             detail = _process_error_detail(completed)
@@ -95,12 +107,20 @@ def refresh_docx_fields(
 
         os.replace(working_copy, path)
         return FieldUpdateResult(True, "microsoft-word")
+    except JobCancelled:
+        raise
     except subprocess.TimeoutExpired:
         return FieldUpdateResult(False, "deferred", "Microsoft Word field update timed out.")
     except Exception as exc:
         return FieldUpdateResult(False, "deferred", str(exc))
     finally:
-        working_copy.unlink(missing_ok=True)
+        # A timed-out script host can leave Word holding this *copy* open.
+        # Cleanup must not replace the safe fallback with PermissionError.
+        # Never terminate an unrelated interactive Word session to remove it.
+        try:
+            working_copy.unlink(missing_ok=True)
+        except OSError:
+            pass
 
 
 def _run_word_update(
@@ -108,6 +128,7 @@ def _run_word_update(
     docx_path: Path,
     *,
     timeout_seconds: int,
+    check_cancelled: Callable[[], None] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     creation_flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
     script_path: Path | None = None
@@ -123,14 +144,33 @@ def _run_word_update(
             script_file.write(_word_update_script())
             script_path = Path(script_file.name)
 
-        return subprocess.run(
-            [script_host, "//B", "//Nologo", str(script_path), str(docx_path)],
-            capture_output=True,
-            text=True,
-            timeout=timeout_seconds,
-            creationflags=creation_flags,
-            check=False,
-        )
+        command = [script_host, "//B", "//Nologo", str(script_path), str(docx_path)]
+        with (
+            tempfile.TemporaryFile() as output,
+            subprocess.Popen(
+                command, stdout=output, stderr=subprocess.STDOUT, creationflags=creation_flags
+            ) as process,
+        ):
+            deadline = time.monotonic() + timeout_seconds
+            try:
+                while True:
+                    if check_cancelled:
+                        check_cancelled()
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise subprocess.TimeoutExpired(command, timeout_seconds)
+                    try:
+                        process.wait(timeout=min(0.5, remaining))
+                        break
+                    except subprocess.TimeoutExpired:
+                        continue
+            finally:
+                if process.poll() is None:
+                    process.kill()
+            output.seek(0)
+            return subprocess.CompletedProcess(
+                command, process.returncode, output.read(2048).decode(errors="replace"), ""
+            )
     finally:
         if script_path is not None:
             script_path.unlink(missing_ok=True)

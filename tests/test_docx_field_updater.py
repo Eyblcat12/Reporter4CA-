@@ -21,9 +21,82 @@ from core.report_generator import (  # noqa: E402
     _enable_field_updates,
     _replace_literal_footer_page_totals,
 )
+from core.report_jobs import JobCancelled  # noqa: E402
 
 
 class DocxFieldUpdaterTests(unittest.TestCase):
+    def test_cancel_while_script_host_is_running_preserves_original(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            path = Path(tmp_dir) / "report.docx"
+            Document().save(path)
+            original = path.read_bytes()
+            with (
+                patch("core.docx_field_updater.platform.system", return_value="Windows"),
+                patch("core.docx_field_updater.shutil.which", return_value="cscript.exe"),
+                patch("core.docx_field_updater.subprocess.Popen") as popen,
+            ):
+                process = popen.return_value.__enter__.return_value
+                process.wait.side_effect = subprocess.TimeoutExpired("cscript.exe", 0.5)
+                process.poll.return_value = None
+
+                def cancel_during_wait():
+                    if process.wait.called:
+                        raise JobCancelled()
+
+                with self.assertRaises(JobCancelled):
+                    refresh_docx_fields(path, check_cancelled=cancel_during_wait)
+                process.kill.assert_called_once_with()
+            self.assertEqual(path.read_bytes(), original)
+            self.assertEqual(list(path.parent.iterdir()), [path])
+
+    def test_timeout_with_word_locked_copy_preserves_original_and_fallback(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            path = Path(tmp_dir) / "report.docx"
+            Document().save(path)
+            original = path.read_bytes()
+            real_unlink = Path.unlink
+
+            def word_locked_copy(candidate, *args, **kwargs):
+                if ".field-refresh-" in candidate.name and candidate.suffix == ".docx":
+                    raise PermissionError("Synthetic Word file lock")
+                return real_unlink(candidate, *args, **kwargs)
+
+            with (
+                patch("core.docx_field_updater.platform.system", return_value="Windows"),
+                patch("core.docx_field_updater.shutil.which", return_value="cscript.exe"),
+                patch(
+                    "core.docx_field_updater._run_word_update",
+                    side_effect=subprocess.TimeoutExpired("cscript.exe", 180),
+                ),
+                patch.object(Path, "unlink", word_locked_copy),
+            ):
+                result = refresh_docx_fields(path)
+            self.assertFalse(result.updated)
+            self.assertEqual(result.engine, "deferred")
+            self.assertIn("timed out", result.detail)
+            self.assertEqual(path.read_bytes(), original)
+
+    def test_busy_word_lock_defers_without_running_word(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            path = Path(tmp_dir) / "report.docx"
+            Document().save(path)
+            original = path.read_bytes()
+            with (
+                patch("core.docx_field_updater.platform.system", return_value="Windows"),
+                patch("core.docx_field_updater.shutil.which", return_value="cscript.exe"),
+                patch("core.docx_field_updater._WORD_UPDATE_LOCK") as lock,
+                patch("core.docx_field_updater._run_word_update") as run,
+            ):
+                lock.acquire.return_value = False
+                result = refresh_docx_fields(path, timeout_seconds=2)
+            lock.acquire.assert_called_once_with(blocking=False)
+            lock.release.assert_not_called()
+            run.assert_not_called()
+            self.assertFalse(result.updated)
+            self.assertIn("busy", result.detail)
+            self.assertEqual(path.read_bytes(), original)
+            self.assertFalse(any(path.parent.glob("*.field-refresh-*.docx")))
+
     def test_literal_footer_total_is_replaced_with_dynamic_numpages_field(self) -> None:
         document = Document()
         paragraph = document.sections[0].footer.paragraphs[0]
@@ -116,7 +189,7 @@ class DocxFieldUpdaterTests(unittest.TestCase):
             _enable_field_updates(document)
             document.save(path)
 
-            def update_copy(_powershell, working_copy, *, timeout_seconds):
+            def update_copy(_powershell, working_copy, *, timeout_seconds, check_cancelled):
                 updated = Document(working_copy)
                 updated.add_paragraph("Updated by Word")
                 updated.save(working_copy)
