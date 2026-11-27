@@ -1096,6 +1096,10 @@ class ApiIntegrationTests(unittest.TestCase):
 
         self.assertEqual(job["status"], "completed")
         self.assertEqual(job["cacheMode"], "preview_cache_hit")
+        # Word ran out of time on the Preview; the promoted copy must say so too,
+        # so the UI can tell the user that the TOC is updated when Word opens it.
+        self.assertEqual(state["fieldEngine"], "deferred")
+        self.assertEqual(job["fieldEngine"], "deferred")
         downloaded = self.client.get(f"/api/report-jobs/{job_id}/download")
         self.assertEqual(downloaded.status_code, 200)
         self.assertEqual(downloaded.content, preview_bytes)

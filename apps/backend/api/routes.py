@@ -6,6 +6,7 @@ import asyncio
 import base64
 import hashlib
 import json
+import math
 import os
 import re
 import shutil
@@ -37,6 +38,7 @@ from core.config import (
     preview_jobs_enabled,
     template_packs_enabled,
     unified_report_scheduler_enabled,
+    word_field_update_timeout_seconds,
 )
 from core.data_quality import assess_rows
 from core.database import file_sha256, get_db
@@ -741,12 +743,19 @@ def _assert_report_size(rows: list[dict[str, Any]]) -> None:
         raise HTTPException(413, f"Report contains {len(rows)} rows; local limit is {limit}.")
 
 
+def _word_wait_label(seconds: int) -> str:
+    """Upper bound of the Word step for progress messages, e.g. "54 giây", "4 phút"."""
+
+    return f"{seconds} giây" if seconds < 120 else f"{math.ceil(seconds / 60)} phút"
+
+
 def _save_finalized_report(
     document: Any,
     output_path: str | Path,
     *,
     metrics: PerformanceMetrics | None = None,
     check_cancelled: Any | None = None,
+    word_timeout_seconds: int | None = None,
 ) -> tuple[Path, FieldUpdateResult]:
     """Save a report, then refresh calculated fields without risking the file."""
     save_attributes: dict[str, Any] = {"outcome": "failed"}
@@ -757,8 +766,11 @@ def _save_finalized_report(
         save_attributes["outcome"] = "passed"
 
     field_attributes: dict[str, Any] = {"outcome": "failed"}
+    refresh_options: dict[str, Any] = {"check_cancelled": check_cancelled}
+    if word_timeout_seconds is not None:
+        refresh_options["timeout_seconds"] = word_timeout_seconds
     with _metric_phase(metrics, "wordFieldUpdate", attributes=field_attributes):
-        field_update = refresh_docx_fields(saved_path, check_cancelled=check_cancelled)
+        field_update = refresh_docx_fields(saved_path, **refresh_options)
         field_attributes["outcome"] = "passed" if field_update.updated else "deferred"
     if metrics is not None:
         metrics.update_metadata({"wordFieldUpdater": field_update.engine})
@@ -904,12 +916,18 @@ def _create_report_artifact_impl(
 
         with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as temporary:
             temporary_path = Path(temporary.name)
-        progress("finalizing", 82, "Đang cập nhật mục lục và fields")
+        word_timeout = word_field_update_timeout_seconds(len(accepted.rows))
+        progress(
+            "finalizing",
+            82,
+            f"Word đang cập nhật mục lục và số trang (tối đa {_word_wait_label(word_timeout)})",
+        )
         output_path, field_update = _save_finalized_report(
             document,
             temporary_path,
             metrics=metrics,
             check_cancelled=check_cancelled,
+            word_timeout_seconds=word_timeout,
         )
         progress("recording", 94, "Đang lưu lịch sử")
         filename = _suggest_filename(req.output_name)
@@ -1007,11 +1025,19 @@ def _create_preview_artifact_impl(
         preview_path = Path(temporary.name)
 
     try:
+        word_timeout = word_field_update_timeout_seconds(len(accepted.rows))
+        if on_progress is not None:
+            on_progress(
+                "finalizing",
+                85,
+                f"Word đang cập nhật mục lục và số trang (tối đa {_word_wait_label(word_timeout)})",
+            )
         _, field_update = _save_finalized_report(
             document,
             preview_path,
             metrics=metrics,
             check_cancelled=check_cancelled,
+            word_timeout_seconds=word_timeout,
         )
         return {
             "path": preview_path,
@@ -1941,7 +1967,9 @@ def _promote_preview_artifact(
                 "outputPath": str(final_path),
                 "filename": filename,
                 "reportId": report_id,
-                "fieldEngine": "preview-promotion",
+                # The published file is the Preview byte for byte, so it has the
+                # same field state, including "deferred" if Word ran out of time.
+                "fieldEngine": artifact.field_engine or "preview-promotion",
                 "integrity": {"valid": True, "sourceArtifactId": preview_id},
                 "requestSignature": artifact.request_signature,
                 "contentSignature": artifact.content_signature,
@@ -1983,6 +2011,7 @@ def _run_preview_job(job: ReportJob) -> dict[str, Any]:
         cache_mode=artifact["cacheMode"],
         snapshot=accepted,
         plugin_manifest=tuple(artifact.get("pluginManifest") or ()),
+        field_engine=str(artifact.get("fieldEngine") or ""),
     )
     return {
         **{key: value for key, value in artifact.items() if key != "pluginManifest"},

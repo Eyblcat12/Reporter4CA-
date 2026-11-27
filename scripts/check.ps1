@@ -37,8 +37,10 @@ if (-not $SkipBackend) {
         tests.test_api_errors `
         tests.test_dashboard_summary `
         tests.test_data_quality `
+        tests.test_real_data_guard `
         tests.test_database_migrations `
         tests.test_docx_field_updater `
+        tests.test_word_field_timeout `
         tests.test_docx_golden `
         tests.test_fast_cell_path `
         tests.test_incident_validation `
@@ -51,6 +53,7 @@ if (-not $SkipBackend) {
         tests.test_profile_renderer `
         tests.test_report_jobs `
         tests.test_report_generator `
+        tests.test_report_table_layout `
         tests.test_report_integrity `
         tests.test_report_snapshot `
         tests.test_rule_engine `

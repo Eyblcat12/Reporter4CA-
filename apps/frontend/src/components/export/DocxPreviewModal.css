@@ -229,6 +229,22 @@
 .docx-modal__status-meta code {
   color: var(--accent);
 }
+.docx-modal__fields-notice {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  margin: 0 0 var(--space-5);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  color: var(--warning);
+  background: var(--warning-muted);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}
+.docx-modal__fields-notice svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
 .docx-modal__status > .btn {
   width: 100%;
   justify-content: center;

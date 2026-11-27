@@ -210,6 +210,14 @@ DETAIL_CHECKLIST_ITEMS = [
     "Kiểm tra các access log, web application log nhằm xác định các request bất thường",
 ]
 
+# Width of every generated "STT" column. The bold 13 pt Times New Roman header
+# needs about 8.7 mm, and Word's default 0.19 cm cell padding left only 8.2 mm
+# of a 12 mm column, so Word wrapped the header to "ST"/"T" in every table.
+# 14 mm leaves 10.2 mm: the bold header and four-digit row numbers fit, while
+# the neighbouring columns keep their usual text on one line. Each table takes
+# the extra 2 mm from its widest column so the 160 mm print width is unchanged.
+STT_COLUMN_WIDTH_MM = 14
+
 DEFAULT_RECOMMENDATIONS = [
     "Đã hoàn thành thực hiện gỡ bỏ mã độc trên các máy chủ.",
     "Thực hiện thêm IoCs trên nền tảng giám sát để rà quét diện rộng.",
@@ -455,7 +463,7 @@ class ReportBuilder:
             document,
             ["STT", "Tài sản", "Địa chỉ IP", "Kết quả"],
             asset_rows,
-            column_widths_mm=[12, 48, 38, 62],
+            column_widths_mm=[STT_COLUMN_WIDTH_MM, 48, 38, 60],
         )
         _style_table(table, left_align_columns={1, 2, 3})
 
@@ -1231,19 +1239,36 @@ def _iter_table_paragraphs(table: Any) -> list[Any]:
 
 
 def _replace_literal_footer_page_totals(document: Any) -> int:
-    """Replace template totals such as ``Trang PAGE / 308`` with NUMPAGES.
+    """Replace template totals such as ``Trang PAGE / 308`` with a page-count field.
 
     Customer templates remain untouched; only the generated in-memory copy is
-    normalized. The existing Word field-refresh stage calculates the real
-    total before preview/download.
+    normalized. The default templates put the table of contents in a first
+    section and restart page numbering in the last (body) section, so ``PAGE``
+    counts body pages only. A footer used only by such a restarting last
+    section therefore gets SECTIONPAGES; NUMPAGES would also count the table of
+    contents (Word showed "Trang 23 / 24" on the last of 23 body pages). Every
+    other footer keeps NUMPAGES.
+
+    The field is written without a cached result. Word computes page-count
+    fields while laying out the document, even when the field-refresh stage
+    times out, and the template's literal (308) must never be stored as if it
+    were a verified total.
     """
     modules = _docx_modules()
     OxmlElement = modules["OxmlElement"]
     qn = modules["qn"]
     replaced = 0
     seen_footer_parts: set[int] = set()
+    sections = list(document.sections)
 
-    for section in document.sections:
+    for index, section in enumerate(sections):
+        # A footer part first reached in the last section is used by no
+        # earlier section, so its page counter cannot span the front matter.
+        field_name = (
+            "SECTIONPAGES"
+            if index == len(sections) - 1 and _section_restarts_page_numbering(section)
+            else "NUMPAGES"
+        )
         for footer in (section.footer, section.first_page_footer, section.even_page_footer):
             part_key = id(footer.part)
             if part_key in seen_footer_parts:
@@ -1258,7 +1283,6 @@ def _replace_literal_footer_page_totals(document: Any) -> int:
                 for run in paragraph.runs:
                     value = run.text
                     if value.strip().isdigit() and preceding.rstrip().endswith("/"):
-                        cached_value = value.strip()
                         for child in list(run._r):
                             if child.tag != qn("w:rPr"):
                                 run._r.remove(child)
@@ -1268,17 +1292,23 @@ def _replace_literal_footer_page_totals(document: Any) -> int:
                         begin.set(qn("w:dirty"), "true")
                         instruction = OxmlElement("w:instrText")
                         instruction.set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
-                        instruction.text = " NUMPAGES \\* Arabic \\* MERGEFORMAT "
+                        instruction.text = f" {field_name} \\* Arabic \\* MERGEFORMAT "
                         separate = OxmlElement("w:fldChar")
                         separate.set(qn("w:fldCharType"), "separate")
                         cached = OxmlElement("w:t")
-                        cached.text = cached_value
+                        cached.text = ""
                         end = OxmlElement("w:fldChar")
                         end.set(qn("w:fldCharType"), "end")
                         run._r.extend((begin, instruction, separate, cached, end))
                         replaced += 1
                     preceding += value
     return replaced
+
+
+def _section_restarts_page_numbering(section: Any) -> bool:
+    qn = _docx_modules()["qn"]
+    page_numbering = section._sectPr.find(qn("w:pgNumType"))
+    return page_numbering is not None and page_numbering.get(qn("w:start")) is not None
 
 
 def _replace_tokens_in_paragraph(paragraph: Any, token_map: dict[str, str]) -> bool:
@@ -1482,7 +1512,7 @@ def _add_summary_analysis_section(document: Any, data: dict[str, Any]) -> None:
             document,
             ["STT", "Tài sản", "Địa chỉ IP", "Phát hiện/ghi chú"],
             rows,
-            column_widths_mm=[12, 42, 36, 70],
+            column_widths_mm=[STT_COLUMN_WIDTH_MM, 42, 36, 68],
         )
         _style_table(table, left_align_columns={1, 2, 3})
     else:
@@ -1667,7 +1697,7 @@ def _add_technical_analysis_section(document: Any, data: dict[str, Any]) -> None
         ["STT", "Thông tin", "Chi tiết"],
         ioc_rows or [["1", "", "Chưa ghi nhận IoC có cấu trúc trong dữ liệu đầu vào."]],
         prototype_key="ioc",
-        column_widths_mm=[14, 38, 108],
+        column_widths_mm=[STT_COLUMN_WIDTH_MM, 38, 108],
     )
     _style_table(table, left_align_columns={1, 2})
 
@@ -1705,7 +1735,7 @@ def _add_technical_remediation_scope(
         ["STT", asset_label, "Địa chỉ IP", "Hành động/Trạng thái"],
         rows,
         prototype_key="remediation_client" if asset_label == "Máy trạm" else None,
-        column_widths_mm=[12, 44, 34, 70],
+        column_widths_mm=[STT_COLUMN_WIDTH_MM, 44, 34, 68],
     )
     _style_table(table, left_align_columns={1, 2, 3})
 
@@ -1912,7 +1942,7 @@ def _add_malware_remediation_table(
         ["STT", asset_label, "Địa chỉ IP", "Trạng thái"],
         rows,
         prototype_key="remediation_client",
-        column_widths_mm=[12, 50, 34, 64],
+        column_widths_mm=[STT_COLUMN_WIDTH_MM, 50, 34, 62],
     )
     _style_table(table, center_all=True)
 
@@ -1942,7 +1972,7 @@ def _add_ioc_section(
         ["STT", "Thông tin", "Chi tiết"],
         rows or [["1", "", ""]],
         prototype_key="ioc",
-        column_widths_mm=[14, 38, 108],
+        column_widths_mm=[STT_COLUMN_WIDTH_MM, 38, 108],
     )
     _style_table(table, left_align_columns={1, 2})
 
@@ -1988,7 +2018,7 @@ def _add_inventory_table(document: Any, assets: list[dict[str, Any]], asset_labe
         ["STT", asset_label, "Địa chỉ truy cập", "Phiên bản hệ điều hành"],
         rows,
         prototype_key="inventory_server" if asset_label == "Máy chủ" else "inventory_client",
-        column_widths_mm=[12, 52, 37, 59],
+        column_widths_mm=[STT_COLUMN_WIDTH_MM, 52, 37, 57],
     )
     _style_table(table, center_all=True)
 
@@ -2009,7 +2039,7 @@ def _add_summary_table(document: Any, assets: list[dict[str, Any]], asset_label:
         ["STT", asset_label, "Kết quả rà soát đánh giá"],
         rows,
         prototype_key="summary_server" if asset_label == "Máy chủ" else "summary_client",
-        column_widths_mm=[12, 52, 96],
+        column_widths_mm=[STT_COLUMN_WIDTH_MM, 52, 94],
     )
     _style_table(table, center_all=True)
 
@@ -2032,7 +2062,7 @@ def _add_detail_table(document: Any, asset: dict[str, Any] | None = None) -> Non
         ["STT", "Hạng mục rà soát", "Kết quả rà soát"],
         rows,
         prototype_key="detail",
-        column_widths_mm=[12, 74, 74],
+        column_widths_mm=[STT_COLUMN_WIDTH_MM, 74, 72],
     )
     _style_table(table, left_align_columns={1, 2})
 
@@ -2289,6 +2319,9 @@ def _create_table(
         header_cells = table.rows[0].cells
         for index, value in enumerate(headers):
             _set_cell_text(header_cells[index], value, bold=True, centered=True)
+        # Template prototypes already mark their header row as repeating; a
+        # generic table must also repeat it when Word continues on a new page.
+        table.rows[0]._tr.get_or_add_trPr().append(_docx_modules()["OxmlElement"]("w:tblHeader"))
 
         for row_values in rows:
             row_cells = table.add_row().cells

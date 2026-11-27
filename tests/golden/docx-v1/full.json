@@ -96,7 +96,7 @@
         "a1f2645e1c95ace689ed9b74770e09786c405849180cc8d8e9f62fd21350fbb4",
         "006e8126261a1fd139787798fbec76dd71a801c81429e5c90930776c92036779"
       ],
-      "formatDigest": "d91cd5c984dee264fce9f023e43ddb31d248f9205d750071c0b90ffddbe2cbbe"
+      "formatDigest": "15f8947f2c9280a84d0e29aa735a77fca1bde35a167a30ed06aae4b7726ff0f1"
     },
     {
       "rows": 2,
@@ -113,7 +113,7 @@
         "59a162e58071bfe44b2b36a98b2a6787b574fe85948e952d6f4ae9cf932bf99f",
         "19067e61484b6798ab3df9912cf1cd6809248d638e87d77d9b525a2c1137afd8"
       ],
-      "formatDigest": "d672fd03e4da4d2b265d7e2492ba5abd8aca929b49ec2d6abb36b11e7b276e8f"
+      "formatDigest": "12e6c3a6e5219f080fec1ac6e9ac32b22c656d32dacaec12b79e80d74a3e00e5"
     },
     {
       "rows": 2,
@@ -129,7 +129,7 @@
         "2dacb3afb1b2bff7426c882d5ce16937691dd25f95b61849496ac3cfd65db6a2",
         "68d198d865fdf966fa275804cad43cbe2c741a06a20e9d4d7afce573ff320a05"
       ],
-      "formatDigest": "d1b8a7c7347055dfbc2f444a46a48e9f69f257e5d55ba4fb1399f5dba0e9d138"
+      "formatDigest": "3ee95253b6dfcc8965f72ecc7973772374847752d63c283b15834723aa69c326"
     },
     {
       "rows": 2,
@@ -145,7 +145,7 @@
         "7ee950c413823dc23162d87109b495889cc14c882c46e49d0077468bdf253eb3",
         "177364626bd523e17296bcda94342b566bd35d077c8282ea041cebb727961b3d"
       ],
-      "formatDigest": "4626b5951ad6e53e5a1a97b05056933c30552a61894d17125cd0bc2291df6c6e"
+      "formatDigest": "ba9b74c752db45a494dce88bdadcff77d777a7f86ff36c2cc3eda7854f85300b"
     },
     {
       "rows": 16,
@@ -175,7 +175,7 @@
         "a4ba466248fe1362aaa977aaa6d75cf7f1be8c2e197d0f1e106fb0db0fb082a5",
         "b94888d5e0a47ba3d598df277cb5e4948872d3eaf8d86e43877f1997c6afd79b"
       ],
-      "formatDigest": "fe6df3eab147485f708d1a1559bb4dae2108983095682f057ec2b31183a77317"
+      "formatDigest": "1c74592f8ef34edc4b686abe3aa9e8f6ec7be333e478c481f41f5ab7b1219b39"
     },
     {
       "rows": 16,
@@ -205,7 +205,7 @@
         "a4ba466248fe1362aaa977aaa6d75cf7f1be8c2e197d0f1e106fb0db0fb082a5",
         "b94888d5e0a47ba3d598df277cb5e4948872d3eaf8d86e43877f1997c6afd79b"
       ],
-      "formatDigest": "fe6df3eab147485f708d1a1559bb4dae2108983095682f057ec2b31183a77317"
+      "formatDigest": "1c74592f8ef34edc4b686abe3aa9e8f6ec7be333e478c481f41f5ab7b1219b39"
     },
     {
       "rows": 2,
@@ -222,7 +222,7 @@
         "e084df3706fc5eeba05fe455c55b2d391693268d221f624bc74456145dd6affa",
         "70034937c1130ff37e1b94f21bc4f17bcb8b66ef57846deaaf7fafcf484e792c"
       ],
-      "formatDigest": "5921c5f958433f2ad2f0a4fac7398dd7bf9a92c9abccbdfa10cb5c3069e14722"
+      "formatDigest": "09f7bacd4356b2cf03f157fec4a9f01e39e48dda4a7bfd507f473fe1cb17f7a1"
     },
     {
       "rows": 2,
@@ -327,14 +327,14 @@
       "part": "word/footer2.xml",
       "kind": "footer",
       "paragraphs": [
-        "Trang 3 / 308"
+        "Trang 3 /"
       ],
-      "paragraphDigest": "9a768c115ae7931f93581be4c437624b49911c73cfb4360c7fd2cadafc43f7df",
+      "paragraphDigest": "1375f5dbb9398ad164cc2b9dbce38a97d207fcdc43e8914ea9372b2a7b6322e9",
       "tableCount": 0,
       "tableCellDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
       "fieldInstructions": [
         "PAGE  \\* Arabic  \\* MERGEFORMAT",
-        "NUMPAGES \\* Arabic \\* MERGEFORMAT"
+        "SECTIONPAGES \\* Arabic \\* MERGEFORMAT"
       ]
     },
     {

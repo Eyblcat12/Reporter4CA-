@@ -194,6 +194,8 @@ const translations = {
     'jobs.backgroundHint': 'Bạn có thể tiếp tục làm việc',
     'jobs.cancel': 'Hủy tác vụ',
     'jobs.downloadAgain': 'Tải lại',
+    'jobs.fieldsDeferred':
+      'Word chưa cập nhật xong mục lục và số trang trong thời gian chờ. File vẫn dùng được: khi mở bằng Word, chọn “Yes” lúc Word hỏi cập nhật để có mục lục đầy đủ.',
     'jobs.resources': 'Tài nguyên tác vụ',
     'jobs.memory': 'RAM',
     'jobs.peak': 'cao nhất',
@@ -459,6 +461,8 @@ const translations = {
     'jobs.backgroundHint': 'You can keep working',
     'jobs.cancel': 'Cancel job',
     'jobs.downloadAgain': 'Download again',
+    'jobs.fieldsDeferred':
+      'Word did not finish updating the table of contents and page numbers in time. The file is still usable: when Word asks to update fields on opening, choose “Yes”.',
     'jobs.resources': 'Job resources',
     'jobs.memory': 'Memory',
     'jobs.peak': 'peak',

@@ -72,7 +72,7 @@
         "59a162e58071bfe44b2b36a98b2a6787b574fe85948e952d6f4ae9cf932bf99f",
         "19067e61484b6798ab3df9912cf1cd6809248d638e87d77d9b525a2c1137afd8"
       ],
-      "formatDigest": "d672fd03e4da4d2b265d7e2492ba5abd8aca929b49ec2d6abb36b11e7b276e8f"
+      "formatDigest": "12e6c3a6e5219f080fec1ac6e9ac32b22c656d32dacaec12b79e80d74a3e00e5"
     },
     {
       "rows": 2,
@@ -88,7 +88,7 @@
         "7ee950c413823dc23162d87109b495889cc14c882c46e49d0077468bdf253eb3",
         "177364626bd523e17296bcda94342b566bd35d077c8282ea041cebb727961b3d"
       ],
-      "formatDigest": "4626b5951ad6e53e5a1a97b05056933c30552a61894d17125cd0bc2291df6c6e"
+      "formatDigest": "ba9b74c752db45a494dce88bdadcff77d777a7f86ff36c2cc3eda7854f85300b"
     },
     {
       "rows": 16,
@@ -118,7 +118,7 @@
         "a4ba466248fe1362aaa977aaa6d75cf7f1be8c2e197d0f1e106fb0db0fb082a5",
         "b94888d5e0a47ba3d598df277cb5e4948872d3eaf8d86e43877f1997c6afd79b"
       ],
-      "formatDigest": "fe6df3eab147485f708d1a1559bb4dae2108983095682f057ec2b31183a77317"
+      "formatDigest": "1c74592f8ef34edc4b686abe3aa9e8f6ec7be333e478c481f41f5ab7b1219b39"
     },
     {
       "rows": 2,
@@ -134,7 +134,7 @@
         "bcb56aa4820d7ea482cbcdaa7ab7e2a01197a366b27955f3078d14f1cf7a8578",
         "835ce42a94afc447413f9d8dff3512b42464d4110b93cfba1a54f95b1eac96d3"
       ],
-      "formatDigest": "cb383581330d1ecfc64ae1346dea8ca6b2f0be06ec63ded91f109d45c68a1cde"
+      "formatDigest": "66f1e5b8e408f104d51e3dd9bdd1e09a54b4d7dd39f0e3afbc8e28d5e3cb3c27"
     }
   ],
   "numberedParagraphs": 41,
@@ -223,14 +223,14 @@
       "part": "word/footer2.xml",
       "kind": "footer",
       "paragraphs": [
-        "Trang 3 / 308"
+        "Trang 3 /"
       ],
-      "paragraphDigest": "9a768c115ae7931f93581be4c437624b49911c73cfb4360c7fd2cadafc43f7df",
+      "paragraphDigest": "1375f5dbb9398ad164cc2b9dbce38a97d207fcdc43e8914ea9372b2a7b6322e9",
       "tableCount": 0,
       "tableCellDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
       "fieldInstructions": [
         "PAGE  \\* Arabic  \\* MERGEFORMAT",
-        "NUMPAGES \\* Arabic \\* MERGEFORMAT"
+        "SECTIONPAGES \\* Arabic \\* MERGEFORMAT"
       ]
     },
     {

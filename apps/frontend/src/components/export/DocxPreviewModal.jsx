@@ -254,6 +254,17 @@ export default function DocxPreviewModal() {
                   </dd>
                 </div>
               </dl>
+              {previewState.fieldEngine === 'deferred' &&
+                ['current', 'stale'].includes(previewState.status) && (
+                  <p className="docx-modal__fields-notice" role="status">
+                    <AlertTriangle size={14} aria-hidden="true" />
+                    <span>
+                      Word chưa cập nhật xong mục lục và số trang trong thời gian chờ, nên Preview
+                      này chưa có mục lục đầy đủ. File tải về vẫn dùng được: khi mở bằng Word, chọn
+                      “Yes” lúc Word hỏi cập nhật.
+                    </span>
+                  </p>
+                )}
               {previewState.status === 'generating' && previewState.previewId && (
                 <button className="btn btn--ghost btn--sm" onClick={() => cancelPreview()}>
                   <X size={14} /> Hủy Preview

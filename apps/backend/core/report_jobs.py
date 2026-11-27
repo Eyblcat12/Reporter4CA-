@@ -106,6 +106,8 @@ class ReportJob:
             "requestSignature": str(self.artifact.get("requestSignature", "")),
             "contentSignature": str(self.artifact.get("contentSignature", "")),
             "previewId": str(self.artifact.get("previewId", "")),
+            # "deferred" tells the UI that Word did not refresh TOC/page fields.
+            "fieldEngine": str(self.artifact.get("fieldEngine") or ""),
             "templateHash": str(self.artifact.get("templateHash", "")),
             "cacheMode": str(self.artifact.get("cacheMode", "")),
             "expiresAt": str(self.artifact.get("expiresAt", "")),

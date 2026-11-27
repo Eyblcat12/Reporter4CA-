@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "apps" / "backend"
 sys.path.insert(0, str(BACKEND))
 
-from core.docx_field_updater import refresh_docx_fields  # noqa: E402
+from core.docx_field_updater import _word_update_script, refresh_docx_fields  # noqa: E402
 from core.report_generator import (  # noqa: E402
     _enable_field_updates,
     _replace_literal_footer_page_totals,
@@ -113,7 +113,100 @@ class DocxFieldUpdaterTests(unittest.TestCase):
             with zipfile.ZipFile(path) as archive:
                 footer_xml = archive.read("word/footer1.xml").decode("utf-8")
         self.assertIn("NUMPAGES", footer_xml)
+        self.assertNotIn("SECTIONPAGES", footer_xml)
         self.assertIn('w:dirty="true"', footer_xml)
+        # The template literal must not survive as a cached, unverified total.
+        self.assertNotIn(">308<", footer_xml)
+
+    def test_restarted_body_section_footer_counts_section_pages_without_cache(self) -> None:
+        # Mirrors the default templates: TOC section, then a body section that
+        # restarts page numbering and owns the "Trang PAGE / 308" footer.
+        document = Document()
+        body = document.add_section()
+        page_numbering = OxmlElement("w:pgNumType")
+        page_numbering.set(qn("w:start"), "1")
+        body._sectPr.append(page_numbering)
+        body.footer.is_linked_to_previous = False
+        paragraph = body.footer.paragraphs[0]
+        for value in ("Trang ", "3", " / ", "308"):
+            paragraph.add_run(value)
+
+        self.assertEqual(_replace_literal_footer_page_totals(document), 1)
+
+        footer = body.footer._element
+        instructions = "".join(node.text or "" for node in footer.iter(qn("w:instrText")))
+        self.assertIn("SECTIONPAGES", instructions)
+        self.assertNotIn("NUMPAGES", instructions)
+        results = [node.text or "" for node in footer.iter(qn("w:t"))]
+        self.assertEqual(results, ["Trang ", "3", " / ", ""])
+        begin = next(
+            node
+            for node in footer.iter(qn("w:fldChar"))
+            if node.get(qn("w:fldCharType")) == "begin"
+        )
+        self.assertEqual(begin.get(qn("w:dirty")), "true")
+
+    def test_footer_shared_with_front_matter_keeps_numpages(self) -> None:
+        # The restarting body section reuses the first section's footer, so a
+        # section count would be wrong on the front-matter pages.
+        document = Document()
+        paragraph = document.sections[0].footer.paragraphs[0]
+        for value in ("Trang ", "3", " / ", "308"):
+            paragraph.add_run(value)
+        body = document.add_section()
+        page_numbering = OxmlElement("w:pgNumType")
+        page_numbering.set(qn("w:start"), "1")
+        body._sectPr.append(page_numbering)
+        self.assertTrue(body.footer.is_linked_to_previous)
+
+        self.assertEqual(_replace_literal_footer_page_totals(document), 1)
+
+        instructions = "".join(
+            node.text or "" for node in document.sections[0].footer._element.iter(qn("w:instrText"))
+        )
+        self.assertIn("NUMPAGES", instructions)
+        self.assertNotIn("SECTIONPAGES", instructions)
+
+    def test_word_script_stores_calculated_page_totals(self) -> None:
+        script = _word_update_script()
+        self.assertIn("If fieldItem.Type = 26 Or fieldItem.Type = 66 Then", script)
+
+    def test_word_script_lays_out_a_long_report_as_few_times_as_possible(self) -> None:
+        # Each relayout of a 350-page report costs 20-25 s; the old script did
+        # about eight and rebuilt the same TOC three times.
+        script = _word_update_script()
+        main = script[: script.index("Function BodyHasFieldsOutsideTocs")]
+        toc_rebuild = main.index("toc.Update")
+        body_check = main.index("If BodyHasFieldsOutsideTocs(document) Then")
+        self.assertLess(toc_rebuild, body_check)
+        # The whole main story is updated again only behind the body check.
+        self.assertEqual(main.count("document.Fields.Update"), 1)
+        self.assertLess(body_check, main.index("document.Fields.Update"))
+        self.assertEqual(main.count("document.Repaginate"), 1)
+        self.assertLess(body_check, main.index("document.Repaginate"))
+        # Other stories (headers, footers, text boxes, notes) are still updated.
+        self.assertIn("If currentStory.StoryType <> 1 Then currentStory.Fields.Update", main)
+        self.assertLess(
+            main.index("headerFooter.Range.Fields.Update"), main.index("toc.UpdatePageNumbers")
+        )
+
+    def test_word_script_body_check_falls_back_to_the_full_update(self) -> None:
+        function = _word_update_script().split("Function BodyHasFieldsOutsideTocs(doc)", 1)[1]
+        # True is the answer until every field was seen, so an error while
+        # checking keeps the full update; TOC, PAGEREF and HYPERLINK inside a
+        # TOC are the only fields the rebuilt TOCs cover.
+        self.assertLess(
+            function.index("BodyHasFieldsOutsideTocs = True"), function.index("For Each item")
+        )
+        # A table of figures is a TOC field too, but toc.Update skips it.
+        self.assertLess(
+            function.index("If doc.TablesOfFigures.Count > 0 Then Exit Function"),
+            function.index("For Each item"),
+        )
+        self.assertIn("If item.Type <> 13 Then", function)
+        self.assertIn("If item.Type = 37 Or item.Type = 88 Then", function)
+        self.assertIn("item.Code.InRange(tocItem.Range)", function)
+        self.assertLess(function.index("Next"), function.index("BodyHasFieldsOutsideTocs = False"))
 
     def test_enable_field_updates_marks_fields_dirty(self) -> None:
         document = Document()

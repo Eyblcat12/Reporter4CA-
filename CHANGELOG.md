@@ -5,6 +5,14 @@ Mọi thay đổi đáng chú ý của Reporter Pro được ghi tại đây. D�
 
 ## [Unreleased]
 
+## [2.3.3] - 2026-11-27
+
+### Fixed
+
+- Nới cột STT lên 14 mm để tiêu đề nằm trên một dòng và lặp hàng tiêu đề khi bảng qua trang.
+- Bỏ tổng số trang cũ lưu trong chân trang template. Reporter dùng số trang của phần nội dung khi phần đó có bộ đếm riêng.
+- Giảm các lượt cập nhật mục lục lặp lại. Preview và Generate điều chỉnh thời gian chờ Word theo số dòng và cảnh báo khi người dùng cần cập nhật mục lục trong Word.
+
 ## [2.3.2] - 2026-11-25
 
 ### Fixed

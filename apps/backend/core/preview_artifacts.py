@@ -65,6 +65,9 @@ class PreviewArtifact:
     last_access_epoch: float = 0.0
     snapshot: Any = field(default=None, repr=False)
     plugin_manifest: tuple[Any, ...] = field(default_factory=tuple, repr=False)
+    # "microsoft-word" when Word refreshed the TOC and page fields, "deferred"
+    # when it could not; a promoted report inherits this state.
+    field_engine: str = ""
 
     def public(self) -> dict[str, Any]:
         return {
@@ -77,6 +80,7 @@ class PreviewArtifact:
             "expiresAt": _utc_iso(self.expires_at_epoch),
             "cacheMode": self.cache_mode,
             "sizeBytes": self.size_bytes,
+            "fieldEngine": self.field_engine,
         }
 
 
@@ -124,6 +128,7 @@ class PreviewArtifactRegistry:
         cache_mode: str = "deterministic",
         snapshot: Any = None,
         plugin_manifest: tuple[Any, ...] = (),
+        field_engine: str = "",
     ) -> PreviewArtifact:
         source_path = Path(source)
         if not source_path.is_file():
@@ -157,6 +162,7 @@ class PreviewArtifactRegistry:
             last_access_epoch=now,
             snapshot=snapshot,
             plugin_manifest=tuple(plugin_manifest),
+            field_engine=field_engine,
         )
         with self._lock:
             self._artifacts[artifact.id] = artifact

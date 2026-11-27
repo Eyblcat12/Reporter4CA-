@@ -72,7 +72,7 @@
         "a1f2645e1c95ace689ed9b74770e09786c405849180cc8d8e9f62fd21350fbb4",
         "006e8126261a1fd139787798fbec76dd71a801c81429e5c90930776c92036779"
       ],
-      "formatDigest": "d91cd5c984dee264fce9f023e43ddb31d248f9205d750071c0b90ffddbe2cbbe"
+      "formatDigest": "15f8947f2c9280a84d0e29aa735a77fca1bde35a167a30ed06aae4b7726ff0f1"
     },
     {
       "rows": 2,
@@ -89,7 +89,7 @@
         "59a162e58071bfe44b2b36a98b2a6787b574fe85948e952d6f4ae9cf932bf99f",
         "19067e61484b6798ab3df9912cf1cd6809248d638e87d77d9b525a2c1137afd8"
       ],
-      "formatDigest": "d672fd03e4da4d2b265d7e2492ba5abd8aca929b49ec2d6abb36b11e7b276e8f"
+      "formatDigest": "12e6c3a6e5219f080fec1ac6e9ac32b22c656d32dacaec12b79e80d74a3e00e5"
     },
     {
       "rows": 2,
@@ -105,7 +105,7 @@
         "2dacb3afb1b2bff7426c882d5ce16937691dd25f95b61849496ac3cfd65db6a2",
         "68d198d865fdf966fa275804cad43cbe2c741a06a20e9d4d7afce573ff320a05"
       ],
-      "formatDigest": "d1b8a7c7347055dfbc2f444a46a48e9f69f257e5d55ba4fb1399f5dba0e9d138"
+      "formatDigest": "3ee95253b6dfcc8965f72ecc7973772374847752d63c283b15834723aa69c326"
     },
     {
       "rows": 2,
@@ -121,7 +121,7 @@
         "7ee950c413823dc23162d87109b495889cc14c882c46e49d0077468bdf253eb3",
         "177364626bd523e17296bcda94342b566bd35d077c8282ea041cebb727961b3d"
       ],
-      "formatDigest": "4626b5951ad6e53e5a1a97b05056933c30552a61894d17125cd0bc2291df6c6e"
+      "formatDigest": "ba9b74c752db45a494dce88bdadcff77d777a7f86ff36c2cc3eda7854f85300b"
     },
     {
       "rows": 2,
@@ -138,7 +138,7 @@
         "f6084663ac6d813c2c175f50f9be3d0dd4e4655559127174a7a6485a2b100ad6",
         "72035f9d26257632dba761c055729f23e91c6955a41038c73c4cef7f82d38448"
       ],
-      "formatDigest": "d331e464f7a4fe8255648bc4837189692abd7f0185868b0461845ae83b7b3038"
+      "formatDigest": "91260a3a9031f4ddbc31a55f34efecad7db737587435f47554c1f417d1d405ac"
     }
   ],
   "numberedParagraphs": 25,
@@ -227,14 +227,14 @@
       "part": "word/footer2.xml",
       "kind": "footer",
       "paragraphs": [
-        "Trang 3 / 308"
+        "Trang 3 /"
       ],
-      "paragraphDigest": "9a768c115ae7931f93581be4c437624b49911c73cfb4360c7fd2cadafc43f7df",
+      "paragraphDigest": "1375f5dbb9398ad164cc2b9dbce38a97d207fcdc43e8914ea9372b2a7b6322e9",
       "tableCount": 0,
       "tableCellDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
       "fieldInstructions": [
         "PAGE  \\* Arabic  \\* MERGEFORMAT",
-        "NUMPAGES \\* Arabic \\* MERGEFORMAT"
+        "SECTIONPAGES \\* Arabic \\* MERGEFORMAT"
       ]
     },
     {

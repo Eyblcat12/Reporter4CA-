@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 
 APP_NAME = "Reporter Pro"
-APP_VERSION = "2.3.2"
+APP_VERSION = "2.3.3"
 DEFAULT_CORS_ORIGINS = (
     "http://127.0.0.1:5173",
     "http://localhost:5173",
@@ -20,6 +20,9 @@ DEFAULT_PREVIEW_ARTIFACT_CACHE_ENTRIES = 20
 DEFAULT_JOB_RESOURCE_POLL_MS = 500
 DEFAULT_AUTO_BACKUP_INTERVAL_HOURS = 24
 DEFAULT_AUTO_BACKUP_RETENTION = 7
+DEFAULT_WORD_FIELD_TIMEOUT_SECONDS = 45
+WORD_FIELD_TIMEOUT_PER_ASSET_SECONDS = 1.0
+MAX_WORD_FIELD_TIMEOUT_SECONDS = 15 * 60
 _TRUTHY = {"1", "true", "yes", "on"}
 
 
@@ -79,6 +82,30 @@ def job_timeout_seconds() -> int | None:
     if value <= 0:
         return None
     return min(max(value, 30), 24 * 60 * 60)
+
+
+def word_field_update_timeout_seconds(asset_count: int) -> int:
+    """Return how long Preview/Generate wait for Word to refresh TOC and page fields.
+
+    Word lays the whole report out to fill the table of contents, so the time
+    grows with its length. Measured on 2026-11-26 on a desktop PC (with the
+    leaner Word script): about 140 s for a 273-asset Server Only report (357
+    pages) and 330 s for 600 assets, far past the former fixed 45 s. The
+    default waits 45 s plus 1 s per asset, at most 15 minutes, leaving room
+    for slower PCs; cancelling the job still stops Word at once.
+    AUTO_REPORT_WORD_TIMEOUT_SECONDS sets a fixed wait instead (5–3600 s).
+    """
+
+    raw = os.getenv("AUTO_REPORT_WORD_TIMEOUT_SECONDS", "").strip()
+    if raw:
+        try:
+            return min(max(int(raw), 5), 60 * 60)
+        except ValueError:
+            pass
+    scaled = DEFAULT_WORD_FIELD_TIMEOUT_SECONDS + WORD_FIELD_TIMEOUT_PER_ASSET_SECONDS * max(
+        0, int(asset_count)
+    )
+    return int(min(scaled, MAX_WORD_FIELD_TIMEOUT_SECONDS))
 
 
 def job_resource_poll_seconds() -> float:

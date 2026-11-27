@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -15,6 +16,7 @@ sys.path.insert(0, str(BACKEND))
 from api.models import GenerateRequest, ValidateRowsRequest  # noqa: E402
 from api.routes import generate, validate_rows  # noqa: E402
 from core.data_quality import assess_rows  # noqa: E402
+from core.database import Database  # noqa: E402
 
 
 class DataQualityTests(unittest.TestCase):
@@ -57,9 +59,21 @@ class DataQualityTests(unittest.TestCase):
 
     def test_generate_rejects_blocking_data_before_report_engine_runs(self) -> None:
         request = GenerateRequest(rows=[{"type": "server", "hostname": ""}])
-        with patch("api.routes.generate_report") as report_engine:
-            with self.assertRaises(HTTPException) as context:
-                asyncio.run(generate(request))
+        # generate() reads detection rules and templates from the database
+        # before it validates rows. A throw-away database keeps the suite off
+        # the real reporter.db.
+        with tempfile.TemporaryDirectory() as temporary:
+            database = Database(Path(temporary) / "reporter.db")
+            database.initialize()
+            try:
+                with (
+                    patch("api.routes.get_db", return_value=database),
+                    patch("api.routes.generate_report") as report_engine,
+                ):
+                    with self.assertRaises(HTTPException) as context:
+                        asyncio.run(generate(request))
+            finally:
+                database.close()
         self.assertEqual(context.exception.status_code, 422)
         report_engine.assert_not_called()
 

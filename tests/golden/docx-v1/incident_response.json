@@ -73,7 +73,7 @@
         "e1840804cde30614a6d60c12f88c808514cc05cf7f022c16f718370d0b3a07c3",
         "d0f778941b4832f504e284521c4e26e8a8822cf48f03663344f05ccdfbff524b"
       ],
-      "formatDigest": "4e3f5d1a3f8d99d6b8446ad31e6bb7adadb31e22a5adf461a1497be9bf7e5b56"
+      "formatDigest": "bac5f5d7508a085e1d848fdd8ff33ce663d5a96a1c7d5bffd575d9d26edda6e7"
     },
     {
       "rows": 3,
@@ -91,7 +91,7 @@
         "8a51ced424866840e35aba908f011ce194c6166319ee94cb5de96cff0435d5c9",
         "4bc804f1a07e623decc5f5f4fe4a984a7bf689f0737958960533685b492d4d21"
       ],
-      "formatDigest": "991b8b90faa7037a295a71bb5b856c7178f6a3be9f5ff405328a3c2aeea14675"
+      "formatDigest": "883e35d04b390a34096cacd7c28feab906c266b14dca9f87009da463d2580e3f"
     },
     {
       "rows": 2,
@@ -108,7 +108,7 @@
         "c0e971c94d4b89826499eb84c0de548091a20b4eeb977325eba7d33c3f987165",
         "c7deda4ca5dfde573778e08073cdadcc0dfe28ef06a3c571eeafcf4020c04bab"
       ],
-      "formatDigest": "b8c7036bbe89b6cc3e6f0be984dc745ea6ad9af99ac28289216d3689b8e8cb20"
+      "formatDigest": "c27fa63fd3edabbd67c4957e42b38ac885faf430555c5a987b22e04a65bfafe5"
     },
     {
       "rows": 2,
@@ -125,7 +125,7 @@
         "b3b99df2e0a914ca96fff1e76286e11719aaa2f5e9fd370d3f6ab62f041e81bc",
         "29a49ab126da31ecb1c1570363e4871e691bfaf7df0be9d69ea43a1fa8333e7b"
       ],
-      "formatDigest": "a94e81aac4310e83561a9c2fd4f9e5d1b91616560fb8e26bab6dcd390a67cc4c"
+      "formatDigest": "f17e2dd914202eb2cb0fd8ebe2d6c6bbbd1a23371b504fc2e5ebe5c13da87c9d"
     },
     {
       "rows": 2,
@@ -143,7 +143,7 @@
         "da92978980c61aa0d2db6940b79974d9618a1dbf2ee8edb95a4d112cb38cdc9f",
         "6cfebf804e787d7f6f42ab4ec170a33635fc041b4fc37ad1e2f3c4a2b5bc8ece"
       ],
-      "formatDigest": "d2b8284211057263d67202ccaa13d7a8ea797053200700e7754ce0b1351c4ca9"
+      "formatDigest": "1bd309b8d8a4b6a914e7161b638e8759bfee27e3745b8117568400a6f71546e9"
     },
     {
       "rows": 2,
@@ -161,7 +161,7 @@
         "6e918fe276115ec94b95f5a5daa7568c7d0a6d2bfbbe99734b44fcca42e75afb",
         "a981cb5a6b3460cb0109abeaafc5ebe74944968befb4e1f1aa0d47183b93d960"
       ],
-      "formatDigest": "456302ef87aae92e33a07e44cc0e4c40f82427dfdc98b8f1d0d893b0dfefc835"
+      "formatDigest": "166b0db1ee08a6e4222b31d22337ce3064f6a921d6fbfc933c037f5c365861e9"
     },
     {
       "rows": 2,
@@ -178,7 +178,7 @@
         "6560a9d3edb61fca41e71415178c6ebe38326c1593f1793678101963ae147ca7",
         "8ec0b9192c453ebe9373cda57f2ed7da96b37f0e0ecd0f391f4a1bc744172460"
       ],
-      "formatDigest": "3c27f039d386be97c8f8d4b2bbf31210be6b8c1458fc3b85f1166bc8cfdde1ab"
+      "formatDigest": "996a0cfeead8ca662c8bdd00d7b38901b644d2a0bbed3f09fc962299cd9116e7"
     },
     {
       "rows": 2,
@@ -195,7 +195,7 @@
         "6560a9d3edb61fca41e71415178c6ebe38326c1593f1793678101963ae147ca7",
         "0ebec0f2344b86272b7e49df2be23ff5f2e7af1b143dd4ca6d53bc8e3af2116f"
       ],
-      "formatDigest": "3c27f039d386be97c8f8d4b2bbf31210be6b8c1458fc3b85f1166bc8cfdde1ab"
+      "formatDigest": "996a0cfeead8ca662c8bdd00d7b38901b644d2a0bbed3f09fc962299cd9116e7"
     },
     {
       "rows": 2,
@@ -212,7 +212,7 @@
         "6560a9d3edb61fca41e71415178c6ebe38326c1593f1793678101963ae147ca7",
         "daf579290b78e94766e80df31203a6c0a37c1b69fc3b7cb1e0ccfd4eb9212f0b"
       ],
-      "formatDigest": "3c27f039d386be97c8f8d4b2bbf31210be6b8c1458fc3b85f1166bc8cfdde1ab"
+      "formatDigest": "996a0cfeead8ca662c8bdd00d7b38901b644d2a0bbed3f09fc962299cd9116e7"
     }
   ],
   "numberedParagraphs": 19,
@@ -301,14 +301,14 @@
       "part": "word/footer2.xml",
       "kind": "footer",
       "paragraphs": [
-        "Trang 3 / 308"
+        "Trang 3 /"
       ],
-      "paragraphDigest": "9a768c115ae7931f93581be4c437624b49911c73cfb4360c7fd2cadafc43f7df",
+      "paragraphDigest": "1375f5dbb9398ad164cc2b9dbce38a97d207fcdc43e8914ea9372b2a7b6322e9",
       "tableCount": 0,
       "tableCellDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
       "fieldInstructions": [
         "PAGE  \\* Arabic  \\* MERGEFORMAT",
-        "NUMPAGES \\* Arabic \\* MERGEFORMAT"
+        "SECTIONPAGES \\* Arabic \\* MERGEFORMAT"
       ]
     },
     {

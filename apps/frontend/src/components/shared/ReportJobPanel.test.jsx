@@ -64,4 +64,32 @@ describe('ReportJobPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'jobs.downloadAgain' }));
     expect(context.downloadReportJob).toHaveBeenCalledWith(context.activeReportJob);
   });
+
+  it('warns when Word did not refresh the table of contents in time', () => {
+    context.activeReportJob = {
+      id: 'job-3',
+      status: 'completed',
+      phase: 'completed',
+      progress: 100,
+      filename: 'large-assessment.docx',
+      fieldEngine: 'deferred',
+    };
+    render(<ReportJobPanel />);
+
+    expect(screen.getByRole('status')).toHaveTextContent('jobs.fieldsDeferred');
+  });
+
+  it('shows no field warning once Word refreshed the fields', () => {
+    context.activeReportJob = {
+      id: 'job-4',
+      status: 'completed',
+      phase: 'completed',
+      progress: 100,
+      filename: 'assessment.docx',
+      fieldEngine: 'microsoft-word',
+    };
+    render(<ReportJobPanel />);
+
+    expect(screen.queryByText('jobs.fieldsDeferred')).not.toBeInTheDocument();
+  });
 });

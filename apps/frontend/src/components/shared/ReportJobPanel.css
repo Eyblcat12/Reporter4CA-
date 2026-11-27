@@ -94,6 +94,22 @@
   color: var(--text-secondary);
   font-weight: 600;
 }
+.report-job-panel__notice {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 14px 0 0;
+  padding: 9px 10px;
+  border-radius: 10px;
+  color: var(--warning);
+  background: var(--warning-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.report-job-panel__notice svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
 .report-job-panel__actions {
   display: flex;
   align-items: center;

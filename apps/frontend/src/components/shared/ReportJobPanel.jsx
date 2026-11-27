@@ -1,5 +1,13 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle2, Download, FileClock, Loader2, X, XCircle } from 'lucide-react';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Download,
+  FileClock,
+  Loader2,
+  X,
+  XCircle,
+} from 'lucide-react';
 import { useReporterContext } from '../../hooks/useReporter';
 import { useI18n } from '../../i18n';
 import './ReportJobPanel.css';
@@ -83,6 +91,12 @@ export default function ReportJobPanel() {
             {resources.timeoutSeconds && ` / ${resources.timeoutSeconds}s`}
           </span>
         </div>
+      )}
+      {completed && job.fieldEngine === 'deferred' && (
+        <p className="report-job-panel__notice" role="status">
+          <AlertTriangle size={14} aria-hidden="true" />
+          <span>{t('jobs.fieldsDeferred')}</span>
+        </p>
       )}
       <div className="report-job-panel__actions">
         <small>

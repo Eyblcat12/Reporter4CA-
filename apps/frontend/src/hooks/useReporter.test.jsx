@@ -146,6 +146,70 @@ describe('ReporterProvider API workflow', () => {
     expect(fetch).toHaveBeenCalledWith('/api/report-jobs/job-1/download');
   });
 
+  it('logs when Word did not refresh fields before the report finished', async () => {
+    fetch
+      .mockResolvedValueOnce(
+        jsonResponse({ rows: [{ type: 'server', hostname: 'srv-01' }], payload: {} }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({ valid: true, issues: [], summary: { totalRows: 1, validRows: 1 } }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          job: { id: 'job-deferred', status: 'queued', phase: 'queued', progress: 0 },
+          deduplicated: false,
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          job: {
+            id: 'job-deferred',
+            status: 'completed',
+            phase: 'completed',
+            progress: 100,
+            filename: 'large.docx',
+            fieldEngine: 'deferred',
+          },
+        }),
+      )
+      .mockResolvedValueOnce(new Response(new Blob(['docx']), { status: 200 }));
+    const { result } = renderHook(() => useReporter(), { wrapper });
+    await act(() => result.current.loadSample());
+    await act(() => result.current.generateReport());
+
+    expect(result.current.activeReportJob.fieldEngine).toBe('deferred');
+    expect(result.current.logs.some((line) => line.includes('Word chưa cập nhật xong'))).toBe(true);
+  });
+
+  it('keeps the Preview field state so the modal can warn about a deferred TOC', async () => {
+    fetch
+      .mockResolvedValueOnce(
+        jsonResponse({ rows: [{ type: 'server', hostname: 'srv-preview' }], payload: {} }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({ valid: true, issues: [], summary: { totalRows: 1, validRows: 1 } }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          previewId: 'preview-deferred',
+          jobId: 'preview-job-deferred',
+          status: 'ready',
+          signature: 'signature-deferred',
+          progress: 100,
+          phase: 'completed',
+          cacheMode: 'deterministic',
+          fieldEngine: 'deferred',
+        }),
+      )
+      .mockResolvedValueOnce(statusResponse(200));
+    const { result } = renderHook(() => useReporter(), { wrapper });
+    await act(() => result.current.loadSample());
+    await act(() => result.current.previewDocx());
+
+    expect(result.current.previewState.status).toBe('current');
+    expect(result.current.previewState.fieldEngine).toBe('deferred');
+  });
+
   it('saves presets and updates templates through their API contracts', async () => {
     fetch
       .mockResolvedValueOnce(jsonResponse({ id: 'preset-1', ok: true }))

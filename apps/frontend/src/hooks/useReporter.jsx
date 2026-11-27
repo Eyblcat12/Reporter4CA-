@@ -92,6 +92,7 @@ const initialState = {
     templateHash: '',
     expiresAt: '',
     cacheMode: '',
+    fieldEngine: '',
     errorCode: '',
     errorMessage: '',
   },
@@ -396,6 +397,9 @@ function reducer(state, action) {
 }
 
 const API_BASE = '/api';
+// fieldEngine "deferred": Word could not refresh the TOC/page fields in time.
+const FIELDS_DEFERRED_LOG =
+  'Word chưa cập nhật xong mục lục và số trang; Word sẽ hỏi cập nhật khi mở file';
 
 export function ReporterProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -861,6 +865,7 @@ export function ReporterProvider({ children }) {
         if (job.status === 'completed') {
           if (job.reportId) dispatch({ type: 'SET_LAST_REPORT_ID', payload: job.reportId });
           await downloadReportJob(job);
+          if (job.fieldEngine === 'deferred') addLog(FIELDS_DEFERRED_LOG);
           return job;
         }
         if (job.status === 'failed') throw new Error(job.errorMessage || 'Report job failed');
@@ -1361,6 +1366,7 @@ export function ReporterProvider({ children }) {
         phase: 'queued',
         previewId: '',
         jobId: '',
+        fieldEngine: '',
         errorCode: '',
         errorMessage: '',
       },
@@ -1423,7 +1429,12 @@ export function ReporterProvider({ children }) {
             revision,
             blob,
             signature: res.headers?.get?.('X-Request-Signature') || JSON.stringify(body),
-            data: { cacheMode: 'compatibility', expiresAt: '', previewId: '' },
+            data: {
+              cacheMode: 'compatibility',
+              expiresAt: '',
+              previewId: '',
+              fieldEngine: res.headers?.get?.('X-Docx-Fields') || '',
+            },
           },
         });
         addLog('Preview generated through compatibility endpoint');
@@ -1529,6 +1540,7 @@ export function ReporterProvider({ children }) {
             templateHash: statePayload.templateHash || created.templateHash || '',
             expiresAt: statePayload.expiresAt || '',
             cacheMode: statePayload.cacheMode || '',
+            fieldEngine: statePayload.fieldEngine || '',
           },
         },
       });
@@ -1537,6 +1549,7 @@ export function ReporterProvider({ children }) {
           ? 'Preview is current and ready to reuse'
           : 'Preview completed but is stale because the document changed',
       );
+      if (statePayload.fieldEngine === 'deferred') addLog(FIELDS_DEFERRED_LOG);
     } catch (err) {
       if (err.name === 'AbortError') return;
       dispatch({

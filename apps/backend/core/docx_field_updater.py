@@ -196,6 +196,14 @@ If Err.Number <> 0 Then
     WScript.Quit 3
 End If
 
+' Leave existing sessions alone if COM returns one.
+Err.Clear
+If wordApp.UserControl Or wordApp.Documents.Count > 0 Then
+    WScript.Echo "Microsoft Word returned an instance that is already in use."
+    WScript.Quit 5
+End If
+If Err.Number <> 0 Then WScript.Quit 5
+
 wordApp.Visible = False
 wordApp.DisplayAlerts = 0
 wordApp.Options.SaveNormalPrompt = False
@@ -206,22 +214,28 @@ If Err.Number <> 0 Then
     operationError = Err.Number
     operationDescription = Err.Description
 Else
-    document.Repaginate
-    ' Rebuild TOCs first. Templates can contain hundreds of stale PAGEREF
-    ' fields; updating those individually before replacing the TOC is wasteful.
+    ' Every step that lays the document out again costs 20-25 s on a
+    ' 350-page report, so each runs once. Rebuild TOCs first: templates can
+    ' contain hundreds of stale PAGEREF fields, and toc.Update replaces them
+    ' (it lays the document out itself).
     For Each toc In document.TablesOfContents
         toc.Update
     Next
 
-    document.Repaginate
-    document.Fields.Update
+    ' The rebuilt TOCs are current; updating the whole main story would
+    ' rebuild them once more. Do it only when the body holds other fields,
+    ' such as a customer template's DATE, SEQ or cross-reference.
+    If BodyHasFieldsOutsideTocs(document) Then
+        document.Repaginate
+        document.Fields.Update
+    End If
     ' Document.Fields does not reliably include header/footer stories. Update
-    ' every linked story so PAGE/NUMPAGES and other footer fields cannot retain
-    ' cached values from the template.
+    ' every other story (main text is story type 1) so PAGE/NUMPAGES and other
+    ' footer fields cannot retain cached values from the template.
     For Each storyRange In document.StoryRanges
         Set currentStory = storyRange
         Do While Not currentStory Is Nothing
-            currentStory.Fields.Update
+            If currentStory.StoryType <> 1 Then currentStory.Fields.Update
             Set currentStory = currentStory.NextStoryRange
         Loop
     Next
@@ -235,11 +249,13 @@ Else
         For Each headerFooter In sectionItem.Footers
             If headerFooter.Exists Then
                 headerFooter.Range.Fields.Update
-                ' Word can calculate NUMPAGES for rendering without serializing
-                ' its new cached result. Touch the result text so docx-preview
-                ' receives the same value that desktop Word displays.
+                ' Word can calculate NUMPAGES (26) and SECTIONPAGES (66) for
+                ' rendering without serializing its new cached result. The
+                ' generator writes these totals with an empty result, so touch
+                ' the result text: docx-preview then receives the same value
+                ' that desktop Word displays.
                 For Each fieldItem In headerFooter.Range.Fields
-                    If fieldItem.Type = 26 Then
+                    If fieldItem.Type = 26 Or fieldItem.Type = 66 Then
                         calculatedResult = fieldItem.Result.Text
                         fieldItem.Result.Text = calculatedResult & " "
                         fieldItem.Result.Text = calculatedResult
@@ -270,6 +286,32 @@ If operationError <> 0 Then
 End If
 
 WScript.Quit 0
+
+' True when the main story has a field that no TOC rebuilt: anything other than
+' a TOC, or a PAGEREF/HYPERLINK outside every TOC. Any error while checking
+' leaves the answer True, so the caller falls back to the full update.
+Function BodyHasFieldsOutsideTocs(doc)
+    Dim item, tocItem, insideToc
+    On Error Resume Next
+    Err.Clear
+    BodyHasFieldsOutsideTocs = True
+    ' A table of figures ("Danh muc bang") is a TOC field (type 13) as well,
+    ' but it is not in TablesOfContents, so toc.Update did not rebuild it.
+    If doc.TablesOfFigures.Count > 0 Then Exit Function
+    For Each item In doc.Fields
+        If item.Type <> 13 Then
+            insideToc = False
+            If item.Type = 37 Or item.Type = 88 Then
+                For Each tocItem In doc.TablesOfContents
+                    If item.Code.InRange(tocItem.Range) Then insideToc = True
+                Next
+            End If
+            If Not insideToc Then Exit Function
+        End If
+    Next
+    If Err.Number = 0 Then BodyHasFieldsOutsideTocs = False
+    Err.Clear
+End Function
 """
 
 
